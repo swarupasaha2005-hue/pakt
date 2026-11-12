@@ -1,5 +1,6 @@
 // Indexer: one Durable Object that runs the alarm-driven index loop and fans new events out over hibernated WebSockets.
 import { DurableObject } from "cloudflare:workers";
+import { clientKey } from "./api";
 import { BadBlock, Budget, events, Neardata, Rpc, type NewEvent, type Source, Upstream } from "./chain";
 import { cursor, save, toEvent, type Row } from "./store";
 
@@ -110,7 +111,7 @@ export class Indexer extends DurableObject<Env> {
 
   async fetch(req: Request): Promise<Response> {
     if (req.headers.get("upgrade")?.toLowerCase() !== "websocket") return Response.json({ error: "expected websocket" }, { status: 426 });
-    const ip = req.headers.get("cf-connecting-ip") ?? "local";
+    const ip = clientKey(req);
     if (this.ctx.getWebSockets().length >= MAX_SOCKETS) return Response.json({ error: "busy" }, { status: 503, headers: { "retry-after": "60" } });
     if (this.ctx.getWebSockets(ip).length >= MAX_PER_IP) return Response.json({ error: "too many sockets" }, { status: 429, headers: { "retry-after": "60" } });
     const { 0: client, 1: server } = new WebSocketPair();

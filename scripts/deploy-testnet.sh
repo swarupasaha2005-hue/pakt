@@ -191,6 +191,6 @@ echo "# (e) wrangler vars"
 echo "PAKT_FACTORY=$FACTORY"
 echo "PRICE_ORACLE=$ORACLE"
 echo "PRICE_MAP=$(jq -nc --arg u "$TUSDC" --arg b "$TBTC" --arg n "$TNEAR" --arg fu $F_USDC --arg fb $F_BTC --arg fn $F_NEAR \
-  --arg cu $C_USDC --arg cb $C_BTC --arg cn $C_NEAR '{($u):{pyth:$fu,coingecko:$cu},($b):{pyth:$fb,coingecko:$cb},($n):{pyth:$fn,coingecko:$cn}}')"
+  --arg cu $C_USDC --arg cb $C_BTC --arg cn $C_NEAR '{($u):{pyth:$fu,coingecko:$cu,coinbase:"USDC-USD"},($b):{pyth:$fb,coingecko:$cb,coinbase:"BTC-USD"},($n):{pyth:$fn,coingecko:$cn,coinbase:"NEAR-USD"}}')"
 echo "# secrets: HERMES_API_KEY (optional, switches the relay to Pyth), and"
-echo "# jq -r '\"\\(.account_id):\\(.private_key)\"' ~/.near-credentials/testnet/$REPORTER.json | wrangler secret put ORACLE_REPORTER"
+echo "# jq -j '\"$REPORTER:\\(.private_key)\"' ~/.near-credentials/testnet/$REPORTER.json | wrangler secret put ORACLE_REPORTER  # near-cli-rs files have no account_id"
