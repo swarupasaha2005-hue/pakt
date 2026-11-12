@@ -115,6 +115,21 @@ export class Upstream {
   }
 }
 
+// A rejected key (401/403) must not stop indexing: go keyless (free tier) for 10 min, then try the key again.
+let keyOffUntil = 0;
+export const resetKey = () => (keyOffUntil = 0); // tests
+const useKey = (key: string) => (key && Date.now() >= keyOffUntil ? key : "");
+async function keyed<T>(key: string, run: (key: string) => Promise<T>): Promise<T> {
+  const k = useKey(key);
+  try {
+    return await run(k);
+  } catch (e) {
+    if (!k || !/: 40[13] /.test(String(e))) throw e;
+    keyOffUntil = Date.now() + 600_000;
+    return run("");
+  }
+}
+
 export interface Source {
   final(up: Upstream): Promise<number>;
   block(up: Upstream, h: number): Promise<Block | null>; // null = skipped height
@@ -123,12 +138,13 @@ export interface Source {
 export class Neardata implements Source {
   constructor(private base: string, private key = "") {}
   // query, not Bearer: neardata redirects drop headers
-  private url = (path: string) => this.base + path + (this.key ? `?apiKey=${encodeURIComponent(this.key)}` : "");
+  private get = (up: Upstream, path: string) =>
+    keyed(this.key, (k) => up.json(this.base + path + (k ? `?apiKey=${encodeURIComponent(k)}` : "")));
   async final(up: Upstream) {
-    return ((await up.json(this.url("/v0/last_block/final"))) as Block).block.header.height;
+    return ((await this.get(up, "/v0/last_block/final")) as Block).block.header.height;
   }
   async block(up: Upstream, h: number) {
-    return (await up.json(this.url(`/v0/block/${h}`))) as Block | null;
+    return (await this.get(up, `/v0/block/${h}`)) as Block | null;
   }
 }
 
@@ -139,10 +155,12 @@ type RpcBlock = { header: Header; chunks: { chunk_hash: string; height_included:
 export class Rpc implements Source {
   constructor(private url: string, private key = "") {}
   async call<T>(up: Upstream, method: string, params: object): Promise<T | null> {
-    const headers: Record<string, string> = { "content-type": "application/json" };
-    if (this.key) headers.authorization = `Bearer ${this.key}`;
     const body = JSON.stringify({ jsonrpc: "2.0", id: "pakt", method, params });
-    const res = (await up.json(this.url, { method: "POST", headers, body }, [422])) as {
+    const res = (await keyed(this.key, (k) => {
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      if (k) headers.authorization = `Bearer ${k}`;
+      return up.json(this.url, { method: "POST", headers, body }, [422]);
+    })) as {
       result?: T; error?: { cause?: { name?: string }; message?: string; data?: unknown };
     };
     if (res.error?.cause?.name === "UNKNOWN_BLOCK") return null;
