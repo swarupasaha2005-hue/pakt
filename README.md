@@ -87,7 +87,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | The trader can never withdraw | No vault method sends tokens to the trader. `trade` only moves tokens to and from the Ref account; `leave` pays only the caller's own shares. The trader's fee is paid as shares, the same as any holder. |
 | Token allowlist | Factory `config.tokens` / `base_tokens` limit what a pakt may hold; vault `token_index` rejects any other token. Non-base deposits are refunded. |
 | Every swap has an oracle price floor (2%) | `min_amount_out` is raised to oracle price minus `MAX_SLIPPAGE_BPS = 200` (`trade.rs`). |
-| 3% slippage budget per 24h | Realized loss vs oracle is summed in `slip_used`; a trade is refused past `MAX_PERIOD_SLIP_BPS = 300` of vault value. Resets on a rolling 24h window (`slip_since_ms`), independent of the settle period. |
+| 3% slippage budget per 24h | Each swap books its worst case (the full 2% oracle floor) in `slip_used`, a leaky bucket that holds half of `MAX_PERIOD_SLIP_BPS = 300` of vault value and refills that half per day (`slip_since_ms`), so no 24h span can lose more than 3%. Independent of the settle period. |
 | Trade delay after hire or cap raise | `trade_after_ms` is set on `accept_offer` and pushed forward by a `set_cap` that adds spend room, so members can leave first (minimum 60 s, `trade_delay_ms`). |
 | Per-trade cap and total budget | `within_caps` checks `max_per_trade` and `budget` in USD. |
 | Stop-loss pause | `check_stop_loss` pauses the trader when share price drops `stop_loss_bps` below the mark; only a DAO `resume` restarts trading. |
@@ -96,7 +96,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | Internal ledger | Balances live in `balances` / `at_dex`, never read from `ft_balance_of`, so tokens sent directly (donations) can't move the share price. |
 | Concurrency and stale-lock unlock | Trade, accept, fire and recover hold an exclusive lock (`op`); deposits, leaves and settles run as counted flows, so deposit spam can't block leaving. A lock or flow older than 10 min is cleared by anyone with `unlock`. Callbacks carry `op_id` / `flow_gen`, so a stale callback is ignored (a stale deposit is refunded). |
 | DAO name squatting | The factory puts a random nonce in the DAO metadata and checks it in `on_dao_check`; a squatted `<name>.<sputnik>` aborts and refunds. |
-| Backend hardening | Per-IP rate limits (60/min API, 10/min stream, 1/min faucet), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), CORS allowlist. Writes are only the faucet (`POST /faucet`) and a token-guarded `POST /admin/start`. |
+| Backend hardening | Per-IP rate limits (60/min API, 10/min stream, 1/min faucet, 6/min gas relay on `POST /relay` and `POST /relay/topup`), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), CORS allowlist. Writes are only the faucet (`POST /faucet`) and a token-guarded `POST /admin/start`. |
 | Faucet limits | `POST /faucet` sends test tokens from a dedicated pre-funded account (its key is a Worker secret; the owner key never touches the backend). One claim per account per day and 3 per IP per day, tracked in D1 (`faucet_claims`); the account must exist on chain. |
 
 Two independent security audits were run on the contracts and backend; their findings were fixed and have regression tests (`contracts/vault/src/audit_tests.rs`, `contracts/vault/src/review_tests.rs`, `contracts/e2e/tests/audit.rs`).
@@ -131,7 +131,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 - access control: only the DAO, the offered trader, or the trader can call their methods;
 - factory rejects tokens outside its allowlist; invite-only needs a valid invite signature;
 - deposits and leaves overlap without blocking each other; a failed payout is owed, then claimed;
-- `fire` pays profit-only fees and still works with the oracle down;
+- `fire` pays profit-only fees and waits for prices with the oracle down (trader paused), then fires anyway after an hour;
 - trades: happy path, refused below the oracle floor, per-trade and budget caps, stop-loss pause then DAO `resume`;
 - a failed Ref withdraw parks funds, then `dex_recover` brings them home;
 - a failed member sync is retried with `sync_member`;
@@ -204,11 +204,14 @@ flowchart LR
   V -- "swap" --> R
   V -- "get_price_data" --> O
   V -- "record_trader" --> F
+  F -. "NEP-297 events" .-> I
   V -. "NEP-297 events" .-> I
   I --> DB --> API
   API -- "feed, leaderboard, stream" --> C
   C -- "first 2 txs" --> RL
-  RL -- "pays gas" --> V
+  RL -- "pays gas (signed delegate)" --> F
+  RL -- "pays gas (signed delegate)" --> V
+  RL -- "0.05 NEAR top-up" --> W
   PR -- "report_prices" --> O
 ```
 
@@ -253,7 +256,7 @@ sequenceDiagram
 | `contracts/e2e/` | near-workspaces sandbox tests and the `stack` binary used by the backend stack test |
 | `contracts/res/` | Built wasm; `res/external/` holds the Sputnik, price-oracle and Ref wasm |
 | `contracts/deployments/` | Contract ids per network |
-| `backend/` | Cloudflare Worker: indexer, read API, WebSocket stream, price relay, D1 migrations, vitest tests, `scripts/stack-e2e.ts` |
+| `backend/` | Cloudflare Worker: indexer, read API, WebSocket stream, price relay, faucet, gas relayer, D1 migrations, vitest tests, `scripts/stack-e2e.ts` |
 | `client/` | Next.js app (see `client/README.md`) |
 | `landing/` | Landing page |
 | `scripts/` | `build-contracts.sh`, `deploy-testnet.sh` |
@@ -275,7 +278,7 @@ sequenceDiagram
 - [Ref exchange](https://github.com/ref-finance/ref-contracts) wasm (sandbox; Ref/Rhea on testnet and mainnet)
 - Cloudflare Workers, D1, Durable Objects, wrangler; vitest with `@cloudflare/vitest-plugin`
 - Next.js, React, Tailwind CSS, lightweight-charts (client)
-- Price data: Pyth Hermes, CoinGecko
+- Price data: Coinbase, Pyth Hermes, CoinGecko
 
 AI coding tools (Claude Code) were used to write and review code, tests and docs.
 

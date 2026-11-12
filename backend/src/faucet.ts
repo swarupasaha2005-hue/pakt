@@ -14,7 +14,9 @@ const ACCOUNT = /^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]
 const b64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
 const STORAGE = 1_250_000_000_000_000_000_000n; // 0.00125 NEAR, the NEP-145 FT registration cost
 // shortcut: one FAUCET_SIGNER tx per isolate so nonces don't race (faucet and gas sponsor); queue it if traffic grows
-export const signer = { busy: false };
+export const signer = { busy: false, nonce: 0n };
+/** next FAUCET_SIGNER nonce: the chain view can lag our own last send by a block or two */
+export const nextNonce = (chain: number) => (signer.nonce = (BigInt(chain) > signer.nonce ? BigInt(chain) : signer.nonce) + 1n);
 
 export type Drip = { status: number; body: { sent?: string[]; error?: string } };
 
@@ -42,10 +44,9 @@ export async function faucet(env: Env, account: string | null, ip: string): Prom
     });
     if (!Number.isInteger(ak?.nonce)) throw new Error(`no access key on ${key.account}`); // wrong FAUCET_SIGNER
     const sent: string[] = [];
-    let nonce = BigInt(ak!.nonce);
     for (const [token, amount] of drips) {
       // registers the receiver (storage refunded if already registered), then transfers
-      const tx = await signedTx(key, ++nonce, token, b58decode(ak!.block_hash), [
+      const tx = await signedTx(key, nextNonce(ak!.nonce), token, b58decode(ak!.block_hash), [
         { method: "storage_deposit", args: { account_id: account, registration_only: true }, deposit: STORAGE },
         { method: "ft_transfer", args: { receiver_id: account, amount, memo: "pakt faucet" }, deposit: 1n },
       ]);

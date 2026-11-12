@@ -22,7 +22,7 @@ type TabId = (typeof TABS)[number]["id"];
 
 
 export function LeftPanel() {
-  const [tab, setTab] = usePersisted<TabId>("pakt:left-tab", "leaderboard", (v): v is TabId => TABS.some((t) => t.id === v));
+  const [tab, setTab] = usePersisted<TabId>("pakt:left-tab", "leaderboard", (v): v is TabId => TABS.some((t) => t.id === v), true);
   const [collapsed, setCollapsed] = usePersisted("pakt:left-collapsed", false, (v): v is boolean => typeof v === "boolean");
   useEffect(() => {
     // the site tour switches tabs to show each one

@@ -14,7 +14,8 @@ export async function freeTxs(account: string): Promise<number> {
 /** the receivers the backend pays for: factory, a direct vault under it, a whitelisted token */
 const ours = (id: string) => id === FACTORY || (id.endsWith(`.${FACTORY}`) && !id.slice(0, -FACTORY.length - 1).includes(".")) || !!token(id);
 /** all or nothing: a flow is sponsored only if every tx of it fits the free count */
-export const sponsorable = (txs: Tx[], left: number) => txs.length > 0 && txs.length <= left && txs.every((t) => ours(t.receiverId));
+export const sponsorable = (txs: Tx[], left: number) =>
+  txs.length > 0 && txs.length <= left && txs.every((t) => ours(t.receiverId) && t.actions.every((a) => a.functionCall?.methodName !== "withdraw"));
 
 /** nothing was sent; walletCant: the wallet module has no delegate signing at all */
 export class NoDelegates extends Error {
@@ -31,7 +32,7 @@ export async function sendSponsored(w: Wallet, accountId: string, publicKey: str
   const res = await rpcFetch({
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: "pakt", method: "query", params: { request_type: "view_access_key", finality: "final", account_id: accountId, public_key: publicKey } }),
+    body: JSON.stringify({ jsonrpc: "2.0", id: "pakt", method: "query", params: { request_type: "view_access_key", finality: "optimistic", account_id: accountId, public_key: publicKey } }),
   }).catch(() => null);
   const ak = (await res?.json().catch(() => ({})))?.result as { nonce?: number; block_height?: number } | undefined;
   // a missing key comes back as result.error; the relayer needs this key on chain, so fall back like a wallet that can't sign
