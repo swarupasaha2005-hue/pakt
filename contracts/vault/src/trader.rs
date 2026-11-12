@@ -56,7 +56,9 @@ impl Vault {
         let o = self.offer.as_ref().unwrap_or_else(|| env::panic_str("no offer"));
         require!(o.terms.account == me, "offer is not for you");
         require!(env::block_timestamp_ms() < o.expires_ms, "offer expired");
-        self.lock(Op::Accept, GAS_OP);
+        if !self.lock(Op::Accept, GAS_OP) {
+            return;
+        }
         oracle::fetch(&self.oracle, self.whitelist.clone())
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CB).on_accept(me, self.op_id))
             .detach();
@@ -91,22 +93,24 @@ impl Vault {
     }
 
     /// Pays the trader for profit so far, then removes them. Works even if the oracle is down.
-    /// Busy lock: pause now, anyone runs `finish_fire` once free, so the dao proposal never fails.
+    /// Always pauses first; busy lock or under GAS_OP prepaid: anyone runs `finish_fire`, so the dao proposal never fails.
     pub fn fire(&mut self) {
         self.only_dao();
         let t = self.trader.as_mut().unwrap_or_else(|| env::panic_str("no trader"));
-        if self.op.is_some() || self.flows > 0 {
-            t.paused = true;
-            self.fire_pending = true;
-            let trader = t.account.clone();
+        t.paused = true;
+        self.fire_pending = true;
+        let trader = t.account.clone();
+        if self.op.is_some() || env::prepaid_gas() < GAS_OP || !self.lock(Op::Fire, GAS_OP) {
             return self.emit("fire_pending", json!({"trader": trader}));
         }
-        self.start_fire();
+        self.fetch_fire();
     }
 
     pub fn finish_fire(&mut self) {
         require!(self.fire_pending, "no fire pending");
-        self.start_fire();
+        if self.lock(Op::Fire, GAS_OP) {
+            self.fetch_fire();
+        }
     }
 
     #[private]
@@ -150,8 +154,7 @@ impl Vault {
 }
 
 impl Vault {
-    fn start_fire(&mut self) {
-        self.lock(Op::Fire, GAS_OP);
+    fn fetch_fire(&self) {
         oracle::fetch(&self.oracle, self.whitelist.clone())
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CB).on_fire(self.op_id))
             .detach();

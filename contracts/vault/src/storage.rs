@@ -48,6 +48,8 @@ impl Vault {
         let Some(left) = self.storage.get(&account).copied() else { return false };
         require!(self.holders.get(&account).is_none() && self.owed.get(&account).is_none(), "holds shares or owed tokens");
         require!(!self.pending_sync.contains(&account), "member sync pending");
+        require!(self.dex_owed.get(&account).is_none(), "holds dex ious");
+        require!(self.paying.get(&account).is_none(), "payouts in flight");
         self.storage.remove(&account);
         if left > 0 {
             Promise::new(account).transfer(NearToken::from_yoctonear(left)).detach();

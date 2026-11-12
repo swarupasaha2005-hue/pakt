@@ -1,10 +1,12 @@
 //! Deposit → shares at current price; leave → pro-rata slice of every token, in kind.
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::{self, json};
+use near_sdk::store::LookupMap;
 use near_sdk::{env, ext_contract, near, require, AccountId, Gas, NearToken, PromiseOrValue};
 
 use crate::math::mul_div;
 use crate::oracle;
+use crate::dao::DAO_STORAGE;
 use crate::storage::STORAGE_FEE;
 use crate::{Holder, JoinMode, Vault, VaultExt, GAS_DEPOSIT, MAX_MEMBERS, MIN_DEPOSIT_USD_E6, STORAGE_RESERVE};
 
@@ -27,6 +29,7 @@ struct DepositMsg {
 trait Ft {
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
     fn ft_transfer_call(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>, msg: String) -> U128;
+    fn ft_balance_of(&self, account_id: AccountId) -> U128;
 }
 
 impl Vault {
@@ -45,6 +48,9 @@ impl Vault {
     fn can_deposit(&self, account: &AccountId, amount: u128, msg: &str) -> Result<(), &'static str> {
         if self.op.is_some() {
             return Err("busy, retry");
+        }
+        if self.is_draining() {
+            return Err("draining, retry");
         }
         if amount < self.min_deposit {
             return Err("below min deposit");
@@ -82,7 +88,31 @@ impl Vault {
         env::ed25519_verify(&sig, text.as_bytes(), &key)
     }
 
-    fn pay(&self, account: &AccountId, token: &AccountId, amount: u128) {
+    /// iou row bytes for this leave, worst case a fresh row
+    fn iou_cost(&self, account: &AccountId) -> u128 {
+        let entries: usize = self.whitelist.iter().zip(&self.at_dex).filter(|(_, a)| **a > 0).map(|(t, _)| 20 + t.len()).sum();
+        env::storage_byte_cost().as_yoctonear() * (49 + account.len() + entries) as u128
+    }
+
+    /// Ious of a leave; the row is paid from the leaver's storage deposit.
+    fn add_ious(&mut self, account: &AccountId, ious: &[(AccountId, u128)]) {
+        let before = env::storage_usage();
+        let mut row = self.dex_owed.get(account).cloned().unwrap_or_default();
+        for (t, a) in ious {
+            add_to(&mut row, t, *a);
+        }
+        self.dex_owed.insert(account.clone(), row);
+        self.dex_owed.flush();
+        let cost = env::storage_byte_cost().as_yoctonear() * env::storage_usage().saturating_sub(before) as u128;
+        if let Some(paid) = self.storage.get_mut(account) {
+            *paid = paid.saturating_sub(cost);
+        }
+        let list: Vec<_> = ious.iter().map(|(t, a)| json!({"token": t, "amount": U128(*a)})).collect();
+        self.emit("dex_iou", json!({"account": account, "ious": list}));
+    }
+
+    fn pay(&mut self, account: &AccountId, token: &AccountId, amount: u128) {
+        *self.paying.entry(account.clone()).or_insert(0) += 1;
         ext_ft::ext(token.clone())
             .with_attached_deposit(NearToken::from_yoctonear(1))
             .with_static_gas(GAS_TRANSFER)
@@ -120,6 +150,12 @@ impl Vault {
         }
         // mark first: new money must not pay fees on profit made before it arrived
         self.crystallize(before, true);
+        // orphaned pool (e.g. last leaver's payout came back): platform's, not this depositor's
+        if self.total_shares == 0 && before > 0 {
+            let platform = self.platform.clone();
+            self.mint_fee(&platform, before);
+            self.emit("orphan_swept", json!({"platform": platform, "shares": U128(before), "value": U128(before)}));
+        }
         let shares = if self.total_shares == 0 { dep } else { mul_div(dep, self.total_shares, before) };
         if shares == 0 {
             env::log_str("refund: zero shares");
@@ -151,8 +187,11 @@ impl Vault {
         let account = env::predecessor_account_id();
         let held = self.holders.get(&account).map_or(0, |h| h.shares.0);
         require!(shares.0 > 0 && shares.0 <= held, "not enough shares");
-        // in-kind payout needs the tokens home; anyone can dex_recover
-        require!(self.at_dex.iter().all(|a| *a == 0), "funds at dex: call dex_recover first");
+        // tokens at ref become an iou, so at_dex must mirror ref; anyone can dex_recover
+        let parked = self.at_dex.iter().any(|a| *a > 0);
+        require!(!parked || self.dex_synced, "funds at dex: call dex_recover first");
+        let paid = self.storage.get(&account).copied().unwrap_or(0);
+        require!(!parked || paid >= self.iou_cost(&account) + DAO_STORAGE.as_yoctonear(), "storage_deposit first: funds at dex need an iou row");
         let gen = self.start_flow(GAS_LEAVE);
         oracle::fetch(&self.oracle, self.whitelist.clone())
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_LEAVE_CB).on_leave(account, shares, gen))
@@ -171,12 +210,20 @@ impl Vault {
         }
         let Some(h) = self.holders.get(&account).cloned() else { return };
         let shares = shares.0.min(h.shares.0);
-        let mut payouts = vec![];
+        let (mut payouts, mut ious) = (vec![], vec![]);
         for i in 0..self.whitelist.len() {
             let amt = mul_div(self.balances[i], shares, self.total_shares);
             if amt > 0 {
                 self.balances[i] -= amt;
+                self.out[i] += amt;
                 payouts.push((self.whitelist[i].clone(), amt));
+            }
+            // slice still at ref leaves pool value as an iou, claimable after dex_recover
+            let iou = mul_div(self.at_dex[i], shares, self.total_shares);
+            if iou > 0 {
+                self.at_dex[i] -= iou;
+                self.dex_iou[i] += iou;
+                ious.push((self.whitelist[i].clone(), iou));
             }
         }
         self.total_shares -= shares;
@@ -194,6 +241,9 @@ impl Vault {
         }
         let list: Vec<_> = payouts.iter().map(|(t, a)| json!({"token": t, "amount": U128(*a)})).collect();
         self.emit("leave", json!({"account": account, "shares": U128(shares), "payouts": list}));
+        if !ious.is_empty() {
+            self.add_ious(&account, &ious);
+        }
         if rest == 0 && h.member {
             self.members -= 1;
             self.queue_sync(account);
@@ -204,15 +254,18 @@ impl Vault {
     /// No NEAR for the owed row: back to the pool ledger, so tokens are never orphaned.
     #[private]
     pub fn on_payout(&mut self, account: AccountId, token: AccountId, amount: U128) {
+        match self.paying.get(&account).copied().unwrap_or(1) {
+            1 => self.paying.remove(&account),
+            n => self.paying.insert(account.clone(), n - 1),
+        };
+        let i = self.token_index(&token);
         if crate::promise_ok(64).is_some() {
+            self.out[i] = self.out[i].saturating_sub(amount.0);
             return;
         }
         let prev = self.owed.get(&account).cloned();
         let mut owed = prev.clone().unwrap_or_default();
-        match owed.iter_mut().find(|(t, _)| *t == token) {
-            Some((_, a)) => a.0 += amount.0,
-            None => owed.push((token.clone(), amount)),
-        }
+        add_to(&mut owed, &token, amount.0);
         self.owed.insert(account.clone(), owed);
         self.owed.flush();
         if !self.free_near().is_zero() {
@@ -222,23 +275,47 @@ impl Vault {
             Some(p) => self.owed.insert(account, p),
             None => self.owed.remove(&account),
         };
-        let i = self.token_index(&token);
+        self.out[i] = self.out[i].saturating_sub(amount.0);
         self.balances[i] += amount.0;
         env::log_str("payout failed, no near for owed: back to pool");
     }
 
-    /// Retry a parked payout, e.g. after registering on the token.
+    /// Retry a parked payout, e.g. after registering on the token, or take a dex iou once it is home.
     pub fn claim(&mut self, token: AccountId) {
         let account = env::predecessor_account_id();
-        let mut owed = self.owed.get(&account).cloned().unwrap_or_default();
-        let i = owed.iter().position(|(t, _)| *t == token).unwrap_or_else(|| env::panic_str("nothing owed"));
-        let (_, amount) = owed.remove(i);
-        if owed.is_empty() {
-            self.owed.remove(&account);
-        } else {
-            self.owed.insert(account.clone(), owed);
-        }
-        self.pay(&account, &token, amount.0);
-        self.emit("claim", json!({"account": account, "token": token, "amount": amount}));
+        let amount = match take(&mut self.owed, &account, &token) {
+            Some(a) => a,
+            None => {
+                let i = self.token_index(&token);
+                let iou = self.dex_owed.get(&account).and_then(|r| r.iter().find(|(t, _)| *t == token)).map_or(0, |(_, a)| a.0);
+                require!(self.iou_home[i] >= iou, "iou still at dex: call dex_recover");
+                let a = take(&mut self.dex_owed, &account, &token).unwrap_or_else(|| env::panic_str("nothing owed"));
+                self.iou_home[i] -= a;
+                self.out[i] += a;
+                a
+            }
+        };
+        self.pay(&account, &token, amount);
+        self.emit("claim", json!({"account": account, "token": token, "amount": U128(amount)}));
     }
+}
+
+fn add_to(row: &mut Vec<(AccountId, U128)>, token: &AccountId, amount: u128) {
+    match row.iter_mut().find(|(t, _)| t == token) {
+        Some((_, a)) => a.0 += amount,
+        None => row.push((token.clone(), U128(amount))),
+    }
+}
+
+/// removes `token` from the account's row; None if absent
+fn take(map: &mut LookupMap<AccountId, Vec<(AccountId, U128)>>, account: &AccountId, token: &AccountId) -> Option<u128> {
+    let mut row = map.get(account).cloned()?;
+    let i = row.iter().position(|(t, _)| t == token)?;
+    let (_, amount) = row.remove(i);
+    if row.is_empty() {
+        map.remove(account);
+    } else {
+        map.insert(account.clone(), row);
+    }
+    Some(amount.0)
 }
