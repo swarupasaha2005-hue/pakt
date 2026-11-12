@@ -47,6 +47,8 @@ export type Pakt = {
   pnl7dPct: number;
   /** false = invite only */
   open: boolean;
+  /** stop-loss hit, trading waits for a vote */
+  paused?: boolean;
 };
 
 export type FeedKind =
