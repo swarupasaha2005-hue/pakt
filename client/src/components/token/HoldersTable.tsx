@@ -33,7 +33,7 @@ function Trader({ account, meta }: { account: string; meta: ReactNode }) {
     <span className="flex items-center gap-3">
       <Avatar name={account} size={32} />
       <span className="flex flex-col leading-5">
-        <span className="text-base">{account}</span>
+        <span className="text-sm">{account}</span>
         <span className="flex items-center gap-1.5 text-xs text-text-2">{meta}</span>
       </span>
     </span>
@@ -43,7 +43,7 @@ function Trader({ account, meta }: { account: string; meta: ReactNode }) {
 function Two({ top, bottom }: { top: ReactNode; bottom: ReactNode }) {
   return (
     <span className="flex flex-col leading-5">
-      <span className="text-base">{top}</span>
+      <span className="text-sm">{top}</span>
       <span className="text-xs text-text-2">{bottom}</span>
     </span>
   );
@@ -124,7 +124,7 @@ export function HoldersTable({ token }: { token: Token }) {
           {rows[tab].map((cells, i) => (
             <tr key={i} className="h-[55px] hover:bg-panel-2/60">
               {cells.map((c, j) => (
-                <td key={j} className="px-3 text-base">{c}</td>
+                <td key={j} className="px-3 text-sm">{c}</td>
               ))}
             </tr>
           ))}
