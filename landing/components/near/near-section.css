@@ -16,7 +16,7 @@
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
 }
-.near-stage__logo img, .near-transition-face--near img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.near-mark { display: block; width: 100%; height: 100%; }
 .near-copy { position: absolute; top: 66svh; left: 50%; width: min(100% - 40px, 1050px); transform: translateX(-50%); text-align: center; }
 .near-label { margin: 0; color: var(--teal); font-size: 15px; font-weight: 550; line-height: 1.3; letter-spacing: .06em; text-transform: uppercase; }
 .near-title { margin: clamp(20px, 3.6svh, 34px) 0 0; color: var(--charcoal); font-size: clamp(44px, min(5.6vw, 9svh), 100px); font-weight: 650; line-height: .94; letter-spacing: -.06em; }
@@ -26,11 +26,14 @@
 .near-pixel-cluster { position: absolute; display: flex; flex-direction: column; gap: 7px; }
 .near-pixel-cluster i { display: block; width: 6px; height: 6px; background: var(--pixel-color); }
 .near-transition-logo { display: none; position: fixed; z-index: 5; top: 0; left: 0; visibility: hidden; pointer-events: none; perspective: 1100px; transform-origin: center; will-change: transform; }
+.near-transition-upper, .near-transition-lower { position: absolute; inset: 0; }
+.near-transition-upper { clip-path: inset(-20% -20% calc(100% - var(--near-boundary, 120%)) -20%); }
+.near-transition-lower { clip-path: inset(var(--near-boundary, 120%) -20% -20%); perspective: 1100px; }
 .near-transition-rotor { position: absolute; inset: 0; transform-style: preserve-3d; }
-.near-transition-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.near-transition-face--pakt { transform: rotateY(calc(var(--near-flip, 0) * -75deg)); opacity: calc(1 - var(--near-blend, 0)); }
-.near-transition-face--near { transform: rotateY(calc((1 - var(--near-flip, 0)) * 75deg)); opacity: var(--near-blend, 0); }
-.near-transition-face--pakt .brand-mark { width: 100%; height: 100%; }
+.near-transition-face { position: absolute; inset: 0; }
+.near-transition-face--pakt { clip-path: inset(0 0 calc(var(--near-morph, 0) * 100%) 0); filter: grayscale(1); opacity: var(--near-wash, 1); }
+.near-transition-face--near { clip-path: inset(calc((1 - var(--near-morph, 0)) * 100%) 0 0); }
+.near-transition-upper .brand-mark, .near-transition-face--pakt .brand-mark { width: 100%; height: 100%; }
 .near-transition-scan { position: absolute; z-index: 2; inset: 0; overflow: hidden; border-radius: 26%; }
 .near-transition-scan > .scan-window { inset: auto; top: 50%; left: 50%; width: var(--scan-frame-width); height: var(--scan-frame-height); transform: translate(-50%, -50%); }
 @media (min-width: 1800px) {
