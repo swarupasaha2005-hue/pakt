@@ -1,0 +1,13 @@
+[package]
+name = "pakt-e2e"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+near-workspaces = "0.24.0"
+anyhow = "1"
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+ed25519-dalek = "2"
+base64 = "0.22"

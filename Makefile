@@ -36,4 +36,10 @@ stack-e2e: wasm ## sandbox + real contracts -> local worker; asserts every index
 smoke: wasm ## ~1 min: one pakt + one deposit through the local worker
 	cd backend && bun install && CONTRACTS_DIR=$(CONTRACTS_DIR) bun scripts/stack-e2e.ts --smoke
 
-.PHONY: contracts client backend backend-migrate backend-test wasm stack-e2e smoke
+build-contracts: ## build vault, factory, mock ft wasm into contracts/res
+	./scripts/build-contracts.sh
+
+e2e: ## build wasm + run local sandbox e2e (real oracle + sputnik)
+	bash scripts/build-contracts.sh && cd contracts && cargo test -p pakt-e2e -- --nocapture
+
+.PHONY: contracts test client backend backend-migrate backend-test wasm stack-e2e smoke build-contracts e2e
