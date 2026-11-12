@@ -10,12 +10,12 @@ export default function Terms() {
       <h2>Testnet only</h2>
       <p>Pakt runs on NEAR testnet. Tokens here (tUSDC, tBTC, tNEAR) are test tokens with no real value. Never send mainnet funds to any Pakt account.</p>
       <h2>What Pakt is</h2>
-      <p>Pakt is a set of smart contracts and a website. A pakt is a shared vault: members deposit, vote in a trader through a DAO, and the trader can only swap whitelisted tokens inside the budget and per-trade caps the members set. Profit above the high-water mark pays the trader&apos;s fee and a platform fee.</p>
+      <p>Pakt is a set of smart contracts and a website. A pakt is a shared vault: members deposit, vote in a pakter through a DAO, and the pakter can only swap whitelisted tokens inside the budget and per-trade caps the members set. Profit above the high-water mark pays the pakter&apos;s fee and a platform fee.</p>
       <h2>You hold your keys</h2>
       <p>Pakt never holds your private keys. Every action is a transaction you sign in your own wallet. We can&apos;t reverse, cancel or refund a transaction once it is on chain.</p>
       <h2>Risk</h2>
       <ul>
-        <li>Traders can lose money, within the caps you agreed to.</li>
+        <li>Pakters can lose money, within the caps you agreed to.</li>
         <li>The contracts are unaudited and may have bugs.</li>
         <li>Prices come from an oracle fed by public price sources. They can be late or wrong.</li>
         <li>The site, the indexer or the price relay can be down at any time.</li>

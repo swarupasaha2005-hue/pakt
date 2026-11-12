@@ -4,6 +4,31 @@ A group trading vault on NEAR: friends pool tokens in a vault, vote one person i
 
 **Problem.** Friend groups, Discord/Telegram groups and investment clubs often pool money with the one person who trades well. Today that means "send money and hope": the trader holds everything and the others have no control if the trader loses it, steals it or disappears. Pakt keeps the money in a contract that only lets the trader swap between allowed tokens within voted limits, and only lets members take money out.
 
+**Live app (NEAR testnet):** https://paktdotfam.vercel.app
+
+## Try it in 5 minutes
+
+1. Install the [Meteor wallet](https://wallet.meteorwallet.app) extension and create a **testnet** account. Get a little testnet NEAR from the [NEAR faucet](https://near-faucet.io/) for gas.
+2. Open the app and click **Connect**.
+3. Click **Create pakt → Request test tokens**. The Pakt faucet sends 1,000 tUSDC, 0.01 tBTC and 50 tNEAR (once a day per account).
+4. **Join a pakt:** pick one under Explore → Pakts, click **Deposit**, send $5 or more of tUSDC. You get shares and a seat in its DAO.
+5. **Vote:** on the pakt page, start a vote (hire a trader, set budget, fire) and vote yes/no under Open votes.
+6. **Hire someone:** on the Leaderboard, click **Hire** next to a trader. This starts the hire vote in a pakt you belong to.
+7. **Trade:** when a pakt offers you the trader job, an offer card shows on its page. Accept it, wait out the trade delay, then buy and sell inside the caps.
+8. **Settle and leave:** anyone can settle when the period ends. **Leave** pays out your share of every token the pakt holds.
+
+The **(i)** button in the top bar explains the contracts behind a pakt, and **Site tour** walks through every screen.
+
+## The app
+
+| Screen | What it shows |
+|---|---|
+| Explore | All pakts (value, trader, fee, members) with filters; your positions (open and closed); tokens with oracle prices and which pakts hold them |
+| Sidebar | Live feed of every on-chain event (deposits, trades, votes, hires, fires, settles); trader leaderboard (7D/30D/all) with Hire; pakt and token lists; your positions. The open tab and collapse state survive reloads |
+| Pakt page | Share-price chart with high-water mark; members, trades, votes and settlements; your share with deposit/leave; trader card with set budget/fire; settlement split; open votes; trade panel for the hired trader; one-click fixes when a vault needs recovery (stuck lock, funds at the dex, pending member sync) |
+| Profile | Wallet cash at oracle prices, holdings with value and P/L (average cost), trader record, activity |
+| Token page | Price chart, which pakts hold it, about the token |
+
 ## How it works
 
 1. **Create.** Anyone calls `create_pakt` on the factory (name, token allowlist, stop-loss, open or invite-only, minimum deposit). The factory creates a Sputnik DAO `<name>.<sputnik>` and the vault `<name>.<factory>`, and registers the vault on every allowed token and on Ref.
@@ -43,7 +68,8 @@ A group trading vault on NEAR: friends pool tokens in a vault, vote one person i
 | Internal ledger | Balances live in `balances` / `at_dex`, never read from `ft_balance_of`, so tokens sent directly (donations) can't move the share price. |
 | Concurrency and stale-lock unlock | Trade, accept, fire and recover hold an exclusive lock (`op`); deposits, leaves and settles run as counted flows, so deposit spam can't block leaving. A lock or flow older than 10 min is cleared by anyone with `unlock`. Callbacks carry `op_id` / `flow_gen`, so a stale callback is ignored (a stale deposit is refunded). |
 | DAO name squatting | The factory puts a random nonce in the DAO metadata and checks it in `on_dao_check`; a squatted `<name>.<sputnik>` aborts and refunds. |
-| Backend hardening | Per-IP rate limits (60/min API, 10/min stream), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), GET-only plus a token-guarded `POST /admin/start`. |
+| Backend hardening | Per-IP rate limits (60/min API, 10/min stream, 1/min faucet), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), CORS allowlist. Writes are only the faucet (`POST /faucet`) and a token-guarded `POST /admin/start`. |
+| Faucet limits | `POST /faucet` sends test tokens from a dedicated pre-funded account (its key is a Worker secret; the owner key never touches the backend). One claim per account per day and 3 per IP per day, tracked in D1 (`faucet_claims`); the account must exist on chain. |
 
 Two independent security audits were run on the contracts and backend; their findings were fixed and have regression tests (`contracts/vault/src/audit_tests.rs`, `contracts/vault/src/review_tests.rs`, `contracts/e2e/tests/audit.rs`).
 
@@ -66,7 +92,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 | `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 16 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
 | `make smoke` | ~1 min. Sandbox + local Worker: one pakt, one deposit. Prints `smoke: <event kinds>` from `/feed`, including `pakt_created` and `deposit`. |
 | `make stack-e2e` | Sandbox runs one pakt through every event kind; the local Worker indexes it; checks HTTP routes, WebSocket push and restart catch-up. Ends with `STACK E2E PASS`. |
-| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 62 passed`. |
+| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 75 passed`. |
 | `make client` | Next.js dev server; open http://localhost:3000. |
 
 `make e2e` proves, on the sandbox:
@@ -92,7 +118,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 3. Add `--execute` to run them. The script prints the Worker vars `PAKT_FACTORY`, `PRICE_ORACLE`, `PRICE_MAP`.
 4. `bash scripts/deploy-testnet.sh --reseed --execute` re-centres the pools on the oracle price later.
 
-Live demo: <URL>
+Live demo: https://paktdotfam.vercel.app (client on Vercel, backend on Cloudflare Workers)
 
 Deployed accounts (testnet):
 
@@ -125,6 +151,7 @@ Deployed accounts (testnet):
                 +--> vault  offer_trader, fire ...      | cron (1 min): price relay     |
        vault --> Ref (Rhea)  swap                       |   Pyth Hermes, CoinGecko      |
        vault --> price oracle  get_price_data  <--------+   fallback -> report_prices   |
+                                                        | POST /faucet: test token drip |
                                                         +---------------+---------------+
   client <------------- HTTP + WebSocket ---------------------------------+
 ```
@@ -140,7 +167,7 @@ Deployed accounts (testnet):
 | `contracts/res/` | Built wasm; `res/external/` holds the Sputnik, price-oracle and Ref wasm |
 | `contracts/deployments/` | Contract ids per network |
 | `backend/` | Cloudflare Worker: indexer, read API, WebSocket stream, price relay, D1 migrations, vitest tests, `scripts/stack-e2e.ts` |
-| `client/` | Next.js app |
+| `client/` | Next.js app (see `client/README.md`) |
 | `landing/` | Landing page |
 | `scripts/` | `build-contracts.sh`, `deploy-testnet.sh` |
 | `Makefile` | All targets above |

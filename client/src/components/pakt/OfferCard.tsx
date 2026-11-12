@@ -16,7 +16,7 @@ export function OfferCard({ offer, name, vault, members, value, now, onDone }: P
   const t = offer.terms;
   const expired = now >= offer.expires_ms;
   return (
-    <section aria-label="Trader offer" className="rounded-xl border border-accent bg-panel-2 p-4">
+    <section aria-label="Pakter offer" className="rounded-xl border border-accent bg-panel-2 p-4">
       <div className="flex items-center gap-3">
         <Avatar name={name} size={36} />
         <h3 className="text-base font-medium">{name} wants to hire you</h3>

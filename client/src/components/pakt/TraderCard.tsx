@@ -11,7 +11,7 @@ export function TraderCard({ state, member, onPropose, onRaise, onFire }: Props)
   const t = state.trader;
   return (
     <section className="border-b p-4">
-      <h2 className="text-xs font-bold tracking-wide text-text-2 uppercase">Trader</h2>
+      <h2 className="text-xs font-bold tracking-wide text-text-2 uppercase">Pakter</h2>
       {t ? (
         <>
           <p className="mt-3 flex items-center gap-2 text-base">
@@ -52,10 +52,10 @@ export function TraderCard({ state, member, onPropose, onRaise, onFire }: Props)
         </p>
       ) : (
         <>
-          <p className="mt-3 text-xs text-text-2">No trader yet</p>
+          <p className="mt-3 text-xs text-text-2">No pakter yet</p>
           {member ? (
             <Button variant="primary" className="mt-3 w-full" onClick={onPropose}>
-              Propose trader
+              Propose pakter
             </Button>
           ) : (
             <p className="mt-1 text-xs text-text-3">Members propose and vote on a trader.</p>

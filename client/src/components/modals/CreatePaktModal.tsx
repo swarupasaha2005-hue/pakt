@@ -140,7 +140,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
         </label>
         <p className="rounded-xl bg-panel-2 p-3 text-xs leading-5 text-text-2">
           ⓘ Creates a Sputnik DAO + vault, open to anyone. Network cost{" "}
-          <span className="font-bold text-text">{cost ? `${fromRaw(cost, 24).toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR` : "…"}</span>{" "}
+          <span className="text-text">{cost ? `${fromRaw(cost, 24).toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR` : "…"}</span>{" "}
           pays their storage and is not refunded. If setup fails, it comes back.
         </p>
         {accountId ? (

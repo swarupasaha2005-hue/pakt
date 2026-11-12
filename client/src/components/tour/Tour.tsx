@@ -8,15 +8,15 @@ export const openTour = () => window.dispatchEvent(new Event("pakt:tour"));
 
 // each step spotlights the element tagged data-tour="<spot>"; missing ones are skipped
 const STEPS: { spot: string; tab?: string; title: string; body: string }[] = [
-  { spot: "market", title: "Explore pakts and tokens", body: "Every pakt with its vault value, trader and share price." },
-  { spot: "pins", title: "Star to pin", body: "Starred tokens sit here so their price is one glance away." },
+  { spot: "market", title: "Explore pakts", body: "Every pakt with its vault value, pakter and 7D share price. Your positions and tokens are one tab over." },
+  { spot: "pins", title: "For you", body: "Pakter offers, votes waiting on you and your pakts, in one row." },
+  { spot: "left", tab: "leaderboard", title: "Pakters", body: "Pakters are the traders a pakt hires. Members vote one in; they can trade the vault but never withdraw it. Ranked here by returns." },
   { spot: "left", tab: "feed", title: "Live feed", body: "Every deposit, trade and vote across pakts, as it lands on chain." },
-  { spot: "left", tab: "leaderboard", title: "Leaderboard", body: "Top traders and pakts ranked by returns." },
-  { spot: "left", tab: "pakts", title: "All pakts", body: "Browse every pakt with its trader, fee and vault value." },
+  { spot: "left", tab: "pakts", title: "All pakts", body: "Browse every pakt with its pakter, fee and vault value." },
   { spot: "left", tab: "tokens", title: "Tokens", body: "Allowed tokens with live oracle prices. Hover one for details." },
-  { spot: "search", title: "Find anything with ⌘K", body: "Tokens, pakts and traders, or any NEAR account." },
+  { spot: "search", title: "Find anything with ⌘K", body: "Tokens, pakts and pakters, or any NEAR account." },
   { spot: "create", title: "Start your own pakt", body: "One transaction deploys a vault and its DAO. Invite friends with a link." },
-  { spot: "positions", title: "Your positions", body: "Your shares in every pakt, open and closed. Connect a wallet to see them." },
+  { spot: "positions", title: "Your positions", body: "Each pakt you are in: your slice of the vault, its value, P/L and who trades it." },
   { spot: "help", title: "How it works", body: "The contracts behind a pakt. Replay this tour from here." },
 ];
 const PAD = 6, CARD = 320;

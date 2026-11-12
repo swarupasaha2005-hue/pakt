@@ -9,8 +9,10 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
+  // absolute og:image urls for share cards
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://paktdotfam.vercel.app"),
   title: "Pakt",
-  description: "Pool funds with friends, hire a trader, split the profit.",
+  description: "Pool funds with friends, hire a pakter, split the profit.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

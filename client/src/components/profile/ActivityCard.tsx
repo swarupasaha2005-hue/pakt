@@ -46,7 +46,7 @@ export function ActivityCard({ account, data }: { account: string; data: Profile
                   <Row
                     href={`/pakt/${name}`}
                     avatar={<Avatar name={name} />}
-                    title={<>{name}<Badge>Trader</Badge></>}
+                    title={<>{name}<Badge>Pakter</Badge></>}
                     subtitle={`${t.trades} trades${t.terms.fee_bps === undefined ? "" : ` · ${t.terms.fee_bps / 100}% fee`}`}
                     value={<span className={pnl < 0 ? "text-down" : "text-up"}>{signed(pnl)}</span>}
                     change={<span className="text-text-2">{t.fired_at === null ? "Live" : "Ended"}</span>}

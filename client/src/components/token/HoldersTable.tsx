@@ -16,8 +16,8 @@ type Held = { pakt: PaktInfo; raw: string; value: number | null };
 type Props = { token: TokenInfo; held?: Held[]; trades?: TradeEvent[]; now: number };
 
 const COLS: Record<Tab, string[]> = {
-  pakts: ["Pakt", "Trader", "Position", "Share of vault", "Fee"],
-  trades: ["Trader", "Side", "Size", "Price", "Pakt"],
+  pakts: ["Pakt", "Pakter", "Position", "Share of vault", "Fee"],
+  trades: ["Pakter", "Side", "Size", "Price", "Pakt"],
 };
 
 function PaktCell({ name }: { name: string }) {

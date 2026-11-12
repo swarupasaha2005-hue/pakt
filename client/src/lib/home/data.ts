@@ -37,7 +37,7 @@ export const loadTokens = () =>
   );
 
 export type PaktInfo = {
-  name: string; vault: string; joinMode: JoinMode; trader: Trader | null; members: number;
+  name: string; vault: string; joinMode: JoinMode; trader: Trader | null; members: number; creator?: string;
   /** usd; null if a held token has no fresh price */
   value: number | null;
   state: VaultState; prices: PriceData;
@@ -53,7 +53,7 @@ export const loadPakts = () =>
         const v = vaultValue(s, pd);
         return {
           name: r.info.name ?? paktName(r.vault), vault: r.vault, joinMode: r.info.join_mode ?? s.join_mode,
-          trader: s.trader, members: s.members, value: v === null ? null : usdNum(v), state: s, prices: pd,
+          trader: s.trader, members: s.members, creator: r.info.creator, value: v === null ? null : usdNum(v), state: s, prices: pd,
         };
       }),
     );

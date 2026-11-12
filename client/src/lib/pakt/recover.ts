@@ -10,7 +10,7 @@ export function recoveries(vault: string, s: VaultState, now: number, account: s
   const stale = !!s.op && now >= s.op_since_ms + LOCK_TTL_MS;
   if (stale) out.push({ label: "Unlock vault", why: `${s.op} has been stuck over 10 minutes`, txs: unlock(vault) });
   const idle = !s.op;
-  if (idle && s.fire_pending) out.push({ label: "Finish fire", why: "The DAO fired the trader but the payout didn't run", txs: finishFire(vault) });
+  if (idle && s.fire_pending) out.push({ label: "Finish fire", why: "The DAO fired the pakter but the payout didn't run", txs: finishFire(vault) });
   // funds at ref only need a recover when the ledger lost track or leavers hold ious there
   const atDex = !s.dex_synced ? some(s.at_dex) : [];
   for (const t of new Set([...atDex, ...some(s.dex_iou)]))

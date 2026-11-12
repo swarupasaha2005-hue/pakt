@@ -12,7 +12,8 @@ function rng(seed: string) {
   };
 }
 
-export function PixelAvatar({ seed }: { seed: string }) {
+/** colors + mirrored cells for a seed; shared with the share-card image */
+export function sprite(seed: string) {
   const rand = rng(seed);
   const hue = Math.floor(rand() * 360);
   const bg = `hsl(${hue} 60% 22%)`;
@@ -21,7 +22,11 @@ export function PixelAvatar({ seed }: { seed: string }) {
   // mirror left half → symmetric sprite
   for (let y = 0; y < GRID; y++)
     for (let x = 0; x < GRID / 2; x++) if (rand() > 0.5) cells.push([x, y], [GRID - 1 - x, y]);
+  return { bg, fg, cells, grid: GRID };
+}
 
+export function PixelAvatar({ seed }: { seed: string }) {
+  const { bg, fg, cells } = sprite(seed);
   return (
     <svg aria-hidden viewBox={`0 0 ${GRID} ${GRID}`} shapeRendering="crispEdges" className="size-full rounded-full">
       <rect width={GRID} height={GRID} fill={bg} />

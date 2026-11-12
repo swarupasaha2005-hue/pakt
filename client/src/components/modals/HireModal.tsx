@@ -37,11 +37,11 @@ export function HireModal({ trader, account, onClose }: Props) {
   return (
     <Modal open onClose={onClose} label={`Hire ${trader}`}>
       <h2 className="text-lg font-medium">Hire {trader}</h2>
-      <p className="mt-1 text-sm text-text-2">Pick a pakt you vote in. Members approve the offer, then the trader accepts.</p>
+      <p className="mt-1 text-sm text-text-2">Pick a pakt you vote in. Members approve the offer, then the pakter accepts.</p>
       <div className="mt-4 space-y-1">
         {!data && !error && [0, 1].map((i) => <Skeleton key={i} className="h-12" />)}
         {error && <p className="py-6 text-center text-sm text-text-2">Could not load your pakts</p>}
-        {data && !data.length && <p className="py-6 text-center text-sm text-text-2">None of your pakts is hiring. Create one, or fire the current trader first.</p>}
+        {data && !data.length && <p className="py-6 text-center text-sm text-text-2">None of your pakts is hiring. Create one, or fire the current pakter first.</p>}
         {data?.map((p) => (
           <button key={p.vault} type="button" onClick={() => setPick(p)} className="flex h-12 w-full items-center gap-3 rounded-lg px-2 text-left hover:bg-panel-2">
             <Avatar name={p.name} size={28} />

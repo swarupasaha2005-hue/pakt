@@ -9,14 +9,15 @@ import { signed, usd } from "@/lib/format";
 import type { Position } from "@/lib/profile/load";
 
 /** profit vs usd paid in; trader fee shares cost nothing, so they count as profit */
-function Pnl({ value, cost }: { value: number | null; cost: number | null }) {
+export function Pnl({ value, cost }: { value: number | null; cost: number | null }) {
   if (value === null || cost === null) return <span className="text-text-2">—</span>;
-  const pnl = value - cost;
-  const tone = Math.abs(pnl) < 0.005 ? "text-text-2" : pnl > 0 ? "text-up" : "text-down";
+  const raw = value - cost;
+  const pnl = Math.abs(raw) < 0.005 ? 0 : raw; // sub-cent drift reads as flat
+  const tone = pnl === 0 ? "text-text-2" : pnl > 0 ? "text-up" : "text-down";
   return (
-    <span className={tone}>
-      {signed(pnl)}
-      {cost > 0 && ` (${((pnl / cost) * 100).toFixed(2)}%)`}
+    <span className={`whitespace-nowrap ${tone}`}>
+      {pnl === 0 ? "$0.00" : signed(pnl)}
+      {cost > 0 && pnl !== 0 && ` (${((pnl / cost) * 100).toFixed(2)}%)`}
     </span>
   );
 }

@@ -42,7 +42,7 @@ type Order = {
 /** first rule the vault would reject the order on, or null */
 export function tradeError({ state, account, tokenIn, tokenOut, amountIn, value, slippageBps, now }: Order) {
   const t = state.trader;
-  if (!t || t.account !== account) return "Only the hired trader";
+  if (!t || t.account !== account) return "Only the hired pakter";
   if (t.paused) return "Trading paused";
   if (state.fire_pending) return "Fire pending";
   if (now < state.trade_after_ms) return `Trading opens in ${Math.ceil((state.trade_after_ms - now) / 60_000)}m`;

@@ -55,7 +55,7 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
   const slN = Number(stopLoss);
   const blocked =
     account.length < 2 || account.length > 64 || !ACCOUNT.test(account)
-      ? "Pick or type a trader account"
+      ? "Pick or type a pakter account"
       : !b || !m
         ? "Set budget and max per trade"
         : BigInt(m) > BigInt(b)
@@ -68,7 +68,7 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
   const done = !!tx.hash && !tx.error;
 
   return (
-    <Modal open onClose={onClose} label={`Propose trader for ${name}`}>
+    <Modal open onClose={onClose} label={`Propose pakter for ${name}`}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -80,7 +80,7 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
         className="flex flex-col gap-3"
       >
         <h2 className="text-xl font-bold">Propose trader for {name}</h2>
-        <Input placeholder="Trader account, e.g. alice.testnet" aria-label="Trader account" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <Input placeholder="Pakter account, e.g. alice.testnet" aria-label="Pakter account" value={query} onChange={(e) => setQuery(e.target.value)} />
         <div role="radiogroup" className="max-h-56 overflow-y-auto">
           {list
             .filter((c) => c.account.includes(account))
@@ -103,7 +103,7 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
           <Input inputMode="decimal" required value={maxPerTrade} onChange={(e) => setMaxPerTrade(e.target.value.replace(/[^\d.]/g, ""))} />
         </label>
         <label className={field}>
-          Trader fee % of profit
+          Pakter fee % of profit
           <Input type="number" min={10} max={30} required value={fee} onChange={(e) => setFee(e.target.value)} />
         </label>
         <label className={field}>

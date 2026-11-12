@@ -26,7 +26,7 @@ export function SettlementCard({ vault, profit, fee, dueMs, now, blocked, onDone
   const tx = useTx(onDone);
   const split = feeSplit(profit, fee);
   const rows = [
-    [`Trader (${fee}%)`, split.trader],
+    [`Pakter (${fee}%)`, split.trader],
     [`Platform (${PLATFORM_FEE}%)`, split.platform],
     [`Members (${100 - fee - PLATFORM_FEE}%)`, split.members],
   ] as const;
@@ -48,7 +48,7 @@ export function SettlementCard({ vault, profit, fee, dueMs, now, blocked, onDone
             </div>
           ))
         ) : (
-          <p className="text-xs text-text-3">{profit > 0 ? "No trader, no fees: the mark just rises." : "Below the high-water mark, no fees."}</p>
+          <p className="text-xs text-text-3">{profit > 0 ? "No pakter, no fees: the mark just rises." : "Below the high-water mark, no fees."}</p>
         )}
       </dl>
       <Button className="mt-3 w-full" disabled={!!blocked || tx.pending} onClick={() => tx.run(settle(vault))}>
