@@ -108,7 +108,6 @@ Deployed accounts (testnet):
 | Ref exchange | `ref-finance-101.testnet` | [nearblocks](https://testnet.nearblocks.io/address/ref-finance-101.testnet) |
 | Sputnik DAO factory | `sputnikv2.testnet` | [nearblocks](https://testnet.nearblocks.io/address/sputnikv2.testnet) |
 | Ref pools | tUSDC/tBTC `2958`, tUSDC/tNEAR `2959` | [tBTC pool](https://testnet.app.ref.finance/pool/2958), [tNEAR pool](https://testnet.app.ref.finance/pool/2959) |
-| Backend Worker | `https://pakt-backend.debanjanspider5.workers.dev` | [/healthz](https://pakt-backend.debanjanspider5.workers.dev/healthz) |
 
 ## Architecture
 
