@@ -1,6 +1,6 @@
 // Read API: input validation, routing and canonical cache keys. All routes are GET.
 import { FIELDS } from "./chain";
-import { LEADERBOARD_KINDS, alerts, leaderboard } from "./stats";
+import { COPY_KINDS, LEADERBOARD_KINDS, alerts, cloneConfig, leaderboard, traderRecord } from "./stats";
 import { feed, pakts, since, toEvent, type FeedCol } from "./store";
 
 export class BadInput extends Error {}
@@ -81,6 +81,15 @@ export function route(url: URL): Route | null {
   if (at("pakts", "*")) {
     const vault = account(p[1]);
     return { ttl: 30, params: {}, run: async (db) => (await pakts(db, vault, 0, 1))[0] ?? null };
+  }
+  if (at("traders", "*")) {
+    const trader = account(p[1]);
+    // shortcut: scans copy-kind history in memory, like the leaderboard
+    return { ttl: 30, params: {}, run: async (db) => traderRecord(await memoized("copy", () => since(db, COPY_KINDS, 0)), trader) };
+  }
+  if (at("pakts", "*", "config")) {
+    const vault = account(p[1]);
+    return { ttl: 30, params: {}, run: async (db) => cloneConfig(await memoized("copy", () => since(db, COPY_KINDS, 0)), vault) };
   }
   if (at("leaderboard")) {
     const range = sp.get("range") ?? "all";
