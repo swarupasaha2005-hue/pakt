@@ -61,7 +61,8 @@ export type FeedKind =
   | "fired"
   | "settled"
   | "joined"
-  | "left";
+  | "left"
+  | "stoploss";
 
 export type FeedEvent = {
   id: string;
