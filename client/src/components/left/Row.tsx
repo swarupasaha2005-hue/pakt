@@ -20,12 +20,12 @@ export function Row({ href, avatar, title, subtitle, value, change, selected }: 
     >
       {avatar}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-center gap-1.5 truncate text-base leading-5">{title}</span>
-        <span className="truncate text-sm leading-5 text-text-2">{subtitle}</span>
+        <span className="flex items-center gap-1.5 truncate text-sm leading-5">{title}</span>
+        <span className="truncate text-xs leading-5 text-text-2">{subtitle}</span>
       </span>
       <span className="flex flex-col items-end">
-        <span className="text-base leading-5">{value}</span>
-        <span className="text-sm leading-5">{change}</span>
+        <span className="text-sm leading-5">{value}</span>
+        <span className="text-xs leading-5">{change}</span>
       </span>
     </Link>
   );

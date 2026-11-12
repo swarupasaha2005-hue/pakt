@@ -24,7 +24,7 @@ export function Discover() {
             <Positions onCollapse={() => setPositionsOpen(false)} />
           </RightPanel>
         ) : (
-          <aside className="flex w-12 shrink-0 justify-center rounded-2xl border bg-panel pt-2.5">
+          <aside className="flex w-12 shrink-0 justify-center rounded-xl border bg-panel pt-2.5">
             <button type="button" aria-label="Show positions" onClick={() => setPositionsOpen(true)} className="h-fit text-text-2 hover:text-text">
               <ChevronsLeftIcon className="size-5" />
             </button>

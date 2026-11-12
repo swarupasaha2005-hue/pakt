@@ -9,13 +9,13 @@ type Props = { pakt: Pakt; member: boolean; onPropose: () => void; onRaise: () =
 export function TraderCard({ pakt, member, onPropose, onRaise, onFire }: Props) {
   return (
     <section className="border-b p-4">
-      <h2 className="text-xs font-semibold tracking-wide text-text-2 uppercase">Trader</h2>
+      <h2 className="text-xs font-bold tracking-wide text-text-2 uppercase">Trader</h2>
       {pakt.trader ? (
         <>
           <p className="mt-3 flex items-center gap-2 text-base">
             <Avatar name={pakt.trader} size={28} /> {pakt.trader} <Badge>{pakt.fee}%</Badge>
           </p>
-          <dl className="mt-3 space-y-2 text-sm">
+          <dl className="mt-3 space-y-2 text-xs">
             <div className="flex justify-between">
               <dt className="text-text-2">Budget</dt>
               <dd>
@@ -41,7 +41,7 @@ export function TraderCard({ pakt, member, onPropose, onRaise, onFire }: Props) 
         </>
       ) : (
         <>
-          <p className="mt-3 text-sm text-text-2">No trader yet</p>
+          <p className="mt-3 text-xs text-text-2">No trader yet</p>
           {member && (
             <Button variant="primary" className="mt-3 w-full" onClick={onPropose}>
               Propose trader

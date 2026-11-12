@@ -8,7 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Segmented } from "@/components/ui/Segmented";
 
 const VISIBILITY = ["Invite only", "Open"] as const;
-const label = "grid grid-cols-[1fr_12rem] items-center gap-3 text-sm text-text-2";
+const label = "grid grid-cols-[1fr_12rem] items-center gap-3 text-xs text-text-2";
 
 export function CreatePaktModal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
@@ -20,8 +20,8 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
   if (created) {
     return (
       <Modal open onClose={onClose} label="Invite friends">
-        <h2 className="text-xl font-semibold">Invite friends</h2>
-        <p className="mt-1 text-sm text-text-2">{name} is live. Anyone with the link can deposit and join.</p>
+        <h2 className="text-xl font-bold">Invite friends</h2>
+        <p className="mt-1 text-xs text-text-2">{name} is live. Anyone with the link can deposit and join.</p>
         <div className="mt-4 flex gap-2">
           <Input readOnly value={link} aria-label="Invite link" onFocus={(e) => e.target.select()} />
           <Button
@@ -35,7 +35,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
           href={`https://x.com/intent/post?text=${encodeURIComponent(`Join my pakt ${name} on Pakt`)}&url=${encodeURIComponent(link)}`}
           target="_blank"
           rel="noreferrer"
-          className="mt-3 flex h-10 items-center justify-center rounded-xl bg-panel-2 text-sm font-semibold hover:bg-border"
+          className="mt-3 flex h-10 items-center justify-center rounded-xl bg-panel-2 text-xs font-bold hover:bg-border"
         >
           Share on X
         </a>
@@ -52,7 +52,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
         }}
         className="flex flex-col gap-3"
       >
-        <h2 className="text-xl font-semibold">Create pakt</h2>
+        <h2 className="text-xl font-bold">Create pakt</h2>
         <Avatar name={name || "pakt"} size={80} />
         <Input
           required
@@ -69,7 +69,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
         </div>
         <label className={label}>
           Voting
-          <select className="h-10 rounded-lg bg-panel-2 px-3 text-sm text-text outline-none focus:ring-1 focus:ring-accent">
+          <select className="h-10 rounded-lg bg-panel-2 px-3 text-xs text-text outline-none focus:ring-1 focus:ring-accent">
             <option>Majority (50%+)</option>
             <option>Two thirds (66%+)</option>
           </select>
@@ -82,7 +82,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
           Your deposit $
           <Input type="number" min={1} defaultValue={100} required />
         </label>
-        <p className="rounded-xl bg-panel-2 p-3 text-[13px] text-text-2">
+        <p className="rounded-xl bg-panel-2 p-3 text-xs text-text-2">
           ⓘ Creates a Sputnik DAO + vault. Network cost ≈ 6 NEAR (refundable deposit).
         </p>
         <Button type="submit" variant="primary" size="lg">

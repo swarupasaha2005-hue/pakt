@@ -18,7 +18,7 @@ export function Tabs<T extends string>({ items, value, onChange, className = "" 
           role="tab"
           aria-selected={item.id === value}
           onClick={() => onChange(item.id)}
-          className={`flex h-full items-center px-1.5 leading-none transition-colors ${i > 0 ? "border-l" : ""} ${item.id === value ? "text-text" : "text-text-2 hover:text-text"}`}
+          className={`flex h-full items-center px-1.5 leading-none transition-colors ${i > 0 ? "border-l" : ""} ${item.id === value ? "text-text" : "text-text-3 hover:text-text"}`}
         >
           {item.label}
         </button>

@@ -30,7 +30,7 @@ export function Positions({ symbol, onCollapse }: Props) {
   );
 
   const toggle = (
-    <div className="flex h-[26px] rounded-lg border p-px text-[13px] font-semibold">
+    <div className="flex h-[26px] rounded-lg border p-px text-xs font-bold">
       {[true, false].map((o) => (
         <button
           key={String(o)}
@@ -69,19 +69,19 @@ export function Positions({ symbol, onCollapse }: Props) {
               <li key={`${p.symbol}-${p.paktId}`} className="flex h-[52px] items-center gap-3 rounded-xl px-2 hover:bg-panel-2/60">
                 <Avatar name={t.symbol} src={t.logo} size={32} />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-[15px] leading-5">{t.symbol}</span>
-                  <span className="truncate text-[13px] leading-5 text-text-2">{pakts.find((x) => x.id === p.paktId)?.name ?? "Solo"}</span>
+                  <span className="text-sm leading-5">{t.symbol}</span>
+                  <span className="truncate text-xs leading-5 text-text-2">{pakts.find((x) => x.id === p.paktId)?.name ?? "Solo"}</span>
                 </span>
                 <span className="flex flex-col items-end">
-                  <span className="text-[15px] leading-5">{usd(p.amount * t.price)}</span>
-                  <Pct value={pnlPct} className="text-[13px] leading-5" />
+                  <span className="text-sm leading-5">{usd(p.amount * t.price)}</span>
+                  <Pct value={pnlPct} className="text-xs leading-5" />
                 </span>
               </li>
             );
           })}
         </ul>
       ) : (
-        <p className="pt-6 text-center text-[15px] text-text-2">No {open ? "open" : "closed"} positions</p>
+        <p className="pt-6 text-center text-sm text-text-2">No {open ? "open" : "closed"} positions</p>
       )}
     </section>
   );

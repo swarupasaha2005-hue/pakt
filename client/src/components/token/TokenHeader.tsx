@@ -9,7 +9,7 @@ import type { Token } from "@/lib/mock/types";
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex h-[46px] flex-col items-center justify-center rounded-xl bg-panel-2 px-3">
-      <span className="text-[13px] leading-4 text-text-2">{label}</span>
+      <span className="text-xs leading-4 text-text-2">{label}</span>
       <span className="text-base leading-5 font-medium">{children}</span>
     </div>
   );
@@ -33,13 +33,13 @@ export function TokenHeader({ token: t }: { token: Token }) {
               <ExternalIcon className="size-4" />
             </a>
           </span>
-          <span className="text-sm text-text-2">{t.name}</span>
+          <span className="text-xs text-text-2">{t.name}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex flex-col items-center px-3">
-          <span className="text-[13px] leading-4 text-text-2">Price</span>
-          <span className="text-[22px] leading-7 font-semibold">{usd(t.price)}</span>
+          <span className="text-xs leading-4 text-text-2">Price</span>
+          <span className="text-[22px] leading-7 font-bold">{usd(t.price)}</span>
         </div>
         <Stat label="24H Vol.">{compact(t.volume24h)}</Stat>
         <Stat label="Market cap">{compact(t.mcap)}</Stat>

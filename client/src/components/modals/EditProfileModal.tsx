@@ -19,8 +19,8 @@ type Props = {
 };
 
 const field = "flex flex-col justify-center rounded-xl bg-panel-2 px-3 focus-within:ring-1 focus-within:ring-accent";
-const label = "text-[13px] text-text-2";
-const linkRow = "flex h-9 items-center gap-2 rounded-xl bg-panel-2 px-3 text-sm font-semibold focus-within:ring-1 focus-within:ring-accent";
+const label = "text-xs text-text-2";
+const linkRow = "flex h-9 items-center gap-2 rounded-xl bg-panel-2 px-3 text-xs font-bold focus-within:ring-1 focus-within:ring-accent";
 const linkInput = "min-w-0 flex-1 bg-transparent outline-none placeholder:text-accent";
 const pencil = "flex size-6 items-center justify-center rounded-lg bg-bg/70 text-text";
 
@@ -59,7 +59,7 @@ export function EditProfileModal({ profile, firstLogin = false, onSave, onClose 
 
   return (
     <Modal open onClose={onClose} label={firstLogin ? "Set up your profile" : "Edit profile"}>
-      {firstLogin && <h2 className="mb-3 text-xl font-semibold">Set up your profile</h2>}
+      {firstLogin && <h2 className="mb-3 text-xl font-bold">Set up your profile</h2>}
       <div
         className="relative h-[104px] rounded-xl bg-panel-2 bg-cover bg-center"
         style={f.cover ? { backgroundImage: `url(${f.cover})` } : undefined}
@@ -113,7 +113,7 @@ export function EditProfileModal({ profile, firstLogin = false, onSave, onClose 
               className="flex-1 resize-none bg-transparent text-base outline-none placeholder:text-text-2"
             />
           </label>
-          <p className="mt-1 text-right text-[13px] text-text-2">
+          <p className="mt-1 text-right text-xs text-text-2">
             {f.bio.length}/{BIO_MAX}
           </p>
         </div>
@@ -129,12 +129,12 @@ export function EditProfileModal({ profile, firstLogin = false, onSave, onClose 
         </label>
         <p className={`-mt-1 px-1 text-xs ${linkError ? "text-down" : "text-text-3"}`}>{linkError ?? "Links are self-reported."}</p>
         <div className="rounded-xl bg-panel-2 px-3 py-2.5">
-          <div className="flex items-center justify-between text-[15px]">
+          <div className="flex items-center justify-between text-sm">
             Open to hire
             <Toggle label="Open to hire" checked={f.openToHire} onChange={(openToHire) => set({ openToHire })} />
           </div>
           {f.openToHire && (
-            <label className="mt-2 flex items-center gap-2 text-sm text-text-2">
+            <label className="mt-2 flex items-center gap-2 text-xs text-text-2">
               Asking fee
               <Input
                 type="number"
@@ -147,7 +147,7 @@ export function EditProfileModal({ profile, firstLogin = false, onSave, onClose 
                 className="h-8! w-16! bg-panel! text-center"
               />
               %
-              <span className={`ml-auto text-[13px] ${errors.fee ? "text-down" : "text-text-3"}`}>{errors.fee ?? `${FEE_MIN}–${FEE_MAX}% of profit`}</span>
+              <span className={`ml-auto text-xs ${errors.fee ? "text-down" : "text-text-3"}`}>{errors.fee ?? `${FEE_MIN}–${FEE_MAX}% of profit`}</span>
             </label>
           )}
         </div>

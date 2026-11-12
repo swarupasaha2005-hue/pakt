@@ -71,16 +71,16 @@ export function TokensTable({ starred, onStar }: Props) {
         <Segmented options={CHIPS} value={chip} onChange={setChip} />
         <div className="flex flex-wrap gap-2">
           <FilterSelect label="Rows" value={rows} options={ROWS} onChange={setRows} />
-          <Segmented options={TIMEFRAMES} value={tf} onChange={setTf} className="gap-0.5 rounded-lg border p-px [&>button]:h-[22px] [&>button]:border-0" />
+          <Segmented options={TIMEFRAMES} value={tf} onChange={setTf} className="gap-0.5 rounded-lg border p-px [&>button]:h-[22px] [&>button]:border-0 [&>button[aria-pressed=false]]:text-text-3" />
           <FilterSelect label="Min market cap" value={minMcap} options={MCAP} onChange={setMinMcap} />
           <FilterSelect label="Min volume" value={minVolume} options={VOLUME} onChange={setMinVolume} />
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[920px] text-left">
-          <thead className="sticky top-0 z-20 bg-panel text-[13px] text-text-2">
+          <thead className="sticky top-0 z-20 bg-panel text-xs text-text-3 [&_th]:font-medium">
             <tr className="h-[38px] border-b">
-              <th className="w-[300px] border-r px-3 font-normal">
+              <th className="w-[300px] border-r px-3">
                 <span className="flex items-center justify-between">
                   Token name
                   <label className="flex items-center gap-1.5">
@@ -102,7 +102,7 @@ export function TokensTable({ starred, onStar }: Props) {
               {header("change", `${tf} change`)}
               {header("volume", `${tf} volume`)}
               {header("holders", "Holders")}
-              <th className="px-3 font-normal">Top pakt</th>
+              <th className="px-3">Top pakt</th>
             </tr>
           </thead>
           <tbody>
@@ -111,7 +111,7 @@ export function TokensTable({ starred, onStar }: Props) {
             ))}
           </tbody>
         </table>
-        {!list.length && <p className="py-10 text-center text-[15px] text-text-2">{chip === "Watchlist" ? "Star tokens to watch them here" : "No tokens match"}</p>}
+        {!list.length && <p className="py-10 text-center text-sm text-text-2">{chip === "Watchlist" ? "Star tokens to watch them here" : "No tokens match"}</p>}
       </div>
     </>
   );

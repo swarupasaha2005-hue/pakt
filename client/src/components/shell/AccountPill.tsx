@@ -43,8 +43,8 @@ export function AccountPill() {
           className="flex h-12 items-center gap-6 rounded-xl border bg-panel pr-2 pl-2.5 text-left"
         >
           <span className="flex flex-col">
-            <span data-balance className="text-[15px] leading-5">{usd(me.total)}</span>
-            <Pct value={me.change24h} className="text-[13px] leading-5" />
+            <span data-balance className="text-sm leading-5">{usd(me.total)}</span>
+            <Pct value={me.change24h} className="text-xs leading-5" />
           </span>
           <Avatar name={me.account} size={32} />
         </button>

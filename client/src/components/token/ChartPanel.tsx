@@ -29,11 +29,11 @@ export function ChartPanel({ token }: { token: Token }) {
   return (
     <section className="shrink-0">
       <Chart token={token} range={range} trades={shown} />
-      <div className="flex h-10 items-center border-b text-[15px]">
+      <div className="flex h-10 items-center border-b text-sm">
         <Tabs items={RANGES.map((r) => ({ id: r, label: r }))} value={range} onChange={setRange} className="h-[18px] [&>button]:border-l-0 [&>button]:px-2.5" />
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
-        <span className="border-r pr-4 text-[13px] font-medium">Chart overlays</span>
+        <span className="border-r pr-4 text-xs font-medium">Chart overlays</span>
         <Checkbox label="My trades" checked={mine} onChange={setMine} />
         <Checkbox label="Pakt trades" checked={paktTrades} onChange={setPaktTrades} />
         <Checkbox label="Following only" checked={followingOnly} onChange={setFollowingOnly} />

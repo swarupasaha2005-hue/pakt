@@ -22,7 +22,7 @@ export function Avatar({ name, size = 36, src, color, glyph, badge }: Props) {
       ) : color || glyph ? (
         <span
           aria-hidden
-          className="flex size-full items-center justify-center rounded-full font-semibold text-white"
+          className="flex size-full items-center justify-center rounded-full font-bold text-white"
           style={{ background: color, fontSize: size * 0.4 }}
         >
           {glyph}

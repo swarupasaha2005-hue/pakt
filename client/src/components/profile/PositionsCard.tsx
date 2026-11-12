@@ -39,7 +39,7 @@ export function PositionsCard({ account, holdings, title }: Props) {
           <button
             type="button"
             onClick={() => setSort(sort === "Recent" ? "PnL" : "Recent")}
-            className="flex items-center gap-1 text-[15px] text-text-2 hover:text-text"
+            className="flex items-center gap-1 text-sm text-text-2 hover:text-text"
           >
             <SortIcon className="size-3.5" /> {sort}
           </button>
@@ -47,12 +47,12 @@ export function PositionsCard({ account, holdings, title }: Props) {
         </div>
       </div>
       <Segmented options={KINDS} value={kind} onChange={setKind} className="p-2.5" />
-      <div className="flex justify-between border-b px-3 pb-1.5 text-[13px] text-text-2">
+      <div className="flex justify-between border-b px-3 pb-1.5 text-xs text-text-2">
         <span>Token</span>
         <span>PnL</span>
       </div>
       {rows.length === 0 ? (
-        <p className="py-6 text-center text-[15px] text-text-2">No {status.toLowerCase()} holdings</p>
+        <p className="py-6 text-center text-sm text-text-2">No {status.toLowerCase()} holdings</p>
       ) : (
         <ul className="p-1">
           {rows.map((p) => {

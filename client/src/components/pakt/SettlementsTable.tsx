@@ -5,13 +5,13 @@ import type { Settlement } from "@/lib/mock/settlements";
 const COLS = ["Date", "Profit", "Trader fee", "Platform fee", "Members", "High-water mark"];
 
 export function SettlementsTable({ rows }: { rows: Settlement[] }) {
-  if (!rows.length) return <p className="py-8 text-center text-[15px] text-text-2">No settlements yet</p>;
+  if (!rows.length) return <p className="py-8 text-center text-sm text-text-2">No settlements yet</p>;
   return (
-    <table className="w-full text-sm">
-      <thead className="text-[13px] text-text-2">
+    <table className="w-full text-xs">
+      <thead className="text-xs text-text-2">
         <tr>
           {COLS.map((c, i) => (
-            <th key={c} className={`py-2 font-normal ${i ? "text-right" : "text-left"}`}>
+            <th key={c} className={`py-2 ${i ? "text-right" : "text-left"}`}>
               {c}
             </th>
           ))}

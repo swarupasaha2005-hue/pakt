@@ -9,7 +9,7 @@ import { stars } from "@/lib/mock/stars";
 import { tokens } from "@/lib/mock/tokens";
 import { Row } from "./Row";
 
-const heading = "px-2 pt-2 pb-1 text-xs font-semibold text-text-3";
+const heading = "px-2 pt-2 pb-1 text-xs font-bold text-text-3";
 
 export function StarredTab() {
   const pathname = usePathname();

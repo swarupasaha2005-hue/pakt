@@ -12,7 +12,7 @@ export const WALLET = "wallet";
 
 const QUICK = ["$10", "$50", "$100", "$500"] as const;
 const PAY_WITH = tokens.filter((t) => t.allowed).map((t) => t.symbol);
-const select = "h-8 rounded-lg px-2 text-sm font-semibold text-text outline-none focus:ring-1 focus:ring-accent";
+const select = "h-8 rounded-lg px-2 text-xs font-bold text-text outline-none focus:ring-1 focus:ring-accent";
 
 type Props = {
   /** WALLET or a pakt id */
@@ -30,8 +30,8 @@ export function DepositModal({ to: initialTo, onClose }: Props) {
 
   return (
     <Modal open onClose={onClose} label="Deposit">
-      <h2 className="text-xl font-semibold">Deposit</h2>
-      <label className="mt-4 flex items-center gap-2 text-[13px] text-text-2">
+      <h2 className="text-xl font-bold">Deposit</h2>
+      <label className="mt-4 flex items-center gap-2 text-xs text-text-2">
         To
         <select value={to} onChange={(e) => setTo(e.target.value)} className={`${select} bg-panel-2`}>
           <option value={WALLET}>Wallet</option>

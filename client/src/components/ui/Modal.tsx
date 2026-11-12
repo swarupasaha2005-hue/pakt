@@ -27,7 +27,7 @@ export function Modal({ open, onClose, label, children }: Props) {
         role="dialog"
         aria-modal
         aria-label={label}
-        className="relative my-auto w-[412px] max-w-[calc(100vw-32px)] rounded-2xl border bg-panel p-4"
+        className="relative my-auto w-[412px] max-w-[calc(100vw-32px)] rounded-xl border bg-panel p-4"
         onClick={(e) => e.stopPropagation()}
       >
         {onClose && (

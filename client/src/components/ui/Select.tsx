@@ -15,7 +15,7 @@ export function Select<T extends string>({ options, value, onChange, label }: Pr
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="field-sizing-content h-6 appearance-none rounded-lg bg-panel-2 pr-7 pl-2.5 text-sm font-semibold text-text outline-none"
+        className="field-sizing-content h-6 appearance-none rounded-lg bg-panel-2 pr-7 pl-2.5 text-xs font-bold text-text outline-none"
       >
         {options.map((o) => (
           <option key={o}>{o}</option>

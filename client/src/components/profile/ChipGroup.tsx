@@ -14,7 +14,7 @@ export function ChipGroup<T extends string>({ options, value, onChange }: Props<
           type="button"
           aria-pressed={o === value}
           onClick={() => onChange(o)}
-          className={`h-full rounded-md px-2 text-sm font-semibold transition-colors ${o === value ? "bg-panel-2 text-text" : "text-text-2 hover:text-text"}`}
+          className={`h-full rounded-md px-2 text-xs font-bold transition-colors ${o === value ? "bg-panel-2 text-text" : "text-text-2 hover:text-text"}`}
         >
           {o}
         </button>

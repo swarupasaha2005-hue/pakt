@@ -35,7 +35,7 @@ export function PaktsTab() {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="mb-1 flex h-11 w-full items-center gap-2 rounded-xl bg-pink/10 px-3 text-[15px] font-semibold text-pink hover:bg-pink/15"
+            className="mb-1 flex h-11 w-full items-center gap-2 rounded-xl bg-pink/10 px-3 text-sm font-bold text-pink hover:bg-pink/15"
           >
             <span className="text-lg leading-none">+</span> Create your pakt
             <span className="ml-auto text-lg leading-none">›</span>
@@ -49,8 +49,8 @@ export function PaktsTab() {
             >
               <Avatar name={p.name} />
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-base leading-5">{p.name}</span>
-                <span className="truncate text-sm leading-5 text-text-2">
+                <span className="truncate text-sm leading-5">{p.name}</span>
+                <span className="truncate text-xs leading-5 text-text-2">
                   {p.members.length} members · {compact(p.vaultValue)} vault
                 </span>
                 <span className="flex items-center gap-1 truncate text-xs leading-4 text-text-2">
@@ -58,10 +58,10 @@ export function PaktsTab() {
                 </span>
               </span>
               <span className="flex flex-col items-end self-start pt-2.5">
-                <span className={`text-base leading-5 ${p.pnl7d < 0 ? "text-down" : "text-up"}`}>
+                <span className={`text-sm leading-5 ${p.pnl7d < 0 ? "text-down" : "text-up"}`}>
                   {signed(p.pnl7d)}
                 </span>
-                <Pct value={p.pnl7dPct} className="text-sm leading-5" />
+                <Pct value={p.pnl7dPct} className="text-xs leading-5" />
               </span>
             </Link>
           </li>

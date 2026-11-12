@@ -35,7 +35,7 @@ export function FeedTab() {
           type="button"
           aria-expanded={filtering}
           onClick={() => setFiltering(!filtering)}
-          className={`flex items-center gap-1 text-sm ${filter === "Everything" ? "text-text-2" : "text-accent"} hover:text-text`}
+          className={`flex items-center gap-1 text-xs ${filter === "Everything" ? "text-text-2" : "text-accent"} hover:text-text`}
         >
           <FilterIcon className="size-3.5" /> Filter
         </button>

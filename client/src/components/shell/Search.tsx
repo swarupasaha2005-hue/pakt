@@ -30,12 +30,12 @@ export function Search() {
         ref={ref}
         type="search"
         placeholder="Search for tokens, pakts or traders…"
-        className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-text-2"
+        className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-2"
       />
-      <button type="button" onClick={paste} className="h-[19px] rounded-md bg-panel-2 px-1.5 text-[11px] font-semibold text-text-2 hover:text-text">
+      <button type="button" onClick={paste} className="h-[19px] rounded-md bg-panel-2 px-1.5 text-[10px] font-bold text-text-2 hover:text-text">
         Paste
       </button>
-      <kbd className="flex size-[19px] items-center justify-center rounded-md bg-panel-2 font-sans text-[11px] font-semibold text-text-2">
+      <kbd className="flex size-[19px] items-center justify-center rounded-md bg-panel-2 font-sans text-[10px] font-bold text-text-2">
         /
       </kbd>
     </label>

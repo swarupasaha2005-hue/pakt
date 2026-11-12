@@ -48,7 +48,7 @@ export function ActivityCard({ account, events, pakts }: Props) {
 
   return (
     <section className="overflow-hidden rounded-xl border">
-      <div className="flex h-[41px] items-center bg-panel px-1.5 text-[15px]">
+      <div className="flex h-[41px] items-center bg-panel px-1.5 text-sm">
         <Tabs items={[...TABS]} value={tab} onChange={(id) => router.replace(`${pathname}?tab=${id}`, { scroll: false })} className="h-[18px]" />
       </div>
       {tab === "pakts" ? (
@@ -75,14 +75,14 @@ export function ActivityCard({ account, events, pakts }: Props) {
       ) : (
         <ul className="divide-y">
           {shown.map((e) => (
-            <li key={e.id} className="flex gap-2.5 px-3 py-2.5 text-sm">
+            <li key={e.id} className="flex gap-2.5 px-3 py-2.5 text-xs">
               <Avatar name={account} size={28} />
               <div className="min-w-0 flex-1">
                 <p className="flex justify-between gap-2">
                   <span>
                     {VERB[e.kind]} <span className="text-text-2">in</span> {e.paktId}
                   </span>
-                  <span className="text-[13px] text-text-3">{ago(e.secondsAgo)}</span>
+                  <span className="text-xs text-text-3">{ago(e.secondsAgo)}</span>
                 </p>
                 <p className="truncate text-text-2">{e.detail}</p>
               </div>
@@ -95,5 +95,5 @@ export function ActivityCard({ account, events, pakts }: Props) {
 }
 
 function Empty({ children }: { children: string }) {
-  return <p className="py-5 text-center text-[15px] text-text-2">{children}</p>;
+  return <p className="py-5 text-center text-sm text-text-2">{children}</p>;
 }

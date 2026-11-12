@@ -28,14 +28,14 @@ export function CashPill() {
             onClick={() => setOpen(!open)}
             className="flex h-12 flex-col justify-center rounded-xl border bg-panel px-2.5 text-left"
           >
-            <span className="text-[15px] leading-5">
-              <span data-balance>{usd(me.cash)}</span> <span className="text-text-2">cash</span>
+            <span className="text-sm leading-5">
+              <span data-balance>{usd(me.cash)}</span> <span className="text-text-3">cash</span>
             </span>
-            <span className="text-sm leading-5 font-semibold text-accent">Deposit more</span>
+            <span className="text-xs leading-4 font-bold text-accent">Deposit more</span>
           </button>
         }
       >
-        <dl className="flex flex-col gap-1 text-[15px] leading-5">
+        <dl className="flex flex-col gap-1 text-sm leading-5">
           <div className="flex justify-between">
             <dt>Wallet cash</dt>
             <dd data-balance>{usd(me.cash)}</dd>
@@ -45,7 +45,7 @@ export function CashPill() {
             <dd data-balance>{usd(me.total - me.cash)}</dd>
           </div>
         </dl>
-        <button type="button" onClick={() => deposit(me.paktIds[0])} className="mt-1.5 flex items-center gap-2 text-sm font-medium text-accent hover:brightness-125">
+        <button type="button" onClick={() => deposit(me.paktIds[0])} className="mt-1.5 flex items-center gap-2 text-xs font-medium text-accent hover:brightness-125">
           <SwapIcon className="size-4" /> Move to a pakt
         </button>
         <div className="mt-3 border-t pt-1">

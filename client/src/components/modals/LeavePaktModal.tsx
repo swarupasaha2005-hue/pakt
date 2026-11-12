@@ -30,8 +30,8 @@ export function LeavePaktModal({ name, share, value, fees, onClose, onLeave }: P
 
   return (
     <Modal open onClose={onClose} label={`Leave ${name}?`}>
-      <h2 className="text-xl font-semibold">Leave {name}?</h2>
-      <dl className="my-4 space-y-2 text-sm">
+      <h2 className="text-xl font-bold">Leave {name}?</h2>
+      <dl className="my-4 space-y-2 text-xs">
         {rows.map(([k, v]) => (
           <div key={k} className="flex justify-between">
             <dt className="text-text-2">{k}</dt>

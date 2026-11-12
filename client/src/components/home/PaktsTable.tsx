@@ -12,10 +12,10 @@ export function PaktsTable() {
   return (
     <div className="min-h-0 flex-1 overflow-auto">
       <table className="w-full min-w-[760px] text-left">
-        <thead className="sticky top-0 z-20 bg-panel text-[13px] text-text-2">
+        <thead className="sticky top-0 z-20 bg-panel text-xs text-text-2">
           <tr className="h-[38px] border-b">
             {COLS.map((c) => (
-              <th key={c} className="px-3 font-normal">{c}</th>
+              <th key={c} className="px-3">{c}</th>
             ))}
           </tr>
         </thead>
@@ -27,7 +27,7 @@ export function PaktsTable() {
                   <Avatar name={p.name} />
                   <span className="flex flex-col leading-5">
                     <Link href={`/pakt/${p.id}`} className="after:absolute after:inset-0">{p.name}</Link>
-                    <span className="text-sm text-text-2">{p.paused ? "Paused" : p.open ? "Open" : "Invite only"}</span>
+                    <span className="text-xs text-text-2">{p.paused ? "Paused" : p.open ? "Open" : "Invite only"}</span>
                   </span>
                 </span>
               </td>
@@ -48,7 +48,7 @@ export function PaktsTable() {
                     {p.pnl7d < 0 ? "-" : "+"}
                     {usd(Math.abs(p.pnl7d))}
                   </span>
-                  <Pct value={p.pnl7dPct} className="text-sm" />
+                  <Pct value={p.pnl7dPct} className="text-xs" />
                 </span>
               </td>
               <td className="px-3">
