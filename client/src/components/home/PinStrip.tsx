@@ -19,7 +19,7 @@ export function PinStrip({ starred }: { starred: string[] }) {
         .filter((t) => starred.includes(t.symbol))
         .map((t) => (
           <Link key={t.symbol} href={`/token/${t.symbol}`} className="flex shrink-0 items-center gap-2.5 rounded-2xl border px-3 hover:bg-panel-2">
-            <Avatar name={t.symbol} glyph={t.glyph} color={t.color} size={32} />
+            <Avatar name={t.symbol} src={t.logo} size={32} />
             <span className="flex flex-col">
               <span className="text-[15px] leading-5">{t.symbol}</span>
               <span className="flex gap-1.5 text-[13px] leading-5 text-text-2">

@@ -22,7 +22,7 @@ export function StarredTab() {
           <Row
             href={`/token/${t.symbol}`}
             selected={pathname === `/token/${t.symbol}`}
-            avatar={<Avatar name={t.symbol} glyph={t.glyph} color={t.color} />}
+            avatar={<Avatar name={t.symbol} src={t.logo} />}
             title={t.symbol}
             subtitle={t.name}
             value={usd(t.price)}

@@ -31,10 +31,10 @@ function PaktCell({ id }: { id: string | null }) {
 function Trader({ account, meta }: { account: string; meta: ReactNode }) {
   return (
     <span className="flex items-center gap-3">
-      <Avatar name={account} />
+      <Avatar name={account} size={32} />
       <span className="flex flex-col leading-5">
         <span className="text-base">{account}</span>
-        <span className="flex items-center gap-1.5 text-[13px] text-text-2">{meta}</span>
+        <span className="flex items-center gap-1.5 text-sm text-text-2">{meta}</span>
       </span>
     </span>
   );
@@ -44,7 +44,7 @@ function Two({ top, bottom }: { top: ReactNode; bottom: ReactNode }) {
   return (
     <span className="flex flex-col leading-5">
       <span className="text-base">{top}</span>
-      <span className="text-[13px] text-text-2">{bottom}</span>
+      <span className="text-sm text-text-2">{bottom}</span>
     </span>
   );
 }
@@ -104,7 +104,15 @@ export function HoldersTable({ token }: { token: Token }) {
           </div>
         )}
       </div>
-      <table className="w-full text-left">
+      <table className="w-full table-fixed text-left">
+        {/* fomo column starts: 217 / 361 / 485 / 598px */}
+        <colgroup>
+          <col className="w-[205px]" />
+          <col className="w-[144px]" />
+          <col className="w-[124px]" />
+          <col className="w-[113px]" />
+          <col />
+        </colgroup>
         <thead className="text-[13px] text-text-2">
           <tr className="h-[38px] border-b">
             {COLS[tab].map((c) => (
@@ -114,7 +122,7 @@ export function HoldersTable({ token }: { token: Token }) {
         </thead>
         <tbody>
           {rows[tab].map((cells, i) => (
-            <tr key={i} className="h-[54px] hover:bg-panel-2/60">
+            <tr key={i} className="h-[55px] hover:bg-panel-2/60">
               {cells.map((c, j) => (
                 <td key={j} className="px-3 text-base">{c}</td>
               ))}

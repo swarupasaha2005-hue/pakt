@@ -21,8 +21,7 @@ export function TokenHeader({ token: t }: { token: Token }) {
       <div className="flex items-center gap-3">
         <Avatar
           name={t.symbol}
-          glyph={t.glyph}
-          color={t.color}
+          src={t.logo}
           size={40}
           badge={t.allowed && <CheckIcon className="size-3.5 rounded-full bg-accent p-0.5 text-white" strokeWidth={3} />}
         />

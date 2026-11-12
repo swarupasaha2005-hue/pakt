@@ -23,7 +23,7 @@ export function AlertsTab() {
 
   return (
     <>
-      <div className="flex items-center gap-4 px-3 pt-1 pb-2">
+      <div className="flex items-center gap-4 px-3 pt-1 pb-3">
         <button type="button" aria-pressed={following} onClick={() => setFollowing(!following)} className={`${toggle} ${following ? "text-text" : "text-text-2"}`}>
           <UsersIcon className="size-4" /> Traders
         </button>
