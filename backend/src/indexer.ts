@@ -4,7 +4,7 @@ import { clientKey } from "./api";
 import { BadBlock, Budget, events, Neardata, Rpc, type NewEvent, type Source, Upstream } from "./chain";
 import { cursor, save, toEvent, type Row } from "./store";
 
-const SUBREQUESTS = 40; // free plan allows 50 per invocation; D1 and slack take the rest
+const SUBREQUESTS = 24; // free plan allows 50 per invocation; neardata redirects can double a call, D1 takes the rest
 const MAX_BLOCKS = 20;
 const STEP_MS = 20_000;
 const TIP_DELAY_MS = 2_500;
