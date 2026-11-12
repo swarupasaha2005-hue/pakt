@@ -150,7 +150,8 @@ fi
 
 echo "# (a) oracle"
 create "$ORACLE" "$F_ORACLE"
-deploy "$ORACLE" res/external/price_oracle.wasm "{\"recency_duration_sec\":3600,\"owner_id\":\"$OWNER\",\"near_claim_amount\":\"0\"}"
+# recency 180s: relay reports each minute, 3 missed rounds -> vaults pause instead of using stale prices
+deploy "$ORACLE" res/external/price_oracle.wasm "{\"recency_duration_sec\":180,\"owner_id\":\"$OWNER\",\"near_claim_amount\":\"0\"}"
 call "$OWNER" "$ORACLE" add_oracle "{\"account_id\":\"$REPORTER\"}" '1 yoctoNEAR'
 
 echo "# (b) tokens, minted to $OWNER"
