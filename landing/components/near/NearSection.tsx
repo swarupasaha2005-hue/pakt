@@ -1,14 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { BrandMark } from "@/components/hero/BrandMark";
+import { NearMark } from "./NearMark";
 import { PixelField } from "./PixelField";
 import { useNearTransition } from "./useNearTransition";
 import "./near-section.css";
-
-function NearMark({ decorative = false }: { decorative?: boolean }) {
-  return <Image src="/near-logo.webp" width={500} height={500} alt={decorative ? "" : "NEAR Protocol"} loading="eager" unoptimized />;
-}
 
 export function NearSection() {
   const { section, overlay, rotor, scan, settled, label, headline, description } = useNearTransition();
@@ -25,11 +21,16 @@ export function NearSection() {
         </div>
       </div>
       <div ref={overlay} className="near-transition-logo" aria-hidden="true">
-        <div ref={rotor} className="near-transition-rotor">
-          <div className="near-transition-face near-transition-face--pakt"><BrandMark prominent decorative /></div>
-          <div className="near-transition-face near-transition-face--near"><NearMark decorative /></div>
+        <div className="near-transition-upper">
+          <BrandMark prominent decorative />
+          <div ref={scan} className="near-transition-scan"><div className="scan-window"><div className="scan-beam" /></div></div>
         </div>
-        <div ref={scan} className="near-transition-scan"><div className="scan-window"><div className="scan-beam" /></div></div>
+        <div className="near-transition-lower">
+          <div ref={rotor} className="near-transition-rotor">
+            <div className="near-transition-face near-transition-face--pakt"><BrandMark prominent decorative /></div>
+            <div className="near-transition-face near-transition-face--near"><NearMark decorative /></div>
+          </div>
+        </div>
       </div>
     </section>
   );

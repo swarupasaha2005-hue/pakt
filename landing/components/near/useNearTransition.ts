@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { clamp, nearTimeline } from "./timeline";
+import { clamp, logoPosition, nearTimeline } from "./timeline";
 
 export function useNearTransition() {
   const section = useRef<HTMLElement>(null);
@@ -38,6 +38,7 @@ export function useNearTransition() {
     let initialSize = 0, finalSize = 0, pinCenter = 0, finalCenter = 0;
     let sourceCenterX = 0, finalCenterX = 0;
     let headerHeight = 0;
+    let boundary = 0, drop = 0;
 
     function pinHeader() {
       if (window.scrollY > 0) {
@@ -78,7 +79,8 @@ export function useNearTransition() {
         reveal(eyebrow!, 1, 0); reveal(title!, 1, 0); reveal(detail!, 1, 0);
         return;
       }
-      const state = nearTimeline(progress);
+      const position = logoPosition(y, { start, boundary, center: pinCenter, drop, initialSize, finalSize, finalCenter, settleDistance: window.innerHeight * .28 });
+      const state = nearTimeline(progress, position.crossing);
       const active = y >= start && y < release - .5;
       const entering = active && floating!.style.display !== "block";
       floating!.style.display = active ? "block" : "none";
@@ -86,13 +88,13 @@ export function useNearTransition() {
       original!.style.visibility = active ? "hidden" : savedVisibility;
       floating!.style.visibility = active ? "visible" : "hidden";
       destination!.style.visibility = y >= release - .5 ? "visible" : "hidden";
-      const size = initialSize + (finalSize - initialSize) * state.settle;
-      const center = pinCenter + (finalCenter - pinCenter) * state.settle;
-      const centerX = sourceCenterX + (finalCenterX - sourceCenterX) * state.settle;
-      floating!.style.transform = `translate3d(${centerX - initialSize / 2}px, ${center - initialSize / 2}px, 0) scale(${size / initialSize})`;
-      rotation!.style.transform = `rotateZ(${state.tilt}deg) scale(${state.depth})`;
-      rotation!.style.setProperty("--near-flip", String(state.flip));
-      rotation!.style.setProperty("--near-blend", String(state.blend));
+      const centerX = sourceCenterX + (finalCenterX - sourceCenterX) * position.settle;
+      floating!.style.transform = `translate3d(${centerX - initialSize / 2}px, ${position.center - initialSize / 2}px, 0) scale(${position.size / initialSize})`;
+      floating!.style.setProperty("--near-boundary", `${Math.max(-.2, Math.min(1.2, position.cut)) * 100}%`);
+      floating!.style.setProperty("--near-crossing", String(position.crossing));
+      rotation!.style.transform = `rotateY(${state.yaw}deg) rotateZ(${state.tilt}deg) scale(${state.depth})`;
+      rotation!.style.setProperty("--near-morph", String(state.morph));
+      rotation!.style.setProperty("--near-wash", String(state.wash));
       scanLayer!.style.opacity = String(state.scan);
       reveal(eyebrow!, state.label, 12);
       reveal(title!, state.headline, 28);
@@ -118,8 +120,9 @@ export function useNearTransition() {
       finalCenter = parseFloat(getComputedStyle(destination!).top);
       pinCenter = Math.max(finalCenter, headerHeight + 24 + initialSize / 2);
       start = Math.max(0, source.top + window.scrollY + source.height / 2 - pinCenter);
-      const top = root!.getBoundingClientRect().top + window.scrollY;
-      release = Math.min(top + root!.offsetHeight - window.innerHeight, document.documentElement.scrollHeight - window.innerHeight);
+      boundary = root!.getBoundingClientRect().top + window.scrollY;
+      drop = Math.max(0, Math.min(window.innerHeight * .1, 96, window.innerHeight - 24 - initialSize / 2 - pinCenter));
+      release = Math.min(boundary + root!.offsetHeight - window.innerHeight, document.documentElement.scrollHeight - window.innerHeight);
       end = Math.max(start + 1, release - window.innerHeight * .12);
       floating!.style.width = `${initialSize}px`;
       floating!.style.height = `${source.height}px`;
