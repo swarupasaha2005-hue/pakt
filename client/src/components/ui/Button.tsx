@@ -5,6 +5,8 @@ const variants = {
   secondary: "bg-panel-2 text-text hover:bg-border",
   up: "bg-up-bg text-up hover:brightness-125",
   outline: "border bg-panel text-text-2 hover:text-text",
+  down: "bg-down text-white hover:brightness-110",
+  "down-outline": "border border-down text-down hover:bg-down/10",
 };
 
 const sizes = {
