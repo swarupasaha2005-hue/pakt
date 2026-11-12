@@ -18,7 +18,7 @@
     // upstream requests per minute; free rpc took 60 rapid calls unthrottled
     "UPSTREAM_PER_MIN": "600",
     // exact origins; `*` = one dns label, so vercel preview urls work. Add the custom domain once there is one
-    "CORS_ORIGINS": "http://localhost:3000,https://*.vercel.app",
+    "CORS_ORIGINS": "http://localhost:3000,https://paktdotfam.vercel.app,https://paktdotfam-*.vercel.app",
     // price relay, off while any is empty: {"<testnet token>": {"pyth": "<feed id hex>", "coingecko": "<coin id>", "coinbase": "<PAIR-USD>"}}
     "PRICE_MAP": "{\"tusdc.pakt-0mxhjh.testnet\":{\"pyth\":\"eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a\",\"coingecko\":\"usd-coin\",\"coinbase\":\"USDC-USD\"},\"tbtc.pakt-0mxhjh.testnet\":{\"pyth\":\"e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43\",\"coingecko\":\"bitcoin\",\"coinbase\":\"BTC-USD\"},\"tnear.pakt-0mxhjh.testnet\":{\"pyth\":\"c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750\",\"coingecko\":\"near\",\"coinbase\":\"NEAR-USD\"}}",
     "PRICE_ORACLE": "oracle.pakt-0mxhjh.testnet",

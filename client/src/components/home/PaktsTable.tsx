@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { DepositModal } from "@/components/modals/DepositModal";
 import { Avatar } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
 import { ChevronDownIcon, CopyIcon, StarIcon, UsersIcon } from "@/components/ui/icons";
 import { Pct } from "@/components/ui/Pct";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -88,7 +87,7 @@ export function PaktsTable({ filter = "All" }: { filter?: PaktFilter }) {
                       <button
                         type="button"
                         onClick={() => setDeposit(p.name)}
-                        className="relative z-10 ml-auto h-6 w-14 shrink-0 rounded-md bg-chip text-xs font-bold opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                        className="relative z-10 ml-auto h-7 shrink-0 rounded-lg bg-accent px-2.5 text-xs font-medium text-white hover:brightness-110"
                       >
                         Deposit
                       </button>
@@ -113,7 +112,7 @@ export function PaktsTable({ filter = "All" }: { filter?: PaktFilter }) {
                     {p.members}
                   </span>
                 </td>
-                <td className="px-3">{p.trader ? <Badge>{p.trader.fee_bps / 100}% fee</Badge> : <span className="text-text-3">—</span>}</td>
+                <td className="px-3">{p.trader ? `${p.trader.fee_bps / 100}%` : <span className="text-text-3">—</span>}</td>
               </tr>
             );
           })}
