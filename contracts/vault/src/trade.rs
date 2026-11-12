@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::{self, json};
-use near_sdk::{env, ext_contract, near, require, AccountId, Gas, NearToken, Promise};
+use near_sdk::{env, ext_contract, near, require, AccountId, Gas, GasWeight, NearToken, Promise};
 
 use crate::math::mul_div;
 use crate::oracle::{self, PriceData};
@@ -20,6 +20,9 @@ pub const MAX_PERIOD_SLIP_BPS: u128 = 300;
 pub const DEX_STORAGE: NearToken = NearToken::from_millinear(50);
 const ONE: NearToken = NearToken::from_yoctonear(1);
 const GAS_REG: Gas = Gas::from_tgas(10);
+/// nep-145 min for a token account row; excess is refunded to us
+pub const FT_REG: NearToken = NearToken::from_micronear(1250);
+const GAS_FT_REG: Gas = Gas::from_tgas(3);
 // hop budgets: callee gas, then each callback = own work + its call + the next callback
 const GAS_FT_CALL: Gas = Gas::from_tgas(50);
 const GAS_SWAP: Gas = Gas::from_tgas(30);
@@ -30,6 +33,8 @@ const GAS_ON_DEPOSIT: Gas = Gas::from_tgas(115);
 const GAS_ON_PRICES: Gas = Gas::from_tgas(180);
 const GAS_VIEW: Gas = Gas::from_tgas(10);
 const GAS_ON_DEPOSITS: Gas = Gas::from_tgas(80);
+const GAS_ON_BALANCE: Gas = Gas::from_tgas(10);
+const GAS_RECONCILE: Gas = Gas::from_tgas(30);
 
 #[near(serializers = [json])]
 pub struct SwapAction {
@@ -50,12 +55,17 @@ trait Ref {
     fn get_deposits(&self, account_id: AccountId) -> HashMap<AccountId, U128>;
 }
 
-/// Ref account + token rows in one batch; token rows let deposits work for non-whitelisted tokens too.
+/// Ref account + token rows in one batch, then us on every token; FT_REG each comes from the vault's own NEAR.
+/// Token regs share init's spare gas by weight, so the factory reserves little per token.
 pub(crate) fn register_dex(dex: &AccountId, tokens: &[AccountId]) {
     Promise::new(dex.clone())
         .function_call("storage_deposit".to_string(), b"{}".to_vec(), DEX_STORAGE, GAS_REG)
         .function_call("register_tokens".to_string(), json!({"token_ids": tokens}).to_string().into_bytes(), ONE, GAS_REG)
         .detach();
+    let reg = json!({"account_id": env::current_account_id(), "registration_only": true}).to_string().into_bytes();
+    for t in tokens {
+        Promise::new(t.clone()).function_call_weight("storage_deposit".to_string(), reg.clone(), FT_REG, GAS_FT_REG, GasWeight(1)).detach();
+    }
 }
 
 /// usd e6 of the input and the oracle floor on the output; None without both prices
@@ -111,7 +121,9 @@ impl Vault {
         let (i, o) = (self.token_index(&token_in), self.token_index(&token_out));
         require!(i != o, "same token");
         require!(amount_in.0 > 0 && amount_in.0 <= self.balances[i], "not enough balance");
-        self.lock(Op::Trade, GAS_OP);
+        if !self.lock(Op::Trade, GAS_OP) {
+            return;
+        }
         oracle::fetch(&self.oracle, self.whitelist.clone())
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_ON_PRICES).on_trade_prices(pool_id, i, o, amount_in, min_out, self.op_id))
             .detach();
@@ -130,12 +142,13 @@ impl Vault {
         if let Err(why) = within_caps(t, value) {
             return self.refuse(why);
         }
+        // leaky bucket: holds half the 24h budget and refills that half per day, so any 24h span stays under it
+        let cap = mul_div(total, MAX_PERIOD_SLIP_BPS, 2 * BPS);
         let now = env::block_timestamp_ms();
-        if now >= self.slip_since_ms + DAY_MS {
-            (self.slip_used, self.slip_since_ms) = (0, now);
-        }
+        let refill = mul_div(cap, now.saturating_sub(self.slip_since_ms) as u128, DAY_MS as u128);
+        (self.slip_used, self.slip_since_ms) = (self.slip_used.saturating_sub(refill), now);
         // worst case this swap loses the full oracle floor
-        if self.slip_used + mul_div(value, MAX_SLIPPAGE_BPS, BPS) > mul_div(total, MAX_PERIOD_SLIP_BPS, BPS) {
+        if self.slip_used + mul_div(value, MAX_SLIPPAGE_BPS, BPS) > cap {
             return self.refuse("period slippage budget used, wait for the 24h window");
         }
         self.balances[i] -= amount_in.0;
@@ -156,7 +169,12 @@ impl Vault {
         if self.stale(id) {
             return;
         }
-        let used = result_u128().unwrap_or(0).min(amount_in.0);
+        // unreadable result: tokens may be at ref, so keep them in at_dex; dex_recover + reconcile settle it
+        let Some(used) = result_u128() else {
+            self.dex_synced = false;
+            return self.refuse("dex deposit unknown, call dex_recover");
+        };
+        let used = used.min(amount_in.0);
         self.at_dex[i] -= amount_in.0 - used;
         self.balances[i] += amount_in.0 - used;
         if used != amount_in.0 {
@@ -213,11 +231,16 @@ impl Vault {
         if self.stale(id) {
             return;
         }
+        let got = result_u128().unwrap_or(0).min(amount.0);
+        // recover also pulls leaver ious: fill those first
+        let iou = if self.op == Some(Op::Recover) { got.min(self.dex_iou[i]) } else { 0 };
         self.op = None;
-        let got = result_u128().unwrap_or(0).min(amount.0).min(self.at_dex[i]);
+        self.dex_iou[i] -= iou;
+        self.iou_home[i] += iou;
+        let got = (got - iou).min(self.at_dex[i]);
         self.at_dex[i] -= got;
         self.balances[i] += got;
-        if got < amount.0 {
+        if got + iou < amount.0 {
             env::log_str("dex withdraw failed: funds stay at dex, call dex_recover");
         }
     }
@@ -225,8 +248,10 @@ impl Vault {
     /// Anyone may pull parked funds home from ref. Resyncs at_dex from ref first: a dead hop leaves it naming the wrong token.
     pub fn dex_recover(&mut self, token: AccountId) {
         let i = self.token_index(&token);
-        require!(self.at_dex.iter().any(|a| *a > 0), "nothing at dex");
-        self.lock(Op::Recover, GAS_OP);
+        require!(self.at_dex.iter().chain(&self.dex_iou).any(|a| *a > 0), "nothing at dex");
+        if !self.lock(Op::Recover, GAS_OP) {
+            return;
+        }
         ext_ref::ext(self.dex.clone())
             .with_static_gas(GAS_VIEW)
             .get_deposits(env::current_account_id())
@@ -244,7 +269,46 @@ impl Vault {
             self.op = None;
             return env::log_str("dex recover: get_deposits failed, retry");
         };
-        self.at_dex = self.whitelist.iter().map(|t| d.get(t).map_or(0, |a| a.0)).collect();
-        self.dex_withdraw(i, self.at_dex[i]);
+        for k in 0..self.whitelist.len() {
+            // ref holds pool + ious; a pool shortfall may have come home already, so park it for reconcile
+            let pool = d.get(&self.whitelist[k]).map_or(0, |a| a.0).saturating_sub(self.dex_iou[k]);
+            self.suspense[k] += self.at_dex[k].saturating_sub(pool);
+            self.at_dex[k] = pool;
+        }
+        self.dex_synced = true;
+        self.dex_withdraw(i, self.at_dex[i] + self.dex_iou[i]);
+    }
+
+    /// Anyone: credits suspense back to the pool, but only what the token says we hold beyond the ledger.
+    pub fn reconcile(&mut self, token: AccountId) {
+        let i = self.token_index(&token);
+        require!(self.suspense[i] > 0, "nothing in suspense");
+        if !self.lock(Op::Recover, GAS_RECONCILE) {
+            return;
+        }
+        ext_ft::ext(token)
+            .with_static_gas(GAS_VIEW)
+            .ft_balance_of(env::current_account_id())
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_ON_BALANCE).on_reconcile(i, env::block_height(), self.op_id))
+            .detach();
+    }
+
+    #[private]
+    pub fn on_reconcile(&mut self, i: usize, since: u64, id: u64) {
+        if self.stale(id) {
+            return;
+        }
+        self.op = None;
+        let Some(chain) = result_u128() else { return env::log_str("reconcile: balance read failed, retry") };
+        // an ft_transfer_call refund in flight shows in the balance but is not ours
+        if self.inbound_block + 3 >= since {
+            return env::log_str("reconcile: transfer raced the read, retry");
+        }
+        let held = self.balances[i] + self.out[i] + self.iou_home[i];
+        let credit = self.suspense[i].min(chain.saturating_sub(held));
+        self.suspense[i] -= credit;
+        self.balances[i] += credit;
+        let token = self.whitelist[i].clone();
+        self.emit("reconciled", json!({"token": token, "amount": U128(credit)}));
     }
 }

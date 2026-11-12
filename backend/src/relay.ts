@@ -149,6 +149,30 @@ const b64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
 let busy = false; // one report in flight per isolate; a racing one dies on its nonce anyway
 const decimalsOf = new Map<string, number>(); // ft decimals never change
 
+const MAX_JUMP = 0.2;
+const JUMP_ROUNDS = 3;
+const last = new Map<string, number>(); // asset -> last reported usd per raw unit
+const strikes = new Map<string, number>();
+
+// steady holds a >20% move until it repeats 3 rounds, so one bad source tick can't misprice vaults.
+// shortcut: per-isolate memory, a fresh isolate trusts its first round; persist in DO storage if that matters.
+export const resetSteady = () => (last.clear(), strikes.clear()); // tests
+
+export function steady(prices: { asset_id: string; price: Price }[]): boolean {
+  let ok = true;
+  for (const { asset_id, price } of prices) {
+    const v = Number(price.multiplier) / 10 ** price.decimals;
+    const prev = last.get(asset_id);
+    if (prev !== undefined && Math.abs(v / prev - 1) > MAX_JUMP && (strikes.get(asset_id) ?? 0) + 1 < JUMP_ROUNDS) {
+      strikes.set(asset_id, (strikes.get(asset_id) ?? 0) + 1);
+      ok = false;
+    }
+  }
+  if (ok) for (const { asset_id, price } of prices) last.set(asset_id, Number(price.multiplier) / 10 ** price.decimals), strikes.delete(asset_id);
+  return ok;
+}
+
+
 // relay runs one round. Returns what it did, for logs and tests; never the key.
 export async function relay(env: Env): Promise<string> {
   if (!env.PRICE_MAP || !env.PRICE_ORACLE || !env.ORACLE_REPORTER) return "off";
@@ -157,7 +181,7 @@ export async function relay(env: Env): Promise<string> {
   try {
     const map = JSON.parse(env.PRICE_MAP) as Record<string, Ids>;
     const key = await parseKey(env.ORACLE_REPORTER);
-    const up = new Upstream(4 + Object.keys(map).length);
+    const up = new Upstream(5 + Object.keys(map).length);
     const testnet = new Rpc(env.TESTNET_RPC_URL, env.FASTNEAR_API_KEY);
     for (const t of Object.keys(map)) {
       if (decimalsOf.has(t)) continue;
@@ -168,17 +192,21 @@ export async function relay(env: Env): Promise<string> {
       if (!Number.isInteger(d) || d < 0 || d > 30) throw new Error(`${t}: bad ft decimals`);
       decimalsOf.set(t, d);
     }
-    // one call covers every token (coingecko free tier); Upstream bounds time and size
-    const src: keyof Ids = env.HERMES_API_KEY ? "pyth" : "coingecko";
-    const ids = [...new Set(Object.values(map).map((i) => encodeURIComponent(String(i?.[src]))))];
+    // pyth when keyed, else (or when pyth is down/stale) coingecko; one call per source covers every token
     const now = Date.now() / 1000;
-    const quotes = src === "pyth"
-      ? fromPyth(((await up.json(`${env.HERMES_URL}/v2/updates/price/latest?${ids.map((i) => `ids%5B%5D=${i}`).join("&")}&parsed=true`, {
-        headers: { authorization: `Bearer ${env.HERMES_API_KEY}` },
-      })) as { parsed?: Feed[] }).parsed ?? [], now)
-      : fromCoingecko((await up.json(`${env.COINGECKO_URL}/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd&include_last_updated_at=true&precision=full`)) as Parameters<typeof fromCoingecko>[0], now);
-    const prices = mapPrices(map, src, quotes, Object.fromEntries(decimalsOf));
+    const read = async (src: keyof Ids) => {
+      const ids = [...new Set(Object.values(map).map((i) => encodeURIComponent(String(i?.[src]))))];
+      const quotes = src === "pyth"
+        ? fromPyth(((await up.json(`${env.HERMES_URL}/v2/updates/price/latest?${ids.map((i) => `ids%5B%5D=${i}`).join("&")}&parsed=true`, {
+          headers: { authorization: `Bearer ${env.HERMES_API_KEY}` },
+        })) as { parsed?: Feed[] }).parsed ?? [], now)
+        : fromCoingecko((await up.json(`${env.COINGECKO_URL}/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd&include_last_updated_at=true&precision=full`)) as Parameters<typeof fromCoingecko>[0], now);
+      return mapPrices(map, src, quotes, Object.fromEntries(decimalsOf));
+    };
+    let prices = env.HERMES_API_KEY ? await read("pyth").catch(() => null) : null;
+    prices ??= await read("coingecko");
     if (!prices) return "stale";
+    if (!steady(prices)) return "jump held";
     const ak = await testnet.call<{ nonce: number; block_hash: string }>(up, "query", {
       request_type: "view_access_key", finality: "final", account_id: key.account, public_key: `ed25519:${b58encode(key.pub)}`,
     });

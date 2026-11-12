@@ -16,6 +16,7 @@ const CODE_KEY: &[u8] = b"code";
 const VAULT_BUFFER: NearToken = NearToken::from_near(3);
 /// sputnik deploys its ~540KB dao code per dao (5.4 NEAR storage, seen on testnet)
 const DAO_DEPOSIT: NearToken = NearToken::from_near(6);
+/// vault registers itself on each token from this; same as vault trade::FT_REG
 const FT_REG: NearToken = NearToken::from_micronear(1250);
 /// vault init pays ref storage from this; same as vault trade::DEX_STORAGE
 const DEX_STORAGE: NearToken = NearToken::from_millinear(50);
@@ -29,12 +30,13 @@ const MAX_TOKENS: usize = 8;
 /// sputnik create gets this plus all unused gas
 const GAS_DAO: Gas = Gas::from_tgas(100);
 /// on_dao and every hop after it
-const GAS_CHAIN: Gas = Gas::from_tgas(140);
+const GAS_CHAIN: Gas = Gas::from_tgas(155);
 const GAS_VIEW: Gas = Gas::from_tgas(5);
-const GAS_CHECK: Gas = Gas::from_tgas(130);
-/// init + its ref storage_deposit/register_tokens batch
-const GAS_INIT: Gas = Gas::from_tgas(45);
-const GAS_REG: Gas = Gas::from_tgas(5);
+/// deploy prepays ~71 Mgas per wasm byte (~30 Tgas at 426KB); `new` takes what is left by weight
+const GAS_CHECK: Gas = Gas::from_tgas(145);
+/// init + its ref batch (20) + one 3 Tgas self-registration per token (GAS_INIT_TOKEN)
+const GAS_INIT: Gas = Gas::from_tgas(35);
+const GAS_INIT_TOKEN: Gas = Gas::from_tgas(4);
 const GAS_CB: Gas = Gas::from_tgas(10);
 
 #[near(serializers = [borsh, json])]
@@ -223,18 +225,16 @@ impl Factory {
         }
         let vault = self.pakts.get(&name).expect("pakt").vault.clone();
         let code = env::storage_read(CODE_KEY).unwrap_or_else(|| VAULT_WASM.to_vec());
-        let vault_cost = need.saturating_sub(DAO_DEPOSIT).saturating_sub(regs_and_row(whitelist.len()));
+        // vault keeps the FT_REG part: its init registers itself on every token
+        let vault_cost = need.saturating_sub(DAO_DEPOSIT).saturating_sub(row());
+        let init_gas = GAS_INIT.saturating_add(GAS_INIT_TOKEN.saturating_mul(whitelist.len() as u64));
         // one batch: nobody can init first; no access keys, so vault code is fixed
-        let mut p = Promise::new(vault.clone())
+        Promise::new(vault.clone())
             .create_account()
             .transfer(vault_cost)
             .deploy_contract(code)
-            .function_call("new", init, NearToken::from_yoctonear(0), GAS_INIT);
-        let reg = json!({"account_id": vault, "registration_only": true}).to_string();
-        for t in whitelist {
-            p = p.and(Promise::new(t).function_call("storage_deposit", reg.clone(), FT_REG, GAS_REG));
-        }
-        p.then(Self::ext(env::current_account_id()).with_static_gas(GAS_CB).on_create(name, payer, vault_cost, join_mode))
+            .function_call_weight("new", init.into_bytes(), NearToken::from_yoctonear(0), init_gas, GasWeight(1))
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CB).on_create(name, payer, vault_cost, join_mode))
             .into()
     }
 
@@ -299,7 +299,11 @@ fn check_config(c: &Config) {
 }
 
 fn regs_and_row(tokens: usize) -> NearToken {
-    FT_REG.saturating_mul(tokens as u128).saturating_add(env::storage_byte_cost().saturating_mul(ROW_BYTES))
+    FT_REG.saturating_mul(tokens as u128).saturating_add(row())
+}
+
+fn row() -> NearToken {
+    env::storage_byte_cost().saturating_mul(ROW_BYTES)
 }
 
 #[cfg(test)]

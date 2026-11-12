@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { b58decode, b58encode, decimal, fromCoingecko, fromPyth, mapPrices, relay, toOracle, type Feed } from "../src/relay";
+import { b58decode, b58encode, decimal, fromCoingecko, fromPyth, mapPrices, relay, resetSteady, steady, toOracle, type Feed } from "../src/relay";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => (vi.restoreAllMocks(), resetSteady()));
 
 // pyth feed ids checked against hermes /v2/price_feeds; BTC/USD is e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43
 const USDC = "eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a";
@@ -139,10 +139,20 @@ describe("relay", () => {
     expect(text).toContain(`{"prices":[{"asset_id":"tusdc.owner.testnet","price":{"multiplier":"99994982","decimals":14}}`);
   });
 
-  it("skips stale feeds without signing", async () => {
+  it("stale pyth falls back to coingecko", async () => {
     const { result, calls } = await run([feed(USDC, "99994982"), feed(NEAR, "188428353", "1000", 120)]);
-    expect(result).toBe("stale");
-    expect(calls.map((c) => c.method)).toEqual(["hermes"]); // decimals cached from the last round
+    expect(result).toBe("reported 2");
+    expect(calls.map((c) => c.method)).toEqual(["hermes", "coingecko", "query", "send_tx"]); // decimals cached from the last round
+  });
+
+  it("holds a >20% jump until it repeats 3 rounds", () => {
+    const p = (m: string) => [{ asset_id: "t", price: { multiplier: m, decimals: 0 } }];
+    expect(steady(p("100"))).toBe(true);
+    expect(steady(p("10"))).toBe(false);
+    expect(steady(p("101"))).toBe(true); // glitch gone: back to normal, strikes reset
+    expect(steady(p("10"))).toBe(false);
+    expect(steady(p("10"))).toBe(false);
+    expect(steady(p("10"))).toBe(true); // a real move lands on the 3rd round
   });
 
   it("falls back to one keyless coingecko call without a hermes key", async () => {
