@@ -12,9 +12,10 @@ type Props = {
   profile: Profile;
   /** set = own profile, shows edit controls */
   onEdit?: () => void;
+  editLabel?: string;
 };
 
-export function ProfileHeader({ profile: p, onEdit }: Props) {
+export function ProfileHeader({ profile: p, onEdit, editLabel }: Props) {
   const share = () => navigator.clipboard.writeText(location.href).catch(() => {});
 
   return (
@@ -24,7 +25,7 @@ export function ProfileHeader({ profile: p, onEdit }: Props) {
         style={p.cover ? { backgroundImage: `url(${p.cover})` } : undefined}
       >
         {onEdit && (
-          <button type="button" aria-label="Edit cover" onClick={onEdit} className="absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-lg bg-panel-2 hover:bg-border">
+          <button type="button" aria-label={editLabel ?? "Edit cover"} onClick={onEdit} className="absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-lg bg-panel-2 hover:bg-border">
             <PencilIcon className="size-3.5" />
           </button>
         )}
@@ -69,7 +70,7 @@ export function ProfileHeader({ profile: p, onEdit }: Props) {
           </button>
           {onEdit && (
             <button type="button" onClick={onEdit} className="h-8 rounded-lg border bg-panel px-3 text-sm font-bold hover:bg-panel-2">
-              Edit profile
+              {editLabel ?? "Edit profile"}
             </button>
           )}
         </div>

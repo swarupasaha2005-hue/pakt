@@ -10,6 +10,7 @@ import { pakts } from "@/lib/mock/pakts";
 import { positions } from "@/lib/mock/positions";
 import type { Token } from "@/lib/mock/types";
 import { MAX_SLIPPAGE, tradeError } from "@/lib/trade";
+import { useMockSession } from "@/components/session/MockSessionProvider";
 
 const SLIPPAGES = [0.5, 1, 3, 5];
 const CHIPS = [10, 50, 100];
@@ -28,6 +29,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 
 /** Buy/Sell for Solo or a pakt you trade for; tradeError mirrors the vault rules */
 export function TradePanel({ token }: { token: Token }) {
+  const { connected, requestConnect } = useMockSession();
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [paktId, setPaktId] = useState("");
   const [amount, setAmount] = useState(useSearchParams().get("amount") ?? "");
@@ -141,15 +143,19 @@ export function TradePanel({ token }: { token: Token }) {
         </label>
       </div>
 
-      <Button
-        size="lg"
-        variant={side === "buy" ? "up" : "secondary"}
-        disabled={!!error || !usdAmount}
-        onClick={submit}
-        className={`w-full ${error ? "disabled:text-down!" : ""}`}
-      >
-        {error ?? (usdAmount ? `${verb} ${token.symbol}` : "Enter amount")}
-      </Button>
+      {connected ? (
+        <Button
+          size="lg"
+          variant={side === "buy" ? "up" : "secondary"}
+          disabled={!!error || !usdAmount}
+          onClick={submit}
+          className={`w-full ${error ? "disabled:text-down!" : ""}`}
+        >
+          {error ?? (usdAmount ? `${verb} ${token.symbol}` : "Enter amount")}
+        </Button>
+      ) : (
+        <Button size="lg" variant="primary" onClick={requestConnect} className="w-full">Connect to trade</Button>
+      )}
       {sent && <p className="text-center text-xs text-up">{sent}</p>}
 
       {!token.allowed && (

@@ -7,20 +7,26 @@ type Props = {
   value: number;
   pnl7d: number;
   open: boolean;
+  connected: boolean;
   onLeave: () => void;
   onDeposit: () => void;
+  onConnect: () => void;
 };
 
-export function ShareCard({ share, value, pnl7d, open, onLeave, onDeposit }: Props) {
+export function ShareCard({ share, value, pnl7d, open, connected, onLeave, onDeposit, onConnect }: Props) {
   if (share === null) {
     return (
       <section className="border-b p-4">
-        {open ? (
+        {!open ? (
+          <p className="text-center text-xs text-text-2">Invite only. Ask a member for the link.</p>
+        ) : !connected ? (
+          <Button variant="primary" size="lg" className="w-full" onClick={onConnect}>
+            Connect to join
+          </Button>
+        ) : (
           <Button variant="primary" size="lg" className="w-full" onClick={onDeposit}>
             Join pakt
           </Button>
-        ) : (
-          <p className="text-center text-xs text-text-2">Invite only. Ask a member for the link.</p>
         )}
       </section>
     );

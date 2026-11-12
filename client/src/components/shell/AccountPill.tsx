@@ -9,11 +9,12 @@ import { Pct } from "@/components/ui/Pct";
 import { Toggle } from "@/components/ui/Toggle";
 import { usd } from "@/lib/format";
 import { me } from "@/lib/mock/me";
+import { useMockSession } from "@/components/session/MockSessionProvider";
 
 const row = `${menuItem} h-9`;
 const icon = "size-4 shrink-0";
 
-// shortcut: manage/settings/transfers/support/log out are visual only until those flows exist
+// Keep menu stubs.
 const VISUAL = [
   { label: "Manage account", Icon: GearIcon },
   { label: "Settings", Icon: SlidersIcon },
@@ -21,6 +22,7 @@ const VISUAL = [
 ] as const;
 
 export function AccountPill() {
+  const { disconnect } = useMockSession();
   const [open, setOpen] = useState(false);
   const [blur, setBlur] = useState(false);
   const close = () => setOpen(false);
@@ -69,7 +71,7 @@ export function AccountPill() {
       <button type="button" onClick={close} className={row}>
         <MailIcon className={icon} /> Contact support
       </button>
-      <button type="button" onClick={close} className={`${row} text-down`}>
+      <button type="button" onClick={() => { close(); disconnect(); }} className={`${row} text-down`}>
         <LogOutIcon className={icon} /> Log out
       </button>
     </Dropdown>

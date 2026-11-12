@@ -1,9 +1,8 @@
 import { Suspense } from "react";
-import { AccountPill } from "./AccountPill";
-import { CashPill } from "./CashPill";
 import { DiscoverLink } from "./DiscoverLink";
 import { Logo } from "./Logo";
 import { Search } from "./Search";
+import { SessionActions } from "./SessionActions";
 
 export function TopBar() {
   return (
@@ -16,10 +15,7 @@ export function TopBar() {
         </Suspense>
       </div>
       <Search />
-      <div className="flex justify-end gap-2.5">
-        <CashPill />
-        <AccountPill />
-      </div>
+      <SessionActions />
     </header>
   );
 }

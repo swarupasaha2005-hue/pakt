@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/Button";
 import { feeSplit, PLATFORM_FEE } from "@/lib/fees";
 import { signed, usd } from "@/lib/format";
 
-type Props = { profit: number; fee: number; onSettle: () => void };
+type Props = { profit: number; fee: number; connected: boolean; onSettle: () => void; onConnect: () => void };
 
 /** live split of profit above the high-water mark */
-export function SettlementCard({ profit, fee, onSettle }: Props) {
+export function SettlementCard({ profit, fee, connected, onSettle, onConnect }: Props) {
   const split = feeSplit(profit, fee);
   const rows = [
     [`Trader (${fee}%)`, split.trader],
@@ -33,9 +33,11 @@ export function SettlementCard({ profit, fee, onSettle }: Props) {
           <p className="text-xs text-text-3">Below the high-water mark, no fees.</p>
         )}
       </dl>
-      <Button className="mt-3 w-full" onClick={onSettle}>
-        Settle now
-      </Button>
+      {connected ? (
+        <Button className="mt-3 w-full" onClick={onSettle}>Settle now</Button>
+      ) : (
+        <Button variant="primary" className="mt-3 w-full" onClick={onConnect}>Connect to settle</Button>
+      )}
     </section>
   );
 }
