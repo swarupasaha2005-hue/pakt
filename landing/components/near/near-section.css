@@ -1,0 +1,76 @@
+.near-section {
+  --near-mark-size: 300px;
+  --near-center: 42svh;
+  --near-size: min(var(--near-mark-size), 35svh);
+  position: relative;
+  height: 100svh;
+  background: var(--light-surface);
+}
+.near-section[data-enhanced="true"] { height: 200svh; }
+.near-stage { position: sticky; top: 0; height: 100svh; overflow: clip; }
+.near-stage__logo {
+  position: absolute;
+  left: 50%;
+  top: max(var(--near-center), calc(var(--near-nav-height, 90px) + 24px + var(--near-size) / 2));
+  width: var(--near-size);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+.near-stage__logo img, .near-transition-face--near img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.near-copy { position: absolute; top: 66svh; left: 50%; width: min(100% - 40px, 1050px); transform: translateX(-50%); text-align: center; }
+.near-label { margin: 0; color: var(--teal); font-size: 15px; font-weight: 550; line-height: 1.3; letter-spacing: .06em; text-transform: uppercase; }
+.near-title { margin: clamp(20px, 3.6svh, 34px) 0 0; color: var(--charcoal); font-size: clamp(44px, min(5.6vw, 9svh), 100px); font-weight: 650; line-height: .94; letter-spacing: -.06em; }
+.near-title span { display: block; }
+.near-description { max-width: 590px; margin: clamp(16px, 2.6svh, 24px) auto 0; color: var(--charcoal); opacity: .7; font-size: 15px; line-height: 1.6; }
+.near-pixels { position: absolute; inset: 0; pointer-events: none; }
+.near-pixel-cluster { position: absolute; display: flex; flex-direction: column; gap: 7px; }
+.near-pixel-cluster i { display: block; width: 6px; height: 6px; background: var(--pixel-color); }
+.near-transition-logo { display: none; position: fixed; z-index: 5; top: 0; left: 0; visibility: hidden; pointer-events: none; perspective: 1100px; transform-origin: center; will-change: transform; }
+.near-transition-rotor { position: absolute; inset: 0; transform-style: preserve-3d; }
+.near-transition-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.near-transition-face--pakt { transform: rotateY(calc(var(--near-flip, 0) * -75deg)); opacity: calc(1 - var(--near-blend, 0)); }
+.near-transition-face--near { transform: rotateY(calc((1 - var(--near-flip, 0)) * 75deg)); opacity: var(--near-blend, 0); }
+.near-transition-face--pakt .brand-mark { width: 100%; height: 100%; }
+.near-transition-scan { position: absolute; z-index: 2; inset: 0; overflow: hidden; border-radius: 26%; }
+.near-transition-scan > .scan-window { inset: auto; top: 50%; left: 50%; width: var(--scan-frame-width); height: var(--scan-frame-height); transform: translate(-50%, -50%); }
+@media (min-width: 1800px) {
+  .near-section { --near-mark-size: 380px; }
+  .near-label { font-size: 21px; }
+  .near-title { font-size: min(110px, 9svh); margin-top: min(40px, 3.6svh); }
+  .near-description { font-size: 17px; max-width: 660px; }
+  .near-pixel-cluster i { width: 8px; height: 8px; }
+}
+@media (max-width: 1050px) {
+  .near-section { --near-mark-size: 272px; }
+}
+@media (max-width: 760px) {
+  .near-section { --near-mark-size: 214px; }
+  .near-section { --near-center: 38svh; }
+  .near-copy { top: 61svh; width: calc(100% - 32px); }
+  .near-label { font-size: 12px; }
+  .near-title { margin-top: 24px; font-size: clamp(35px, 6.1vw, 46px); }
+  .near-description { margin-top: 20px; font-size: 13px; max-width: 360px; line-height: 1.6; }
+  .near-pixel-cluster { gap: 5px; }
+  .near-pixel-cluster i { width: 4px; height: 4px; }
+  .near-pixel-cluster:nth-child(even) { display: none; }
+}
+@media (max-height: 700px) {
+  .near-section { --near-center: 35svh; }
+  .near-copy { top: 61svh; }
+  .near-label { font-size: 12px; }
+  .near-title { margin-top: 20px; font-size: clamp(32px, 7svh, 64px); }
+  .near-description { margin-top: 16px; font-size: 12px; max-width: 520px; }
+}
+@media (max-height: 500px) {
+  .near-label { font-size: 11px; }
+  .near-title { margin-top: 14px; font-size: 30px; }
+  .near-description { margin-top: 12px; font-size: 11px; line-height: 1.5; }
+}
+@media (max-height: 500px) and (min-width: 760px) {
+  .near-section { --near-mark-size: 18svh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .near-section[data-enhanced="true"] { height: 100svh; }
+  .near-stage { position: relative; }
+  .near-transition-logo { display: none; }
+}
