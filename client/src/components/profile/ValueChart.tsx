@@ -30,7 +30,7 @@ export function ValueChart({ profile }: { profile: Profile }) {
     <section aria-label="Portfolio value">
       <div className="flex items-start justify-between">
         <div>
-          <p data-balance className="text-[32px] leading-10 font-medium">
+          <p data-balance className="text-[30px] leading-[30px] font-medium">
             {whole}
             {cents && <span className="text-text-2">.{cents}</span>}
           </p>

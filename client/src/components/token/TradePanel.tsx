@@ -19,7 +19,7 @@ const select = "h-7 appearance-none rounded-lg border bg-panel-2 pr-7 pl-2.5 tex
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="flex items-center justify-between text-sm">
       <span className="text-text-2">{label}</span>
       <span>{children}</span>
     </div>
@@ -83,7 +83,7 @@ export function TradePanel({ token }: { token: Token }) {
       </label>
 
       <label className="flex h-[69px] items-center justify-between rounded-xl bg-panel-2 px-4">
-        <span className="flex items-center text-[32px] font-medium">
+        <span className="flex items-center text-[30px] leading-9 font-medium">
           $
           <input
             inputMode="decimal"
@@ -91,7 +91,7 @@ export function TradePanel({ token }: { token: Token }) {
             aria-label="Amount in USD"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-            className="w-32 bg-transparent outline-none placeholder:text-text"
+            className="w-32 bg-transparent outline-none placeholder:text-text-3"
           />
         </span>
         <span className="flex flex-col items-end text-xs leading-5 whitespace-nowrap text-text-2">
@@ -104,11 +104,11 @@ export function TradePanel({ token }: { token: Token }) {
 
       <div className="grid grid-cols-4 gap-2">
         {CHIPS.map((c) => (
-          <Button key={c} size="sm" onClick={() => setAmount(String(c))}>
+          <Button key={c} size="sm" className="h-9 text-sm" onClick={() => setAmount(String(c))}>
             ${c}
           </Button>
         ))}
-        <Button size="sm" disabled={max <= 0} onClick={() => setAmount(String(max))}>
+        <Button size="sm" className="h-9 text-sm" disabled={max <= 0} onClick={() => setAmount(String(max))}>
           Max
         </Button>
       </div>
