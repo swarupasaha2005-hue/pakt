@@ -58,6 +58,19 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--teal); outline-
 .brand-mark--hero { width: 300px; filter: drop-shadow(0 10px 13px rgb(18 89 78 / .08)); }
 .scan-window { position: absolute; z-index: 2; inset: 0; overflow: hidden; }
 .scan-beam { position: absolute; inset-block: 0; left: 0; width: 42%; opacity: 0; background: linear-gradient(90deg, transparent, rgb(141 232 191 / .18) 16%, rgb(141 232 191 / .34) 54%, rgb(141 232 191 / .16) 88%, transparent); mix-blend-mode: multiply; will-change: transform, opacity; animation: pakt-scan 4s linear infinite; }
+.scan-beam {
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent), repeating-conic-gradient(rgb(0 0 0 / .55) 0% 25%, transparent 0% 50%);
+  mask-size: 100% 100%, 4px 4px;
+  mask-composite: add;
+}
+.scan-beam::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgb(18 89 78 / .2) .55px, transparent .85px);
+  background-size: 4px 4px;
+  opacity: .6;
+}
 @keyframes pakt-scan {
   0% { transform: translateX(-110%); opacity: 0; }
   2% { transform: translateX(-110%); opacity: 1; }
