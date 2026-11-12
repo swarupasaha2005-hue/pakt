@@ -13,7 +13,15 @@ export function NearSection() {
     <section ref={section} className="near-section" aria-labelledby="near-title">
       <div className="near-stage">
         <PixelField />
-        <div ref={settled} className="near-stage__logo"><NearMark /></div>
+        <div ref={settled} className="near-stage__logo">
+          <NearMark />
+          <div className="near-loop" aria-hidden="true">
+            <div className="near-loop-rotor">
+              <div className="near-loop-face near-loop-face--near"><NearMark decorative /></div>
+              <div className="near-loop-face near-loop-face--pakt"><BrandMark prominent decorative /></div>
+            </div>
+          </div>
+        </div>
         <div className="near-copy">
           <p ref={label} className="near-label">Designed for NEAR</p>
           <h2 ref={headline} id="near-title" className="near-title"><span>One vault.</span><span>Shared decisions.</span></h2>
