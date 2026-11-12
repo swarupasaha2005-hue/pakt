@@ -1,4 +1,4 @@
-// Price relay: Pyth Hermes (when HERMES_API_KEY is set), else keyless Coinbase, else keyless CoinGecko -> report_prices on our testnet oracle, once a minute.
+// Price relay: keyless Coinbase, else Pyth Hermes (when HERMES_API_KEY is set), else keyless CoinGecko -> report_prices on our testnet oracle, once a minute.
 // No-op unless PRICE_MAP, PRICE_ORACLE and the ORACLE_REPORTER secret are all set.
 import { Rpc, Upstream } from "./chain";
 
@@ -208,9 +208,9 @@ export async function relay(env: Env): Promise<string> {
         : fromCoingecko((await up.json(`${env.COINGECKO_URL}/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd&include_last_updated_at=true&precision=full`, { headers: UA })) as Parameters<typeof fromCoingecko>[0], now);
       return mapPrices(map, src, quotes, Object.fromEntries(decimalsOf));
     };
-    let prices = env.HERMES_API_KEY ? await read("pyth").catch((e) => (console.warn(JSON.stringify({ msg: "pyth failed", err: String(e) })), null)) : null;
-    // coinbase before coingecko: coingecko 429s cloudflare's shared ips
-    if (!prices && Object.values(map).every((i) => i?.coinbase)) prices = await read("coinbase").catch((e) => (console.warn(JSON.stringify({ msg: "coinbase failed", err: String(e) })), null));
+    // coinbase first: free and reliable from workers; coingecko last, it 429s cloudflare's shared ips
+    let prices = Object.values(map).every((i) => i?.coinbase) ? await read("coinbase").catch((e) => (console.warn(JSON.stringify({ msg: "coinbase failed", err: String(e) })), null)) : null;
+    if (!prices && env.HERMES_API_KEY) prices = await read("pyth").catch((e) => (console.warn(JSON.stringify({ msg: "pyth failed", err: String(e) })), null));
     prices ??= await read("coingecko");
     if (!prices) return "stale";
     if (!steady(prices)) return "jump held";
