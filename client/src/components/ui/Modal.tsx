@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { CloseIcon } from "./icons";
 
 type Props = {
@@ -9,10 +10,12 @@ type Props = {
   onClose?: () => void;
   label: string;
   children: ReactNode;
+  /** card width class, default 412px */
+  width?: string;
 };
 
 /** centered 412px card, round ✕ floating above its top-right corner */
-export function Modal({ open, onClose, label, children }: Props) {
+export function Modal({ open, onClose, label, children, width = "w-[412px]" }: Props) {
   useEffect(() => {
     if (!open || !onClose) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -20,14 +23,15 @@ export function Modal({ open, onClose, label, children }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-black/70 py-14" onClick={onClose}>
+  if (!open || typeof document === "undefined") return null;
+  // portal: a transformed ancestor (e.g. the sliding left panel) would trap position:fixed
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex justify-center animate-fade-in overflow-y-auto bg-black/70 py-14" onClick={onClose}>
       <div
         role="dialog"
         aria-modal
         aria-label={label}
-        className="relative my-auto w-[412px] max-w-[calc(100vw-32px)] rounded-xl border bg-panel p-4"
+        className={`relative my-auto ${width} max-w-[calc(100vw-32px)] rounded-xl border bg-panel p-4`}
         onClick={(e) => e.stopPropagation()}
       >
         {onClose && (
@@ -42,6 +46,7 @@ export function Modal({ open, onClose, label, children }: Props) {
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

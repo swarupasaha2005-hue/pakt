@@ -3,73 +3,66 @@
 import { useState } from "react";
 import { Row } from "@/components/left/Row";
 import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/Badge";
 import { SortIcon } from "@/components/ui/icons";
-import { Pct } from "@/components/ui/Pct";
-import { Segmented } from "@/components/ui/Segmented";
-import { signed } from "@/lib/format";
-import type { Holding } from "@/lib/mock/holdings";
-import { tokens } from "@/lib/mock/tokens";
-import { ChipGroup } from "./ChipGroup";
+import { signed, usd } from "@/lib/format";
+import type { Position } from "@/lib/profile/load";
 
-const STATUS = ["Open", "Closed"] as const;
-const KINDS = ["All", "Solo", "Pakts"] as const;
+/** profit vs usd paid in; trader fee shares cost nothing, so they count as profit */
+function Pnl({ value, cost }: { value: number | null; cost: number | null }) {
+  if (value === null || cost === null) return <span className="text-text-2">—</span>;
+  const pnl = value - cost;
+  const tone = Math.abs(pnl) < 0.005 ? "text-text-2" : pnl > 0 ? "text-up" : "text-down";
+  return (
+    <span className={tone}>
+      {signed(pnl)}
+      {cost > 0 && ` (${((pnl / cost) * 100).toFixed(2)}%)`}
+    </span>
+  );
+}
 
 type Props = {
-  account: string;
-  /** solo holdings (owner = account) and holdings of related pakts, newest first */
-  holdings: Holding[];
+  /** pakts where the account holds shares, newest first */
+  positions: Position[];
   title: string;
 };
 
-export function PositionsCard({ account, holdings, title }: Props) {
-  const [status, setStatus] = useState<(typeof STATUS)[number]>("Open");
-  const [kind, setKind] = useState<(typeof KINDS)[number]>("All");
-  const [sort, setSort] = useState<"Recent" | "PnL">("Recent");
-
-  const rows = holdings
-    .filter((p) => p.open === (status === "Open"))
-    .filter((p) => kind === "All" || (kind === "Solo") === (p.owner === account))
-    .toSorted((a, b) => (sort === "PnL" ? b.pnl - a.pnl : 0));
+export function PositionsCard({ positions, title }: Props) {
+  const [sort, setSort] = useState<"Recent" | "Value">("Recent");
+  const rows = sort === "Value" ? positions.toSorted((a, b) => (b.value ?? 0) - (a.value ?? 0)) : positions;
 
   return (
     <section className="overflow-hidden rounded-xl border">
       <div className="flex h-[43px] items-center justify-between bg-panel pr-2 pl-2.5">
         <h2 className="text-base">{title}</h2>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSort(sort === "Recent" ? "PnL" : "Recent")}
-            className="flex items-center gap-1 text-sm text-text-2 hover:text-text"
-          >
-            <SortIcon className="size-3.5" /> {sort}
-          </button>
-          <ChipGroup options={STATUS} value={status} onChange={setStatus} />
-        </div>
+        <button
+          type="button"
+          onClick={() => setSort(sort === "Recent" ? "Value" : "Recent")}
+          className="flex items-center gap-1 text-sm text-text-2 hover:text-text"
+        >
+          <SortIcon className="size-3.5" /> {sort}
+        </button>
       </div>
-      <Segmented options={KINDS} value={kind} onChange={setKind} className="p-2.5" />
-      <div className="flex justify-between border-b px-3 pb-1.5 text-xs text-text-2">
-        <span>Token</span>
-        <span>PnL</span>
+      <div className="flex justify-between border-b px-3 pt-2.5 pb-1.5 text-xs text-text-2">
+        <span>Pakt</span>
+        <span>Value · P/L</span>
       </div>
       {rows.length === 0 ? (
-        <p className="py-6 text-center text-sm text-text-2">No {status.toLowerCase()} holdings</p>
+        <p className="py-6 text-center text-sm text-text-2">No holdings</p>
       ) : (
         <ul className="p-1">
-          {rows.map((p) => {
-            const t = tokens.find((t) => t.symbol === p.symbol);
-            return (
-              <li key={p.id}>
-                <Row
-                  href={`/token/${p.symbol}`}
-                  avatar={<Avatar name={p.symbol} src={t?.logo} size={32} />}
-                  title={p.symbol}
-                  subtitle={`${p.amount.toLocaleString("en-US")} · ${p.owner === account ? "Solo" : p.owner}`}
-                  value={<span className={p.pnl < 0 ? "text-down" : "text-up"}>{signed(p.pnl)}</span>}
-                  change={<Pct value={p.pnlPct} />}
-                />
-              </li>
-            );
-          })}
+          {rows.map((p) => (
+            <li key={p.vault}>
+              <Row
+                href={`/pakt/${p.name}`}
+                avatar={<Avatar name={p.name} size={32} />}
+                title={<>{p.name}{p.member ? <Badge tone="neutral">Member</Badge> : <Badge tone="neutral">Fee shares</Badge>}</>}
+                subtitle={`Joined ${new Date(p.joinedMs).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                value={p.value === null ? "--" : usd(p.value)}
+                change={<Pnl value={p.value} cost={p.cost} />}
+              />
+            </li>
+          ))}
         </ul>
       )}
     </section>

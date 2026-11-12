@@ -5,6 +5,7 @@ interface __BaseEnv_Env {
 	DB: D1Database;
 	API_LIMIT: RateLimit;
 	STREAM_LIMIT: RateLimit;
+	FAUCET_LIMIT: RateLimit;
 	PAKT_FACTORY: string;
 	NEARDATA_URL: string;
 	NEAR_RPC_URL: string;

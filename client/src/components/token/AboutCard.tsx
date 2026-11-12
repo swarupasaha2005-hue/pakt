@@ -1,43 +1,82 @@
-import { Pct } from "@/components/ui/Pct";
-import { compact } from "@/lib/format";
-import { changeIn, TIMEFRAMES } from "@/lib/mock/timeframes";
-import { flow } from "@/lib/mock/trades";
-import type { Token } from "@/lib/mock/types";
+import type { ReactNode } from "react";
+import { ORACLE, type TokenInfo } from "@/lib/config";
+import { ago } from "@/lib/format";
+import { tokenAmount } from "@/lib/home/data";
+import type { PriceData } from "@/lib/near/contracts";
+import { addressUrl, NAMES, WINDOWS, type Pool, type Stats } from "@/lib/token/data";
 
-function Split({ left, right, a, b }: { left: string; right: string; a: number; b: number }) {
+type Props = {
+  token: TokenInfo;
+  /** null = base token, no pool; undefined while loading */
+  pool: Pool | null | undefined;
+  poolError: boolean;
+  oracle?: PriceData;
+  now: number;
+  stats?: Stats | null;
+};
+
+function Item({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-sm">
-        <span>{left}</span>
-        <span>{right}</span>
-      </div>
-      <div className="flex gap-1">
-        <span className="h-1 rounded-full bg-up" style={{ flexGrow: a }} />
-        <span className="h-1 rounded-full bg-down" style={{ flexGrow: b }} />
-      </div>
+    <div className="flex justify-between gap-3 text-sm">
+      <dt className="text-text-2">{label}</dt>
+      <dd className="min-w-0 truncate text-right">{children}</dd>
     </div>
   );
 }
 
-export function AboutCard({ token: t }: { token: Token }) {
-  const f = flow(t);
+const link = (id: string) => (
+  <a href={addressUrl(id)} target="_blank" rel="noreferrer" className="text-accent hover:underline">
+    {id}
+  </a>
+);
+
+export function AboutCard({ token: t, pool, poolError, oracle, now, stats }: Props) {
+  const fresh = oracle?.prices.find((p) => p.asset_id === t.id)?.price;
+  // oracle timestamp is ns
+  const updated = oracle ? Math.max(0, Math.round((now - Number(oracle.timestamp) / 1e6) / 1000)) : null;
   return (
     <section className="space-y-4 border-b p-4">
       <div>
-        <h2 className="text-lg font-medium">About {t.symbol}</h2>
-        <p className="text-xs text-text-2">{t.name} · {t.allowed ? "on the Pakt whitelist" : "not on the Pakt whitelist"}</p>
+        <h2 className="text-base font-medium">About {t.symbol}</h2>
+        <p className="text-xs text-text-2">{NAMES[t.symbol] ?? t.symbol} · on the Pakt whitelist</p>
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
-        {TIMEFRAMES.map((tf) => (
-          <div key={tf} className="flex flex-col items-center rounded-lg bg-panel-2 py-1.5 text-xs">
-            <span className="text-text-2 uppercase">{tf}</span>
-            <Pct value={changeIn(t, tf)} />
-          </div>
-        ))}
-      </div>
-      <Split left={`${f.buys.toLocaleString("en-US")} buys`} right={`${f.sells.toLocaleString("en-US")} sells`} a={f.buys} b={f.sells} />
-      <Split left={`${compact(f.buyVol)} vol.`} right={`${compact(f.sellVol)} vol.`} a={f.buyVol} b={f.sellVol} />
-      <Split left={`${f.buyers.toLocaleString("en-US")} buyers`} right={`${f.sellers.toLocaleString("en-US")} sellers`} a={f.buyers} b={f.sellers} />
+      {stats && (
+        <div className="grid grid-cols-4 gap-1.5">
+          {(Object.keys(WINDOWS) as (keyof typeof WINDOWS)[]).map((w) => {
+            const c = stats.change[w];
+            return (
+              <div key={w} className="flex h-12 flex-col items-center justify-center rounded-lg border text-xs">
+                <span className="text-text-2">{w}</span>
+                {c === null ? <span className="text-text-3">—</span> : <span className={c < 0 ? "text-down" : "text-up"}>{c < 0 ? "▾" : "▴"} {Math.abs(c).toFixed(2)}%</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <dl className="space-y-2">
+        <Item label="Decimals">{t.decimals}</Item>
+        <Item label="Contract">{link(t.id)}</Item>
+        <Item label="Ref pool">{t.pool === null ? <span className="text-text-3">base token</span> : `#${t.pool}`}</Item>
+        {t.pool !== null && (
+          <Item label="Reserves">
+            {poolError ? (
+              <span className="text-text-3">unavailable</span>
+            ) : pool ? (
+              <span className="flex flex-col">
+                {pool.token_account_ids.map((id, i) => (
+                  <span key={id}>{tokenAmount(id, pool.amounts[i])}</span>
+                ))}
+              </span>
+            ) : (
+              "…"
+            )}
+          </Item>
+        )}
+        <Item label="Oracle">{link(ORACLE)}</Item>
+        <Item label="Oracle price">
+          {!oracle ? "…" : fresh ? `updated ${ago(updated!)} ago` : <span className="text-down">stale</span>}
+        </Item>
+      </dl>
     </section>
   );
 }

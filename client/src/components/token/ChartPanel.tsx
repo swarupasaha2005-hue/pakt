@@ -1,44 +1,51 @@
 "use client";
 
-import { useState } from "react";
-import { Tabs } from "@/components/ui/Tabs";
-import { RANGES, type ChartRange } from "@/lib/mock/candles";
-import { following } from "@/lib/mock/following";
-import { me } from "@/lib/mock/me";
-import { trades } from "@/lib/mock/trades";
-import type { Token } from "@/lib/mock/types";
+import { useEffect, useState } from "react";
+import { Segmented } from "@/components/ui/Segmented";
+import { Skeleton } from "@/components/ui/Skeleton";
+import type { TokenInfo } from "@/lib/config";
+import { FRAMES, loadCandles, PAIRS, type Candle, type Frame } from "@/lib/token/data";
 import { Chart } from "./Chart";
-import { Checkbox } from "./Checkbox";
 
-/** chart + range chips + overlay filters for the trade bubbles */
-export function ChartPanel({ token }: { token: Token }) {
-  const [range, setRange] = useState<ChartRange>("1D");
-  const [mine, setMine] = useState(true);
-  const [paktTrades, setPaktTrades] = useState(true);
-  const [followingOnly, setFollowingOnly] = useState(false);
-  const [minSize, setMinSize] = useState(false);
+const REFRESH_MS = 30_000;
 
-  const shown = trades(token).filter((t) => {
-    const isMine = t.account === me.account;
-    if (isMine) return mine;
-    if (t.paktId && !paktTrades) return false;
-    if (followingOnly && !following.includes(t.account)) return false;
-    return !minSize || t.usd > 100;
-  });
+/** mainnet candles of the pair the test token tracks; refreshed every 30s */
+export function ChartPanel({ token }: { token: TokenInfo }) {
+  const pair = PAIRS[token.symbol];
+  const [frame, setFrame] = useState<Frame>("1h");
+  const [got, setGot] = useState<{ key: string; candles: Candle[] | null }>({ key: "", candles: null });
+  const key = `${pair}/${frame}`;
+
+  useEffect(() => {
+    if (!pair) return;
+    let live = true;
+    const load = () => loadCandles(pair, frame).then((candles) => live && setGot({ key, candles }), () => live && setGot((g) => (g.key === key ? g : { key, candles: null }))); // keep last good candles on a failed refresh
+    load();
+    const t = setInterval(load, REFRESH_MS);
+    return () => { live = false; clearInterval(t); };
+  }, [pair, frame, key]);
+
+  const candles = got.key === key ? got.candles : undefined; // undefined = loading, null = failed
 
   return (
     <section className="shrink-0">
-      <Chart token={token} range={range} trades={shown} />
-      <div className="flex h-10 items-center border-b text-sm">
-        <Tabs items={RANGES.map((r) => ({ id: r, label: r }))} value={range} onChange={setRange} className="h-[18px] [&>button]:border-l-0 [&>button]:px-2.5" />
-      </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5">
-        <span className="border-r pr-4 text-xs font-medium">Chart overlays</span>
-        <Checkbox label="My trades" checked={mine} onChange={setMine} />
-        <Checkbox label="Pakt trades" checked={paktTrades} onChange={setPaktTrades} />
-        <Checkbox label="Following only" checked={followingOnly} onChange={setFollowingOnly} />
-        <Checkbox label="Min size (>$100)" checked={minSize} onChange={setMinSize} />
+      {!pair ? (
+        <Empty>No mainnet price for {token.symbol}</Empty>
+      ) : candles === undefined ? (
+        <Skeleton className="h-[360px]" />
+      ) : !candles?.length ? (
+        <Empty>Could not load {pair} candles</Empty>
+      ) : (
+        <Chart key={key} label={`${pair} · ${frame}`} candles={candles} />
+      )}
+      <div className="flex h-10 items-center justify-between gap-2 border-b px-2 text-xs text-text-2">
+        <Segmented pill options={Object.keys(FRAMES) as Frame[]} value={frame} onChange={setFrame} />
+        <span className="truncate">mainnet {pair ?? "-"} spot candles · Coinbase</span>
       </div>
     </section>
   );
 }
+
+const Empty = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex h-[360px] items-center justify-center text-sm text-text-2">{children}</div>
+);

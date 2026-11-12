@@ -32,7 +32,7 @@ export function Dropdown({ open, onOpenChange, trigger, className, children }: P
     <div ref={ref} className="relative">
       {trigger}
       {open && (
-        <div className={`absolute top-full z-40 mt-1 rounded-xl border bg-panel shadow-2xl shadow-black/60 ${className}`}>
+        <div className={`absolute top-full z-40 mt-1 animate-fade-in rounded-xl border bg-panel shadow-2xl shadow-black/60 ${className}`}>
           {children}
         </div>
       )}

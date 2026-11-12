@@ -27,12 +27,6 @@ export const CloseIcon = (p: SVGProps<SVGSVGElement>) => (
 export const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M20 6 9 17l-5-5" /></Icon>
 );
-export const SplitBottomIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 12h18M7 16h10" /></Icon>
-);
-export const SplitRightIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M12 4v16" /></Icon>
-);
 export const PencilIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z" /></Icon>
 );
@@ -72,20 +66,8 @@ export const UserIcon = (p: SVGProps<SVGSVGElement>) => (
 export const ShieldIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></Icon>
 );
-export const GearIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" /></Icon>
-);
-export const SlidersIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><path d="M4 6h8M16 6h4M4 12h2M10 12h10M4 18h10M18 18h2" /><circle cx="14" cy="6" r="2" /><circle cx="8" cy="12" r="2" /><circle cx="16" cy="18" r="2" /></Icon>
-);
-export const HistoryIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5M12 7v5l4 2" /></Icon>
-);
 export const EyeOffIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M10.7 5.1A10 10 0 0 1 22 12a13 13 0 0 1-2.2 3M6.6 6.6A13 13 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M2 2l20 20" /></Icon>
-);
-export const MailIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 6L2 7" /></Icon>
 );
 export const LogOutIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></Icon>
@@ -119,4 +101,7 @@ export const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
 );
 export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></Icon>
+);
+export const InfoIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></Icon>
 );

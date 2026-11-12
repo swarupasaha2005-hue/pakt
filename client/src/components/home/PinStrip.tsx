@@ -1,33 +1,46 @@
+"use client";
+
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { Pct } from "@/components/ui/Pct";
+import { StarIcon } from "@/components/ui/icons";
 import { usd } from "@/lib/format";
-import { tokens } from "@/lib/mock/tokens";
+import { loadTokens, useLoad, useStarred } from "@/lib/home/data";
 
-/** starred tokens as chips; empty = hint card */
-export function PinStrip({ starred }: { starred: string[] }) {
-  if (!starred.length) {
-    return (
-      <div className="flex h-16 w-fit shrink-0 items-center rounded-xl border px-3 text-sm text-text-3">
-        Star assets to pin them here
-      </div>
-    );
+/** starred tokens as 176x66 cards; a hint box when none are starred */
+export function PinStrip() {
+  const { data } = useLoad(loadTokens, []);
+  const { starred, toggle } = useStarred();
+  const pinned = data?.filter((t) => starred.includes(t.symbol)) ?? [];
+
+  if (!pinned.length) {
+    return <div data-tour="pins" className="flex h-[66px] w-fit shrink-0 items-center rounded-xl border px-3 text-sm text-text-3">Star assets to pin them here</div>;
   }
   return (
-    <div className="flex h-16 shrink-0 gap-2 overflow-x-auto">
-      {tokens
-        .filter((t) => starred.includes(t.symbol))
-        .map((t) => (
-          <Link key={t.symbol} href={`/token/${t.symbol}`} className="flex shrink-0 items-center gap-2.5 rounded-xl border px-3 hover:bg-panel-2">
-            <Avatar name={t.symbol} src={t.logo} size={32} />
-            <span className="flex flex-col">
-              <span className="text-sm leading-5">{t.symbol}</span>
-              <span className="flex gap-1.5 text-xs leading-5 text-text-2">
-                {usd(t.price)} <Pct value={t.change24h} />
-              </span>
+    <section data-tour="pins" className="flex h-[66px] shrink-0 gap-3 overflow-x-auto">
+      {pinned.map((t) => (
+        <Link key={t.id} href={`/token/${t.symbol}`} className="flex w-44 shrink-0 animate-fade-in flex-col gap-2 rounded-xl border p-2 text-sm font-medium hover:bg-panel-2">
+          <span className="flex h-5 items-center justify-between gap-2">
+            <Avatar name={t.symbol} src={t.logo} size={20} />
+            <span className="flex items-center gap-1 text-text-2">
+              {t.symbol}
+              <button
+                type="button"
+                aria-label={`Unstar ${t.symbol}`}
+                onClick={(e) => {
+                  e.preventDefault(); // inside the card link
+                  toggle(t.symbol);
+                }}
+              >
+                <StarIcon className="size-3 fill-current text-yellow-400" />
+              </button>
             </span>
-          </Link>
-        ))}
-    </div>
+          </span>
+          <span className="flex h-5 items-center justify-between gap-2">
+            <span>{t.price === null ? "—" : usd(t.price)}</span>
+            <span className="text-text-3">{t.price === null ? "stale" : "oracle"}</span>
+          </span>
+        </Link>
+      ))}
+    </section>
   );
 }

@@ -1,118 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import { Segmented } from "@/components/ui/Segmented";
-import { tokens } from "@/lib/mock/tokens";
-import { changeIn, TIMEFRAMES, volumeIn, type Timeframe } from "@/lib/mock/timeframes";
-import type { Token } from "@/lib/mock/types";
-import { FilterSelect } from "./FilterSelect";
-import { SortHeader } from "./SortHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { loadPakts, loadTokens, useLoad, usdNum, type PaktInfo } from "@/lib/home/data";
+import { usdE6 } from "@/lib/near/contracts";
 import { TokenRow } from "./TokenRow";
 
-const CHIPS = ["Trending", "Allowed", "Most held", "Watchlist"] as const;
-type Chip = (typeof CHIPS)[number];
-
-const SORTS = {
-  mcap: (t: Token) => t.mcap,
-  change: (t: Token, tf: Timeframe) => changeIn(t, tf),
-  volume: (t: Token, tf: Timeframe) => volumeIn(t, tf),
-  holders: (t: Token) => t.holders,
-};
-type SortKey = keyof typeof SORTS;
-
-const ROWS = [10, 25, 100].map((n) => ({ value: n, label: String(n) }));
-const MCAP = [
-  { value: 0, label: "Market cap" },
-  { value: 1e7, label: "MC > $10M" },
-  { value: 1e9, label: "MC > $1B" },
-  { value: 1e11, label: "MC > $100B" },
-];
-const VOLUME = [
-  { value: 0, label: "Volume" },
-  { value: 1e6, label: "Vol > $1M" },
-  { value: 1e8, label: "Vol > $100M" },
-];
-
-function byChip(chip: Chip, starred: string[]) {
-  if (chip === "Trending") return tokens.toSorted((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h));
-  if (chip === "Allowed") return tokens.filter((t) => t.allowed);
-  if (chip === "Most held") return tokens.toSorted((a, b) => b.holders - a.holders);
-  return tokens.filter((t) => starred.includes(t.symbol));
+/** usd each pakt holds of a token (balances + at_dex), largest first */
+export function heldIn(token: string, list: PaktInfo[]) {
+  return list
+    .map((p) => {
+      const i = p.state.balances.findIndex(([t]) => t === token);
+      if (i < 0) return { pakt: p, value: 0 };
+      const raw = BigInt(p.state.balances[i][1]) + BigInt(p.state.at_dex[i]?.[1] ?? "0");
+      const v = usdE6(p.prices, token, raw.toString());
+      return { pakt: p, value: v === null ? 0 : usdNum(v) };
+    })
+    .filter((h) => h.value > 0)
+    .toSorted((a, b) => b.value - a.value);
 }
 
-type Props = { starred: string[]; onStar: (symbol: string) => void };
-
-export function TokensTable({ starred, onStar }: Props) {
-  const [chip, setChip] = useState<Chip>("Trending");
-  const [rows, setRows] = useState(100);
-  const [tf, setTf] = useState<Timeframe>("24h");
-  const [minMcap, setMinMcap] = useState(0);
-  const [minVolume, setMinVolume] = useState(0);
-  const [sort, setSort] = useState<{ key: SortKey; desc: boolean } | null>(null);
-  const [quickBuy, setQuickBuy] = useState("100");
-
-  const list = byChip(chip, starred)
-    .filter((t) => t.mcap >= minMcap && volumeIn(t, tf) >= minVolume)
-    .toSorted((a, b) => (sort ? (SORTS[sort.key](b, tf) - SORTS[sort.key](a, tf)) * (sort.desc ? 1 : -1) : 0))
-    .slice(0, rows);
-
-  const header = (key: SortKey, label: string) => (
-    <SortHeader
-      label={label}
-      active={sort?.key === key}
-      desc={sort?.key !== key || sort.desc}
-      onClick={() => setSort({ key, desc: sort?.key === key ? !sort.desc : true })}
-    />
-  );
+export function TokensTable() {
+  const tokens = useLoad(loadTokens, []);
+  const pakts = useLoad(loadPakts, []);
 
   return (
-    <>
-      <div className="shrink-0 space-y-2.5 border-b px-3 py-2.5">
-        <Segmented options={CHIPS} value={chip} onChange={setChip} />
-        <div className="flex flex-wrap gap-2">
-          <FilterSelect label="Rows" value={rows} options={ROWS} onChange={setRows} />
-          <Segmented options={TIMEFRAMES} value={tf} onChange={setTf} className="gap-0.5 rounded-lg border p-px [&>button]:h-[22px] [&>button]:border-0 [&>button[aria-pressed=false]]:text-text-3" />
-          <FilterSelect label="Min market cap" value={minMcap} options={MCAP} onChange={setMinMcap} />
-          <FilterSelect label="Min volume" value={minVolume} options={VOLUME} onChange={setMinVolume} />
+    // the column divider is painted on the scroller so it runs to the bottom, past the last row
+    <div className="min-h-0 flex-1 overflow-auto bg-[linear-gradient(var(--color-border),var(--color-border))] bg-size-[1px_100%] bg-position-[299px_0] bg-no-repeat bg-local">
+      <table className="w-full min-w-[640px] text-left">
+        <thead className="sticky top-0 z-20 bg-panel text-xs text-text-3 [&_th]:font-medium">
+          <tr className="h-8 border-b">
+            <th className="w-[300px] border-r px-3">Token name</th>
+            <th className="px-3">Price</th>
+            <th className="px-3">Held by pakts</th>
+            <th className="px-3">Top pakt</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tokens.data?.map((t) => <TokenRow key={t.id} token={t} held={pakts.data && heldIn(t.id, pakts.data)} />)}
+        </tbody>
+      </table>
+      {!tokens.data && !tokens.error && (
+        <div className="space-y-2 p-3">
+          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}
         </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full min-w-[920px] text-left">
-          <thead className="sticky top-0 z-20 bg-panel text-xs text-text-3 [&_th]:font-medium">
-            <tr className="h-[38px] border-b">
-              <th className="w-[300px] border-r px-3">
-                <span className="flex items-center justify-between">
-                  Token name
-                  <label className="flex items-center gap-1.5">
-                    Quick buy
-                    <span className="flex h-[26px] w-[74px] items-center rounded-lg border px-2 text-base text-text">
-                      $
-                      <input
-                        inputMode="decimal"
-                        aria-label="Quick buy amount"
-                        value={quickBuy}
-                        onChange={(e) => setQuickBuy(e.target.value.replace(/[^\d.]/g, ""))}
-                        className="w-full bg-transparent text-right outline-none"
-                      />
-                    </span>
-                  </label>
-                </span>
-              </th>
-              {header("mcap", "Market cap")}
-              {header("change", `${tf} change`)}
-              {header("volume", `${tf} volume`)}
-              {header("holders", "Holders")}
-              <th className="px-3">Top pakt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((t) => (
-              <TokenRow key={t.symbol} token={t} tf={tf} starred={starred.includes(t.symbol)} onStar={onStar} quickBuy={Number(quickBuy)} />
-            ))}
-          </tbody>
-        </table>
-        {!list.length && <p className="py-10 text-center text-sm text-text-2">{chip === "Watchlist" ? "Star tokens to watch them here" : "No tokens match"}</p>}
-      </div>
-    </>
+      )}
+      {tokens.error && <p className="py-10 text-center text-sm text-text-2">Could not load prices</p>}
+    </div>
   );
 }

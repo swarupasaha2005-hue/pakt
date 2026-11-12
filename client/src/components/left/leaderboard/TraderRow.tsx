@@ -1,50 +1,42 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { AvatarStack } from "@/components/ui/AvatarStack";
-import { signed, wholeUsd } from "@/lib/format";
-import { me } from "@/lib/mock/me";
-import type { Trader } from "@/lib/mock/types";
+import type { LeaderTrader } from "@/lib/api";
+import { compact, signed, wholeUsd } from "@/lib/format";
+import { usdNum } from "@/lib/home/data";
 
 type Props = {
-  trader: Trader;
+  trader: LeaderTrader;
   rank: number;
-  pnl: number;
   /** pakt names they trade for */
   paktNames: string[];
+  /** opens the hire flow; hidden for your own row */
+  onHire?: () => void;
 };
 
-const chip = "inline-flex h-5 w-fit items-center rounded-md px-2 text-xs font-bold transition hover:brightness-125";
-
-export function TraderRow({ trader, rank, pnl, paktNames }: Props) {
-  const [following, setFollowing] = useState(false);
-
+export function TraderRow({ trader, rank, paktNames, onHire }: Props) {
+  const pnl = usdNum(trader.pnl);
   return (
-    <li className="flex h-[57px] items-center gap-3 pl-2">
-      <span className="w-5 text-xs text-text-2">{rank}.</span>
-      <Avatar name={trader.account} />
+    <li className="group relative flex h-14 items-center gap-2.5 rounded-lg px-2 py-1 transition-colors hover:bg-panel-2/60">
+      <span className="w-5 text-xs font-medium text-text-2">{rank}.</span>
+      <Avatar name={trader.trader} />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <Link href={`/profile/${trader.account}`} className="truncate text-sm leading-5 hover:underline">{trader.account}</Link>
-        {trader.openToHire ? (
-          // fee is fixed to the trader's asking fee, no negotiation
-          <Link href={`/pakt/${me.paktIds[0]}?propose=${trader.account}`} className={`${chip} bg-accent-bg text-accent`}>
-            Hire · {trader.askingFee}%
-          </Link>
-        ) : (
-          <button
-            type="button"
-            aria-pressed={following}
-            onClick={() => setFollowing(!following)}
-            className={`${chip} bg-panel-2 ${following ? "text-text" : "text-text-2"}`}
-          >
-            {following ? "Following" : "Follow"}
-          </button>
-        )}
+        <Link href={`/u/${trader.trader}`} className="truncate text-sm leading-5 font-medium after:absolute after:inset-0">{trader.trader}</Link>
+        <span className="text-xs leading-5 text-text-2">
+          {trader.trades} trades · {compact(usdNum(trader.volume))} vol
+        </span>
       </span>
+      {onHire && (
+        <button
+          type="button"
+          onClick={onHire}
+          className="relative z-10 h-7 shrink-0 rounded-lg bg-accent px-2.5 text-xs font-medium text-white hover:brightness-110"
+        >
+          Hire
+        </button>
+      )}
       <span className="flex flex-col items-end gap-1">
-        <span className={`text-sm leading-5 ${pnl < 0 ? "text-down" : "text-up"}`}>{signed(pnl, wholeUsd)}</span>
+        <span className={`text-sm leading-5 font-medium ${pnl < 0 ? "text-down" : "text-up"}`}>{signed(pnl, wholeUsd)}</span>
         <AvatarStack names={paktNames} />
       </span>
     </li>

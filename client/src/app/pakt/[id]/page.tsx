@@ -1,14 +1,17 @@
-import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { PaktView } from "@/components/pakt/PaktView";
-import { pakts } from "@/lib/mock/pakts";
+import Loading from "./loading";
 
-export function generateStaticParams() {
-  return pakts.map((p) => ({ id: p.id }));
+// id = pakt name; params are awaited inside Suspense so unknown names get the shell first
+async function Pakt({ params }: Pick<PageProps<"/pakt/[id]">, "params">) {
+  const { id } = await params;
+  return <PaktView key={id} name={id} />;
 }
 
-export default async function PaktPage({ params }: PageProps<"/pakt/[id]">) {
-  const { id } = await params;
-  const pakt = pakts.find((p) => p.id === id);
-  if (!pakt) notFound();
-  return <PaktView key={pakt.id} initial={pakt} />;
+export default function PaktPage({ params }: PageProps<"/pakt/[id]">) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <Pakt params={params} />
+    </Suspense>
+  );
 }

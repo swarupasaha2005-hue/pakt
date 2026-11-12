@@ -11,12 +11,12 @@ type Props = {
   selected?: boolean;
 };
 
-/** 52px list row: avatar, title/subtitle left, value/change right */
+/** 53px list row: avatar, title/subtitle left, value/change right */
 export function Row({ href, avatar, title, subtitle, value, change, selected }: Props) {
   return (
     <Link
       href={href}
-      className={`flex h-[52px] items-center gap-3 rounded-xl px-2 transition-colors ${selected ? "bg-panel-2" : "hover:bg-panel-2/60"}`}
+      className={`flex h-[53px] items-center gap-3 rounded-lg p-2 transition-colors ${selected ? "bg-panel-2" : "hover:bg-panel-2/60"}`}
     >
       {avatar}
       <span className="flex min-w-0 flex-1 flex-col">

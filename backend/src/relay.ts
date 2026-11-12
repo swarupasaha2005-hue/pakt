@@ -127,7 +127,9 @@ export async function parseKey(s: string): Promise<Key> {
 }
 
 // signedTx is borsh SignedTransaction (Transaction v0) with one FunctionCall; signature is over sha256(tx).
-export async function signedTx(key: Key, nonce: bigint, receiver: string, blockHash: Uint8Array, method: string, args: object): Promise<Uint8Array> {
+export type Call = { method: string; args: object; deposit?: bigint }; // deposit in yocto
+
+export async function signedTx(key: Key, nonce: bigint, receiver: string, blockHash: Uint8Array, calls: Call[]): Promise<Uint8Array> {
   const w = new W();
   w.str(key.account);
   w.uint(0n, 1); // ed25519
@@ -135,12 +137,14 @@ export async function signedTx(key: Key, nonce: bigint, receiver: string, blockH
   w.uint(nonce, 8);
   w.str(receiver);
   w.raw(blockHash);
-  w.uint(1n, 4); // one action
-  w.uint(2n, 1); // FunctionCall
-  w.str(method);
-  w.bytes(enc.encode(JSON.stringify(args)));
-  w.uint(GAS, 8);
-  w.uint(0n, 16); // report_prices takes no deposit
+  w.uint(BigInt(calls.length), 4);
+  for (const c of calls) {
+    w.uint(2n, 1); // FunctionCall
+    w.str(c.method);
+    w.bytes(enc.encode(JSON.stringify(c.args)));
+    w.uint(GAS, 8);
+    w.uint(c.deposit ?? 0n, 16);
+  }
   const tx = Uint8Array.from(w.b);
   const sig = await key.sign(new Uint8Array(await crypto.subtle.digest("SHA-256", tx)));
   return Uint8Array.from([...tx, 0, ...sig]);
@@ -218,7 +222,7 @@ export async function relay(env: Env): Promise<string> {
       request_type: "view_access_key", finality: "final", account_id: key.account, public_key: `ed25519:${b58encode(key.pub)}`,
     });
     if (!Number.isInteger(ak?.nonce)) throw new Error(`no access key ${b58encode(key.pub).slice(0, 8)}… on ${key.account}`); // wrong ORACLE_REPORTER
-    const tx = await signedTx(key, BigInt(ak!.nonce) + 1n, env.PRICE_ORACLE, b58decode(ak!.block_hash), "report_prices", { prices });
+    const tx = await signedTx(key, BigInt(ak!.nonce) + 1n, env.PRICE_ORACLE, b58decode(ak!.block_hash), [{ method: "report_prices", args: { prices } }]);
     const out = await testnet.call<{ status: Record<string, unknown> }>(up, "send_tx", { signed_tx_base64: b64(tx), wait_until: "EXECUTED_OPTIMISTIC" });
     if (!out || "Failure" in out.status) throw new Error(`report_prices failed: ${JSON.stringify(out?.status).slice(0, 300)}`);
     return `reported ${prices.length}`;

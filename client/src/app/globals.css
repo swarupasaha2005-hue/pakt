@@ -35,7 +35,48 @@
   --color-down: var(--down);
   --color-warn-bg: var(--warn-bg);
   --color-pink: var(--pink);
-  --font-sans: var(--font-geist);
+  --font-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.1s ease-out both;
+  --animate-hover-card-in: hover-card-in 150ms ease-out both;
+  --animate-hover-card-out: hover-card-out 150ms ease-in both;
+  --animate-slide-in-left: slide-in-left 150ms ease-out both;
+  --animate-squish: squish 200ms ease-out;
+  --animate-pulse-ring: pulse-ring 2s linear infinite;
+  --animate-flash-up: flash-up 600ms ease-out;
+  --animate-flash-down: flash-down 600ms ease-out;
+  --animate-dash: dash 0.8s linear infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+  }
+  @keyframes hover-card-in {
+    from { opacity: 0; transform: scale(0.96); }
+  }
+  @keyframes hover-card-out {
+    to { opacity: 0; transform: scale(0.96); }
+  }
+  @keyframes slide-in-left {
+    from { opacity: 0; transform: translateX(8px); }
+  }
+  @keyframes squish {
+    40% { transform: scale(0.75); }
+  }
+  /* put on an absolutely-positioned ring behind a status dot */
+  @keyframes pulse-ring {
+    from { opacity: 0.6; transform: scale(1); }
+    to { opacity: 0; transform: scale(2.5); }
+  }
+  @keyframes flash-up {
+    from { color: var(--up); }
+  }
+  @keyframes flash-down {
+    from { color: var(--down); }
+  }
+  /* marching dashes on a stroke-dasharray="6 6" path */
+  @keyframes dash {
+    to { stroke-dashoffset: -12; }
+  }
 }
 
 @layer base {
@@ -65,5 +106,18 @@
   }
   *::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-hover-card-in,
+  .animate-hover-card-out,
+  .animate-slide-in-left,
+  .animate-squish,
+  .animate-pulse-ring,
+  .animate-flash-up,
+  .animate-flash-down {
+    animation: none;
   }
 }

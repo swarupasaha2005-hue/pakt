@@ -4,6 +4,7 @@
 // Deploy: `wrangler d1 create pakt`, paste the id into wrangler.jsonc, `wrangler d1 migrations apply pakt --remote`,
 // `wrangler secret put ADMIN_TOKEN` (and FASTNEAR_API_KEY), then `wrangler deploy`.
 import { BadInput, cacheKey, clientKey, route } from "./api";
+import { faucet } from "./faucet";
 import { relay } from "./relay";
 
 export { Indexer } from "./indexer";
@@ -23,7 +24,7 @@ function finish(res: Response, req: Request, env: Env): Response {
   const origin = req.headers.get("origin");
   if (origin && env.CORS_ORIGINS.split(",").map((s) => s.trim()).includes(origin)) {
     r.headers.set("access-control-allow-origin", origin);
-    r.headers.set("access-control-allow-methods", "GET, OPTIONS");
+    r.headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
     r.headers.set("access-control-allow-headers", "content-type");
   }
   r.headers.append("vary", "origin");
@@ -54,6 +55,11 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
   }
   if (req.method === "OPTIONS") return new Response(null, { status: 204 });
   if (url.pathname === "/admin/start" && req.method === "POST") return adminStart(req, env);
+  if (url.pathname === "/faucet" && req.method === "POST") {
+    if (!(await env.FAUCET_LIMIT.limit({ key: clientKey(req) })).success) return json({ error: "one request per minute" }, 429, { "retry-after": "60" });
+    const d = await faucet(env, url.searchParams.get("account"), clientKey(req)).catch((e) => (console.error(JSON.stringify({ msg: "faucet failed", err: String(e) })), { status: 502, body: { error: "mint failed, try again" } }));
+    return json(d.body, d.status);
+  }
   if (req.method !== "GET") return json({ error: "method not allowed" }, 405, { allow: "GET, OPTIONS" });
   if (stream) return env.INDEXER.getByName("main").fetch(req);
   if (url.pathname === "/healthz") {
