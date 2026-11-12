@@ -151,11 +151,12 @@ describe("relay", () => {
     expect(calls.map((c) => c.method)).toEqual(["hermes", "coingecko", "query", "send_tx"]); // decimals cached from the last round
   });
 
-  it("throttled coingecko falls back to coinbase", async () => {
+  it("tries coinbase before pyth and coingecko", async () => {
     const cb = { "tusdc.owner.testnet": { ...MAP["tusdc.owner.testnet"], coinbase: "USDC-USD" }, "tnear.owner.testnet": { ...MAP["tnear.owner.testnet"], coinbase: "NEAR-USD" } };
-    const { result, calls } = await run([], "", cb, 429);
+    const { result, calls } = await run([], "hk", cb, 429);
     expect(result).toBe("reported 2");
     expect(calls.filter((c) => c.method === "coinbase").map((c) => c.url)).toEqual([`${env.COINBASE_URL}/v2/prices/USDC-USD/spot`, `${env.COINBASE_URL}/v2/prices/NEAR-USD/spot`]);
+    expect(calls.some((c) => c.method === "coingecko" || c.method === "hermes")).toBe(false);
     expect(calls.at(-1)!.method).toBe("send_tx");
   });
 
