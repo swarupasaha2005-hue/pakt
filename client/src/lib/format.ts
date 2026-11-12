@@ -20,5 +20,18 @@ export function usd(n: number) {
 /** $12.4M */
 export const compact = (n: number) => compactUsd.format(n);
 
-/** +$1,240 / -$310 */
-export const signed = (n: number) => `${n < 0 ? "-" : "+"}${usd(Math.abs(n))}`;
+/** +$1,240 / -$310; pass compact for +$1.24K */
+export const signed = (n: number, fmt = usd) => `${n < 0 ? "-" : "+"}${fmt(Math.abs(n))}`;
+
+const compactNum = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+
+/** 8.4K */
+export const count = (n: number) => compactNum.format(n);
+
+/** 25s / 4m / 2h / 3d */
+export function ago(seconds: number) {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3_600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3_600)}h`;
+  return `${Math.floor(seconds / 86_400)}d`;
+}

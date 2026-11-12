@@ -14,7 +14,7 @@ export function Ticker() {
           .filter((t) => TICKER.includes(t.symbol))
           .map((t) => (
             <li key={t.symbol} className="flex items-center gap-1.5">
-              <Avatar name={t.symbol} glyph={t.glyph} color={t.color} size={14} />
+              <Avatar name={t.symbol} src={t.logo} size={14} />
               {usd(t.price)}
               <Pct value={t.change24h} />
             </li>
