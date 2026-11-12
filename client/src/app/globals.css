@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #060510;
+  --panel: #060510;
+  --panel-2: #12111a;
+  --chip: #161522;
+  --border: rgb(203 208 235 / 0.1);
+  --text: #f7f7f7;
+  --text-2: #9899a3;
+  --text-3: #474b52;
+  --accent: #516af6;
+  --accent-bg: rgb(81 106 246 / 0.16);
+  --up: #21c95e;
+  --up-bg: rgb(33 201 94 / 0.2);
+  --down: #ff622e;
+  --warn-bg: rgb(255 98 46 / 0.2);
+  --pink: #e85db0;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-chip: var(--chip);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-bg: var(--accent-bg);
+  --color-up: var(--up);
+  --color-up-bg: var(--up-bg);
+  --color-down: var(--down);
+  --color-warn-bg: var(--warn-bg);
+  --color-pink: var(--pink);
+  --font-sans: var(--font-geist);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* account menu "Blur balances" sets data-blur on <html> */
+[data-blur] [data-balance] {
+  filter: blur(6px);
+}
+
+/* hide scrollbars app-wide; wheel/trackpad/keys still scroll */
+@layer base {
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}

@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["factory", "vault", "mocks/*", "e2e"]
+# e2e is host-only (tokio, sandbox); keep it out of bare wasm builds
+default-members = ["factory", "vault", "mocks/*"]
+
+[workspace.dependencies]
+near-sdk = "5.30.1"
+near-contract-standards = "5.30.1"
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+strip = true
+panic = "abort"
+overflow-checks = true

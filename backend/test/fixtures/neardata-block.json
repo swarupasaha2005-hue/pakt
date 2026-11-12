@@ -1,0 +1,26 @@
+{
+  "block": {"header": {"height": 1000, "timestamp": 1794489970886812651}},
+  "shards": [
+    {"shard_id": 0, "receipt_execution_outcomes": [
+      {"tx_hash": "tx1", "execution_outcome": {"id": "r1", "outcome": {
+        "executor_id": "pakt.testnet", "status": {"SuccessValue": ""},
+        "logs": ["EVENT_JSON:{\"standard\":\"pakt\",\"version\":\"1.0.0\",\"event\":\"pakt_created\",\"data\":[{\"name\":\"alpha\",\"vault\":\"alpha.pakt.testnet\",\"dao\":\"alpha.sputnikv2.testnet\",\"creator\":\"alice.testnet\",\"join_mode\":\"open\"}]}"]}}},
+      {"tx_hash": "tx2", "execution_outcome": {"id": "r2", "outcome": {
+        "executor_id": "alpha.pakt.testnet", "status": {"SuccessReceiptId": "x"},
+        "logs": [
+          "plain text log",
+          "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"a\"}]}",
+          "EVENT_JSON:{not json",
+          "EVENT_JSON:{\"standard\":\"pakt\",\"version\":\"1.0.0\",\"event\":\"trade\",\"data\":[{\"trader\":\"bob.testnet\",\"token_in\":\"usdc.testnet\",\"amount_in\":\"100\",\"token_out\":\"wrap.testnet\",\"amount_out\":\"5\",\"value\":\"100000000\"}]}"
+        ]}}}
+    ]},
+    {"shard_id": 1, "receipt_execution_outcomes": [
+      {"tx_hash": "tx3", "execution_outcome": {"id": "r3", "outcome": {
+        "executor_id": "alpha.pakt.testnet", "status": {"Failure": {"ActionError": {}}},
+        "logs": ["EVENT_JSON:{\"standard\":\"pakt\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"account\":\"carol.testnet\",\"amount\":\"1\",\"shares\":\"1\",\"value\":\"1\"}]}"]}}},
+      {"tx_hash": "tx4", "execution_outcome": {"id": "r4", "outcome": {
+        "executor_id": "evilpakt.testnet", "status": {"SuccessValue": ""},
+        "logs": ["EVENT_JSON:{\"standard\":\"pakt\",\"version\":\"1.0.0\",\"event\":\"deposit\",\"data\":[{\"account\":\"mallory.testnet\",\"amount\":\"1\",\"shares\":\"1\",\"value\":\"1\"}]}"]}}}
+    ]}
+  ]
+}

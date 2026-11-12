@@ -1,0 +1,9 @@
+# local overrides for `wrangler dev`; copy to .dev.vars (gitignored)
+NEAR_RPC_URL=http://localhost:3030
+# e2e sandbox factory; vaults are <name>.<factory>
+PAKT_FACTORY=pakt.test.near
+START_HEIGHT=0
+UPSTREAM_PER_MIN=6000
+CORS_ORIGINS=http://localhost:3000
+FASTNEAR_API_KEY=
+ADMIN_TOKEN=
