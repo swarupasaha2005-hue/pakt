@@ -17,5 +17,19 @@ export function usd(n: number) {
   });
 }
 
+/** $10,783 */
+export const wholeUsd = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
 /** $12.4M */
 export const compact = (n: number) => compactUsd.format(n);
+
+/** 25s / 4m / 2h / 3d */
+export function ago(seconds: number) {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3_600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3_600)}h`;
+  return `${Math.floor(seconds / 86_400)}d`;
+}
+
+/** +$1,240 / -$310; pass compact for +$1.24K */
+export const signed = (n: number, fmt = usd) => `${n < 0 ? "-" : "+"}${fmt(Math.abs(n))}`;
