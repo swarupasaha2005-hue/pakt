@@ -1,64 +1,61 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { DepositModal, WALLET } from "@/components/modals/DepositModal";
-import { EditProfileModal } from "@/components/modals/EditProfileModal";
+import { Suspense, useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { me } from "@/lib/mock/me";
-import type { Holding } from "@/lib/mock/holdings";
-import type { Profile } from "@/lib/mock/profiles";
-import type { FeedEvent, Pakt } from "@/lib/mock/types";
+import { useWallet } from "@/lib/near/wallet";
+import { loadProfile, type ProfileData } from "@/lib/profile/load";
 import { ActivityCard } from "./ActivityCard";
 import { CashCard } from "./CashCard";
-import { OnboardModal } from "./OnboardModal";
 import { PositionsCard } from "./PositionsCard";
 import { ProfileHeader } from "./ProfileHeader";
-import { ValueChart } from "./ValueChart";
 
-type Props = {
-  profile: Profile;
-  holdings: Holding[];
-  pakts: Pakt[];
-  events: FeedEvent[];
-};
+/** undefined = loading, null = no such account */
+export function ProfileView({ account }: { account: string }) {
+  const [data, setData] = useState<ProfileData | null | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  const isMe = useWallet().accountId === account;
 
-export function ProfileView({ profile: initial, holdings, pakts, events }: Props) {
-  const [profile, setProfile] = useState(initial);
-  const [editing, setEditing] = useState(false);
-  const [depositing, setDepositing] = useState(false);
-  const isMe = profile.account === me.account;
+  useEffect(() => {
+    let dead = false;
+    loadProfile(account).then(
+      (d) => !dead && setData(d),
+      (e: Error) => !dead && setError(e.message),
+    );
+    return () => {
+      dead = true;
+    };
+  }, [account]);
+
+  if (data === null)
+    return (
+      <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-20 text-center">
+        <h1 className="text-lg font-medium">Account not found</h1>
+        <p className="text-sm text-text-2">{account} does not exist on chain.</p>
+      </main>
+    );
 
   return (
     <main className="flex min-w-0 flex-1 flex-col overflow-y-auto pb-4">
-      <ProfileHeader profile={profile} onEdit={isMe ? () => setEditing(true) : undefined} />
-      <div className="mt-4 grid grid-cols-2 items-start gap-3">
-        <div className="flex flex-col gap-3">
-          <ValueChart profile={profile} />
-          {isMe && <CashCard cash={me.cash} onDeposit={() => setDepositing(true)} />}
-          <PositionsCard account={profile.account} holdings={holdings} title={isMe ? "Your holdings" : "Positions"} />
+      <ProfileHeader account={account} data={data} />
+      {error ? (
+        <p className="py-6 text-center text-sm text-down">Could not load profile: {error}</p>
+      ) : !data ? (
+        <div className="mt-4 grid grid-cols-2 items-start gap-3">
+          <Skeleton className="h-[200px]" />
+          <Skeleton className="h-[200px]" />
         </div>
-        {/* why: useSearchParams suspends in prerendered routes */}
-        <Suspense fallback={<Skeleton className="h-[101px]" />}>
-          <ActivityCard account={profile.account} events={events} pakts={pakts} />
-        </Suspense>
-      </div>
-
-      {editing && (
-        <EditProfileModal
-          profile={profile}
-          onClose={() => setEditing(false)}
-          onSave={(p) => {
-            setProfile(p);
-            setEditing(false);
-          }}
-        />
+      ) : (
+        <div className="mt-4 grid grid-cols-2 items-start gap-3">
+          <div className="flex flex-col gap-3">
+            <CashCard cash={data.cash} />
+            <PositionsCard positions={data.positions} title={isMe ? "Your holdings" : "Positions"} />
+          </div>
+          {/* why: useSearchParams suspends in prerendered routes */}
+          <Suspense fallback={<Skeleton className="h-[101px]" />}>
+            <ActivityCard account={account} data={data} />
+          </Suspense>
+        </div>
       )}
-      {isMe && (
-        <Suspense>
-          <OnboardModal profile={profile} onSave={setProfile} />
-        </Suspense>
-      )}
-      {depositing && <DepositModal to={WALLET} onClose={() => setDepositing(false)} />}
     </main>
   );
 }

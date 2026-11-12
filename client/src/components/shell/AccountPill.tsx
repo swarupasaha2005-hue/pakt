@@ -5,10 +5,11 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Dropdown, menuItem } from "@/components/ui/Dropdown";
 import { EyeOffIcon, GearIcon, HistoryIcon, LogOutIcon, MailIcon, ShieldIcon, SlidersIcon, UserIcon } from "@/components/ui/icons";
-import { Pct } from "@/components/ui/Pct";
+import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
 import { usd } from "@/lib/format";
-import { me } from "@/lib/mock/me";
+import { useTotal } from "@/lib/home/data";
+import { useWallet } from "@/lib/near/wallet";
 
 const row = `${menuItem} h-9`;
 const icon = "size-4 shrink-0";
@@ -21,6 +22,8 @@ const VISUAL = [
 ] as const;
 
 export function AccountPill() {
+  const { accountId, ready, signIn, signOut } = useWallet();
+  const { cash, inPakts } = useTotal(accountId);
   const [open, setOpen] = useState(false);
   const [blur, setBlur] = useState(false);
   const close = () => setOpen(false);
@@ -28,6 +31,15 @@ export function AccountPill() {
     setBlur(on);
     document.documentElement.toggleAttribute("data-blur", on);
   };
+
+  if (!accountId) {
+    return (
+      <Button variant="primary" size="lg" disabled={!ready} onClick={signIn} className="h-12">
+        {ready ? "Connect wallet" : "Loading…"}
+      </Button>
+    );
+  }
+  const total = cash !== undefined && inPakts !== undefined ? cash + inPakts : undefined;
 
   return (
     <Dropdown
@@ -43,17 +55,17 @@ export function AccountPill() {
           className="flex h-12 items-center gap-6 rounded-xl border bg-panel pr-2 pl-2.5 text-left"
         >
           <span className="flex flex-col">
-            <span data-balance className="text-sm leading-5">{usd(me.total)}</span>
-            <Pct value={me.change24h} className="text-xs leading-5" />
+            <span data-balance className="text-sm leading-5">{total === undefined ? "…" : usd(total)}</span>
+            <span className="max-w-[140px] truncate text-xs leading-5 text-text-2">{accountId}</span>
           </span>
-          <Avatar name={me.account} size={32} />
+          <Avatar name={accountId} size={32} />
         </button>
       }
     >
-      <Link href={`/u/${me.account}`} onClick={close} className={row}>
+      <Link href={`/u/${accountId}`} onClick={close} className={row}>
         <UserIcon className={icon} /> Your profile
       </Link>
-      <Link href={`/u/${me.account}?tab=pakts`} onClick={close} className={row}>
+      <Link href={`/u/${accountId}?tab=pakts`} onClick={close} className={row}>
         <ShieldIcon className={icon} /> Your pakts
       </Link>
       {VISUAL.map(({ label, Icon }) => (
@@ -69,7 +81,7 @@ export function AccountPill() {
       <button type="button" onClick={close} className={row}>
         <MailIcon className={icon} /> Contact support
       </button>
-      <button type="button" onClick={close} className={`${row} text-down`}>
+      <button type="button" onClick={() => { close(); signOut().catch(() => {}); }} className={`${row} text-down`}>
         <LogOutIcon className={icon} /> Log out
       </button>
     </Dropdown>

@@ -7,18 +7,15 @@ import { MarketTable } from "./MarketTable";
 import { PinStrip } from "./PinStrip";
 import { Positions } from "./Positions";
 
-/** §18: pin strip on top, market table + collapsible positions below */
+/** token strip on top, pakts/tokens table + collapsible positions below */
 export function Discover() {
-  const [starred, setStarred] = useState<string[]>([]);
   const [positionsOpen, setPositionsOpen] = useState(true);
-  const toggleStar = (symbol: string) =>
-    setStarred((s) => (s.includes(symbol) ? s.filter((x) => x !== symbol) : [...s, symbol]));
 
   return (
     <main className="flex min-w-0 flex-1 flex-col gap-3">
-      <PinStrip starred={starred} />
+      <PinStrip />
       <div className="flex min-h-0 flex-1 gap-3">
-        <MarketTable starred={starred} onStar={toggleStar} />
+        <MarketTable />
         {positionsOpen ? (
           <RightPanel>
             <Positions onCollapse={() => setPositionsOpen(false)} />

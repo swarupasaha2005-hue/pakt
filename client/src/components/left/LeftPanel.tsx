@@ -8,12 +8,10 @@ import { FeedTab } from "./FeedTab";
 import { LeaderboardTab } from "./LeaderboardTab";
 import { PaktsTab } from "./PaktsTab";
 import { StarredTab } from "./StarredTab";
-import { TokensTab } from "./TokensTab";
 
 const TABS = [
   { id: "alerts", label: <><BellIcon className="size-[18px]" /><span className="sr-only">Alerts</span></>, body: <AlertsTab /> },
   { id: "starred", label: <><StarIcon className="size-[18px]" /><span className="sr-only">Starred</span></>, body: <StarredTab /> },
-  { id: "tokens", label: "Tokens", body: <TokensTab /> },
   { id: "pakts", label: "Pakts", body: <PaktsTab /> },
   { id: "leaderboard", label: "Leaderboard", body: <LeaderboardTab /> },
   { id: "feed", label: "Feed", body: <FeedTab /> },
@@ -24,7 +22,7 @@ type TabId = (typeof TABS)[number]["id"];
 const splitButton = "flex h-[26px] items-center justify-center gap-1.5 rounded-lg border bg-panel-2 text-xs text-text-3";
 
 export function LeftPanel() {
-  const [tab, setTab] = useState<TabId>("tokens");
+  const [tab, setTab] = useState<TabId>("feed");
   const [collapsed, setCollapsed] = useState(false);
 
   if (collapsed) {
