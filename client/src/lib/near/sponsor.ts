@@ -2,7 +2,7 @@
 import { PublicKey } from "@near-js/crypto";
 import { buildDelegateAction, encodeSignedDelegate, type SignedDelegate } from "@near-js/transactions";
 import type { FinalExecutionOutcome, Wallet } from "@near-wallet-selector/core";
-import { API_URL, FACTORY, RPC_URL, token } from "../config";
+import { API_URL, FACTORY, rpcFetch, token } from "../config";
 import type { Tx } from "./contracts";
 
 /** free sponsored txs left; 0 when the sponsor is off or unreachable */
@@ -28,13 +28,14 @@ const b64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
  * Throws NoDelegates only when nothing was sent, so the caller can fall back to a normal send.
  */
 export async function sendSponsored(w: Wallet, accountId: string, publicKey: string, txs: Tx[]): Promise<FinalExecutionOutcome[]> {
-  const res = await fetch(RPC_URL, {
+  const res = await rpcFetch({
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: "pakt", method: "query", params: { request_type: "view_access_key", finality: "final", account_id: accountId, public_key: publicKey } }),
-  });
-  const ak = (await res.json()).result as { nonce: number; block_height: number } | undefined;
-  if (!ak) throw new NoDelegates("access key not found");
+  }).catch(() => null);
+  const ak = (await res?.json().catch(() => ({})))?.result as { nonce?: number; block_height?: number } | undefined;
+  // a missing key comes back as result.error; the relayer needs this key on chain, so fall back like a wallet that can't sign
+  if (ak?.nonce === undefined || ak.block_height === undefined) throw Object.assign(new NoDelegates("access key not found"), { walletCant: true });
   // 10.1.4 types leave signDelegateAction out; every wallet module has it, most throw "not supported"
   const sign = (w as unknown as { signDelegateAction: (d: unknown) => Promise<SignedDelegate | [Uint8Array, SignedDelegate]> }).signDelegateAction;
   const signed: SignedDelegate[] = [];

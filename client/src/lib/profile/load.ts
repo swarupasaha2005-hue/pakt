@@ -1,6 +1,6 @@
 // Everything the profile page shows for one account, from the backend and chain views.
 import { accountFeed, pakts, trader, type PaktEvent, type TraderRecord } from "../api";
-import { RPC_URL, TOKENS, type TokenInfo } from "../config";
+import { rpcFetch, TOKENS, type TokenInfo } from "../config";
 import { ftBalanceOf, getHolder, getPrices, getState, sharesValue, usdE6, vaultValue } from "../near/contracts";
 import { costBasis } from "./cost";
 import { e6, paktName } from "./format";
@@ -13,7 +13,7 @@ export type ProfileData = { cash: Cash[]; positions: Position[]; events: PaktEve
 
 /** false only for UNKNOWN_ACCOUNT; other rpc errors throw */
 async function accountExists(account: string) {
-  const res = await fetch(RPC_URL, {
+  const res = await rpcFetch({
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: "pakt", method: "query", params: { request_type: "view_account", finality: "final", account_id: account } }),

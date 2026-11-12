@@ -1,9 +1,9 @@
 import { actionCreators } from "@near-js/transactions";
-import { RPC_URL, SOCIAL } from "./config";
+import { rpcFetch, SOCIAL } from "./config";
 import type { Tx } from "./near/contracts";
 
 export async function accountExists(account: string) {
-  const res = await fetch(RPC_URL, {
+  const res = await rpcFetch({
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: "pakt", method: "query", params: { request_type: "view_account", finality: "final", account_id: account } }),

@@ -7,6 +7,14 @@ export const NETWORK = (process.env.NEXT_PUBLIC_NETWORK || "testnet") as Network
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://pakt-backend.debanjanspider5.workers.dev";
 export const WS_URL = API_URL.replace(/^http/, "ws") + "/stream";
 export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.testnet.fastnear.com";
+export const RPC_BACKUP = process.env.NEXT_PUBLIC_RPC_BACKUP || (NETWORK === "mainnet" ? "https://near.drpc.org" : "https://near-testnet.drpc.org");
+
+/** json-rpc POST to the main rpc; a network error, 429 or 5xx retries once on the backup */
+export async function rpcFetch(init: RequestInit): Promise<Response> {
+  const res = await fetch(RPC_URL, init).catch(() => null);
+  if (res && res.status < 500 && res.status !== 429) return res;
+  return fetch(RPC_BACKUP, init);
+}
 export const FACTORY = process.env.NEXT_PUBLIC_FACTORY || "pakt.pakt-0mxhjh.testnet";
 export const ORACLE = process.env.NEXT_PUBLIC_ORACLE || "oracle.pakt-0mxhjh.testnet";
 export const SPUTNIK = process.env.NEXT_PUBLIC_SPUTNIK || "sputnikv2.testnet";

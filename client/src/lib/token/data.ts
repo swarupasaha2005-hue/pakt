@@ -1,6 +1,6 @@
 // Token page loaders: config lookup, ref pool reserves, trade events and pakt holdings for one token.
 import { feed, type PaktEvent } from "../api";
-import { DEX, RPC_URL, TOKENS } from "../config";
+import { DEX, rpcFetch, TOKENS } from "../config";
 import { usdE6 } from "../near/contracts";
 import { usdNum, type PaktInfo } from "../home/data";
 
@@ -17,7 +17,7 @@ export const addressUrl = (id: string) => `https://testnet.nearblocks.io/address
 export type Pool = { pool_kind: string; token_account_ids: string[]; amounts: string[]; total_fee: number };
 /** ref get_pool view, same rpc call shape as near/contracts view() */
 export async function getPool(poolId: number): Promise<Pool> {
-  const res = await fetch(RPC_URL, {
+  const res = await rpcFetch({
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
