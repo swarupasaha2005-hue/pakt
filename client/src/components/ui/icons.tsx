@@ -57,3 +57,12 @@ export const VolumeIcon = (p: SVGProps<SVGSVGElement>) => (
 export const MuteIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6" /></Icon>
 );
+export const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></Icon>
+);
+export const SortIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="m8 9 4-4 4 4M8 15l4 4 4-4" /></Icon>
+);
+export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></Icon>
+);

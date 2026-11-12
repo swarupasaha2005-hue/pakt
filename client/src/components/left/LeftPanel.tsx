@@ -29,11 +29,14 @@ export function LeftPanel() {
 
   if (collapsed) {
     return (
-      <aside className="flex w-12 shrink-0 justify-center rounded-2xl border bg-panel pt-2.5">
-        <button type="button" aria-label="Expand panel" onClick={() => setCollapsed(false)} className="h-fit text-text-2 hover:text-text">
-          <ChevronsLeftIcon className="size-5 rotate-180" />
-        </button>
-      </aside>
+      <button
+        type="button"
+        aria-label="Expand panel"
+        onClick={() => setCollapsed(false)}
+        className="flex size-[33px] shrink-0 items-center justify-center rounded-lg border bg-panel text-text-2 hover:text-text"
+      >
+        <ChevronsLeftIcon className="size-[18px] rotate-180" />
+      </button>
     );
   }
 
