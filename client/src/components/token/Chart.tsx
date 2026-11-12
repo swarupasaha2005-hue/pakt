@@ -89,7 +89,7 @@ export function Chart({ token, range, trades }: Props) {
   return (
     <div className="relative h-[360px] overflow-hidden">
       <div ref={box} className="size-full" />
-      <p className="pointer-events-none absolute top-1 left-2 z-10 flex gap-2 text-[13px] text-text-2">
+      <p className="pointer-events-none absolute top-1 left-2 z-10 flex gap-2 text-xs text-text-2">
         <span className="text-text">{token.symbol} · {range} · Rhea</span>
         {(["open", "high", "low", "close"] as const).map((k) => (
           <span key={k} className="flex gap-0.5">

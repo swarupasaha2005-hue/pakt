@@ -28,7 +28,7 @@ export function ValueChart({ value, pnl7d, hwm }: Props) {
       <div className="flex items-start justify-between">
         <div>
           <div className="text-[28px] leading-9">{usd(value)}</div>
-          <div className={`text-sm ${change < 0 ? "text-down" : "text-up"}`}>
+          <div className={`text-xs ${change < 0 ? "text-down" : "text-up"}`}>
             {change < 0 ? "▼" : "▲"} {usd(Math.abs(change))} ({Math.abs((change / series[0]) * 100).toFixed(1)}%) <span className="text-text-2">{range}</span>
           </div>
         </div>

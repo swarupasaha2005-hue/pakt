@@ -31,10 +31,10 @@ export function TokenRow({ token: t, tf, starred, onStar, quickBuy }: Props) {
             badge={t.allowed && <CheckIcon className="size-3.5 rounded-full bg-accent p-0.5 text-white" strokeWidth={3} />}
           />
           <span className="flex min-w-0 flex-1 flex-col">
-            <Link href={`/token/${t.symbol}`} className="leading-5 after:absolute after:inset-0">
+            <Link href={`/token/${t.symbol}`} className="leading-6 after:absolute after:inset-0">
               {t.symbol}
             </Link>
-            <span className="flex items-center gap-1.5 text-sm leading-5 text-text-2">
+            <span className="flex items-center gap-1.5 text-xs leading-4 text-text-2">
               <span className="truncate">{t.name}</span>
               <button type="button" aria-label={`Copy ${t.symbol}`} onClick={() => navigator.clipboard.writeText(t.symbol)} className={iconLink}>
                 <CopyIcon className="size-3.5" />
@@ -47,24 +47,24 @@ export function TokenRow({ token: t, tf, starred, onStar, quickBuy }: Props) {
           {t.allowed && quickBuy > 0 && (
             <Link
               href={`/token/${t.symbol}?amount=${quickBuy}`}
-              className="relative z-10 rounded-lg bg-up-bg px-2.5 py-1 text-[13px] font-semibold text-up opacity-0 transition group-hover:opacity-100 focus:opacity-100"
+              className="relative z-10 flex h-6 items-center rounded-md bg-border px-2 text-xs font-bold text-text-3 transition hover:text-text"
             >
-              Buy ${quickBuy}
+              ${quickBuy}
             </Link>
           )}
         </span>
       </td>
       <td className="px-3">{compact(t.mcap)}</td>
-      <td className="px-3">
+      <td className="px-3 text-sm">
         <Pct value={changeIn(t, tf)} />
       </td>
-      <td className="px-3">{compact(volumeIn(t, tf))}</td>
-      <td className="px-3">
+      <td className="px-3 text-sm">{compact(volumeIn(t, tf))}</td>
+      <td className="px-3 text-sm">
         <span className="flex items-start gap-2">
           <UsersIcon className="mt-0.5 size-4 text-text-2" />
           <span className="flex flex-col leading-5">
             {count(t.holders)}
-            <span className="text-sm text-text-3">{paktCount} pakts</span>
+            <span className="text-xs leading-4 text-text-3">{paktCount} pakts</span>
           </span>
         </span>
       </td>
@@ -73,8 +73,8 @@ export function TokenRow({ token: t, tf, starred, onStar, quickBuy }: Props) {
           <span className="flex items-center gap-2">
             <Avatar name={pakt.trader ?? pakt.name} size={20} />
             <span className="flex flex-col leading-5">
-              <span className="text-[15px] font-semibold">{pakt.name}</span>
-              <span className="text-sm text-text-2">{pakt.trader}</span>
+              <span className="text-sm">{pakt.name}</span>
+              <span className="text-xs text-text-2">{pakt.trader}</span>
             </span>
           </span>
         ) : (

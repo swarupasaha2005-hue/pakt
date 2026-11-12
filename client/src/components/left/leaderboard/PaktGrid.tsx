@@ -15,11 +15,11 @@ export function PaktGrid() {
   return (
     <section className="border-b px-3 pb-3">
       <div className="flex h-10 items-center justify-between">
-        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-2 text-base">
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="flex items-center gap-2 text-sm">
           Pakts <Badge>New</Badge>
           <ChevronDownIcon className={`size-4 text-text-2 transition-transform ${open ? "rotate-180" : ""}`} />
         </button>
-        <Link href="/" className="flex items-center gap-0.5 text-sm text-text-2 hover:text-text">
+        <Link href="/" className="flex items-center gap-0.5 text-xs text-text-2 hover:text-text">
           View all <ChevronRightIcon className="size-4" />
         </Link>
       </div>

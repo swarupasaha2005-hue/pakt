@@ -21,7 +21,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-const splitButton = "flex h-[26px] items-center justify-center gap-1.5 rounded-lg border text-sm text-text-3";
+const splitButton = "flex h-[26px] items-center justify-center gap-1.5 rounded-lg border bg-panel-2 text-xs text-text-3";
 
 export function LeftPanel() {
   const [tab, setTab] = useState<TabId>("tokens");
@@ -41,8 +41,8 @@ export function LeftPanel() {
   }
 
   return (
-    <aside className="flex w-[366px] shrink-0 flex-col overflow-hidden rounded-2xl border bg-panel">
-      <div className="flex h-[39px] shrink-0 items-center justify-between pr-2 pl-1.5 text-[15px]">
+    <aside className="flex w-[366px] shrink-0 flex-col overflow-hidden rounded-xl border bg-panel">
+      <div className="flex h-9 shrink-0 items-center justify-between bg-panel-2 pr-2 pl-1.5 text-sm">
         <Tabs items={[...TABS]} value={tab} onChange={setTab} className="h-[18px]" />
         <button type="button" aria-label="Collapse panel" onClick={() => setCollapsed(true)} className="text-text-2 hover:text-text">
           <ChevronsLeftIcon className="size-5" />

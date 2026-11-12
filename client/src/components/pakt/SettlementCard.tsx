@@ -14,10 +14,10 @@ export function SettlementCard({ profit, fee, onSettle }: Props) {
   ] as const;
   return (
     <section className="border-b p-4">
-      <h2 className="flex justify-between text-xs font-semibold tracking-wide text-text-2 uppercase">
+      <h2 className="flex justify-between text-xs font-bold tracking-wide text-text-2 uppercase">
         Next settlement <span className="text-text">2d 4h</span>
       </h2>
-      <dl className="mt-3 space-y-2 text-sm">
+      <dl className="mt-3 space-y-2 text-xs">
         <div className="flex justify-between">
           <dt className="text-text-2">Profit above HWM</dt>
           <dd className={profit > 0 ? "text-up" : "text-text-2"}>{profit > 0 ? signed(profit) : "$0.00"}</dd>
@@ -30,7 +30,7 @@ export function SettlementCard({ profit, fee, onSettle }: Props) {
             </div>
           ))
         ) : (
-          <p className="text-[13px] text-text-3">Below the high-water mark, no fees.</p>
+          <p className="text-xs text-text-3">Below the high-water mark, no fees.</p>
         )}
       </dl>
       <Button className="mt-3 w-full" onClick={onSettle}>

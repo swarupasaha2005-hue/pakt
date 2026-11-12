@@ -112,7 +112,7 @@ export function PaktView({ initial }: { initial: Pakt }) {
         <PaktHeader pakt={pakt} trades={trades.length} />
         {offer && <OfferCard offer={offer} pakt={pakt} onAccept={accept} onDecline={() => setOffer(null)} />}
         {paused && pakt.trader && (
-          <div role="alert" className="flex items-center gap-3 rounded-xl bg-warn-bg px-4 py-3 text-sm text-down">
+          <div role="alert" className="flex items-center gap-3 rounded-xl bg-warn-bg px-4 py-3 text-xs text-down">
             <span className="flex-1">
               Trading paused: vault down {pakt.stopLoss}%. Vote to resume or fire.
             </span>
@@ -139,7 +139,7 @@ export function PaktView({ initial }: { initial: Pakt }) {
             ]}
             value={tab}
             onChange={setTab}
-            className="mb-2 h-[18px] text-[15px]"
+            className="mb-2 h-[18px] text-sm"
           />
           {body}
         </section>

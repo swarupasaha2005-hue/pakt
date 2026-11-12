@@ -15,7 +15,7 @@ export function FilterSelect({ label, value, options, onChange }: Props) {
         aria-label={label}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-[26px] appearance-none rounded-lg border bg-panel pr-6 pl-2.5 text-[13px] font-semibold text-text hover:bg-panel-2"
+        className="h-[26px] appearance-none rounded-lg border bg-panel pr-6 pl-2.5 text-xs font-bold text-text hover:bg-panel-2"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

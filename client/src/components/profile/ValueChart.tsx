@@ -34,7 +34,7 @@ export function ValueChart({ profile }: { profile: Profile }) {
             {whole}
             {cents && <span className="text-text-2">.{cents}</span>}
           </p>
-          <p className="flex items-center gap-1.5 text-[15px] text-text-2">
+          <p className="flex items-center gap-1.5 text-sm text-text-2">
             {start > 0 ? <Pct value={change} /> : "--"} {range.toLowerCase()}
           </p>
         </div>

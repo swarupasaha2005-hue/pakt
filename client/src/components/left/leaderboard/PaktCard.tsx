@@ -12,8 +12,8 @@ export function PaktCard({ pakt, rank }: { pakt: Pakt; rank: number }) {
         badge={rank <= 3 && <span className="flex size-full items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white">{rank}</span>}
       />
       <span className="flex min-w-0 flex-col">
-        <span className="truncate text-base leading-5">{pakt.name}</span>
-        <span className={`text-sm leading-5 ${pakt.pnl7d < 0 ? "text-down" : "text-up"}`}>{signed(pakt.pnl7d, compact)}</span>
+        <span className="truncate text-sm leading-5">{pakt.name}</span>
+        <span className={`text-xs leading-5 ${pakt.pnl7d < 0 ? "text-down" : "text-up"}`}>{signed(pakt.pnl7d, compact)}</span>
       </span>
     </Link>
   );

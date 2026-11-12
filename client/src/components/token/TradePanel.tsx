@@ -15,11 +15,11 @@ const SLIPPAGES = [0.5, 1, 3, 5];
 const CHIPS = [10, 50, 100];
 const myPakts = pakts.filter((p) => p.trader === me.account);
 
-const select = "h-7 appearance-none rounded-lg border bg-panel-2 pr-7 pl-2.5 text-[13px] font-semibold text-text";
+const select = "h-7 appearance-none rounded-lg border bg-panel-2 pr-7 pl-2.5 text-xs font-bold text-text";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex items-center justify-between text-[13px]">
+    <div className="flex items-center justify-between text-xs">
       <span className="text-text-2">{label}</span>
       <span>{children}</span>
     </div>
@@ -58,7 +58,7 @@ export function TradePanel({ token }: { token: Token }) {
             type="button"
             aria-pressed={side === s}
             onClick={() => setSide(s)}
-            className={`h-9 rounded-xl text-base font-semibold capitalize transition-colors ${
+            className={`h-9 rounded-xl text-base font-bold capitalize transition-colors ${
               side !== s ? "bg-panel-2 text-text-2 hover:text-text" : s === "buy" ? "bg-up-bg text-up" : "bg-down/15 text-down"
             }`}
           >
@@ -67,7 +67,7 @@ export function TradePanel({ token }: { token: Token }) {
         ))}
       </div>
 
-      <label className="flex items-center justify-between text-[13px] text-text-2">
+      <label className="flex items-center justify-between text-xs text-text-2">
         Trading for
         <span className="relative">
           <select value={paktId} onChange={(e) => setPaktId(e.target.value)} className={select}>
@@ -94,7 +94,7 @@ export function TradePanel({ token }: { token: Token }) {
             className="w-32 bg-transparent outline-none placeholder:text-text"
           />
         </span>
-        <span className="flex flex-col items-end text-[13px] leading-5 whitespace-nowrap text-text-2">
+        <span className="flex flex-col items-end text-xs leading-5 whitespace-nowrap text-text-2">
           <span className="text-text">
             {(usdAmount / token.price).toLocaleString("en-US", { maximumSignificantDigits: 5 })} {token.symbol}
           </span>
@@ -126,7 +126,7 @@ export function TradePanel({ token }: { token: Token }) {
           <Row label="Cash">{usd(me.cash)}</Row>
         )}
         {side === "sell" && <Row label={`${token.symbol} held`}>{usd(held)}</Row>}
-        <label className="flex items-center justify-between text-[13px] text-text-2">
+        <label className="flex items-center justify-between text-xs text-text-2">
           Slippage
           <span className="relative">
             <select value={slippage} onChange={(e) => setSlippage(Number(e.target.value))} className={select}>
@@ -150,12 +150,12 @@ export function TradePanel({ token }: { token: Token }) {
       >
         {error ?? (usdAmount ? `${verb} ${token.symbol}` : "Enter amount")}
       </Button>
-      {sent && <p className="text-center text-[13px] text-up">{sent}</p>}
+      {sent && <p className="text-center text-xs text-up">{sent}</p>}
 
       {!token.allowed && (
         <div className="rounded-xl bg-warn-bg p-3">
-          <p className="text-[15px] font-semibold text-down">Not on the whitelist</p>
-          <p className="text-[13px] text-text-2">Vaults only trade established tokens, so nobody can drain one into a token they control.</p>
+          <p className="text-sm font-bold text-down">Not on the whitelist</p>
+          <p className="text-xs text-text-2">Vaults only trade established tokens, so nobody can drain one into a token they control.</p>
         </div>
       )}
     </section>

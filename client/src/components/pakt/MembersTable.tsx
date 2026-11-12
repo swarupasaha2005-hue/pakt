@@ -6,13 +6,13 @@ import type { Pakt } from "@/lib/mock/types";
 export function MembersTable({ pakt }: { pakt: Pakt }) {
   const total = pakt.members.reduce((s, m) => s + m.shares, 0);
   return (
-    <table className="w-full text-sm">
-      <thead className="text-left text-[13px] text-text-2">
+    <table className="w-full text-xs">
+      <thead className="text-left text-xs text-text-2">
         <tr>
-          <th className="py-2 font-normal">Member</th>
-          <th className="text-right font-normal">Share</th>
-          <th className="text-right font-normal">Value</th>
-          <th className="text-right font-normal">PnL 7D</th>
+          <th className="py-2">Member</th>
+          <th className="text-right">Share</th>
+          <th className="text-right">Value</th>
+          <th className="text-right">PnL 7D</th>
         </tr>
       </thead>
       <tbody>

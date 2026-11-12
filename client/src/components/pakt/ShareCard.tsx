@@ -20,18 +20,18 @@ export function ShareCard({ share, value, pnl7d, open, onLeave, onDeposit }: Pro
             Join pakt
           </Button>
         ) : (
-          <p className="text-center text-sm text-text-2">Invite only. Ask a member for the link.</p>
+          <p className="text-center text-xs text-text-2">Invite only. Ask a member for the link.</p>
         )}
       </section>
     );
   }
   return (
     <section className="border-b p-4">
-      <h2 className="text-sm text-text-2">Your share</h2>
+      <h2 className="text-xs text-text-2">Your share</h2>
       <p className="mt-1 text-[28px] leading-9">
         {usd(value)} <span className="text-base text-text-2">({(share * 100).toFixed(1)}%)</span>
       </p>
-      <p className={`text-sm ${pnl7d < 0 ? "text-down" : "text-up"}`}>
+      <p className={`text-xs ${pnl7d < 0 ? "text-down" : "text-up"}`}>
         {pnl7d < 0 ? "▼" : "▲"} {usd(Math.abs(pnl7d))} 7D
       </p>
       <div className="mt-3 grid grid-cols-2 gap-2">

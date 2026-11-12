@@ -35,20 +35,20 @@ export function VoteModal({ pakt, kind, onClose, onSubmit }: Props) {
     <Modal open onClose={onClose} label={title}>
       <div className="flex flex-col gap-3">
         <div>
-          <h2 className={`text-xl font-semibold ${kind === "fire" ? "text-down" : ""}`}>{title}</h2>
-          <p className="text-sm text-text-2">
+          <h2 className={`text-xl font-bold ${kind === "fire" ? "text-down" : ""}`}>{title}</h2>
+          <p className="text-xs text-text-2">
             {pakt.trader ?? "no trader"} · {pakt.name}
           </p>
         </div>
         {kind === "raise" && (
-          <label className="flex items-center gap-3 text-sm text-text-2">
+          <label className="flex items-center gap-3 text-xs text-text-2">
             Budget <span className="text-text">{usd(pakt.budget)}</span> →
             <Input type="number" min={pakt.budget + 1} value={budget} onChange={(e) => setBudget(+e.target.value)} />
           </label>
         )}
-        {kind === "fire" && <p className="text-sm text-text-2">Trading stops. Money stays in the vault. Unpaid fees are settled first.</p>}
-        {kind === "resume" && <p className="text-sm text-text-2">Trading restarts with the same budget, cap and stop-loss.</p>}
-        <p className="text-[13px] text-text-3">Vote ends in 3 days · needs 50%+</p>
+        {kind === "fire" && <p className="text-xs text-text-2">Trading stops. Money stays in the vault. Unpaid fees are settled first.</p>}
+        {kind === "resume" && <p className="text-xs text-text-2">Trading restarts with the same budget, cap and stop-loss.</p>}
+        <p className="text-xs text-text-3">Vote ends in 3 days · needs 50%+</p>
         <Button
           variant={kind === "fire" ? "down" : "primary"}
           size="lg"

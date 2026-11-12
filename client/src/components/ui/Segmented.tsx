@@ -15,7 +15,7 @@ export function Segmented<T extends string>({ options, value, onChange, classNam
           type="button"
           aria-pressed={o === value}
           onClick={() => onChange(o)}
-          className={`h-[26px] shrink-0 rounded-lg border px-2.5 text-[13px] font-semibold transition-colors ${o === value ? "bg-panel-2 text-text" : "bg-panel text-text-2 hover:text-text"}`}
+          className={`h-6 shrink-0 rounded-md border border-chip px-1.5 text-xs font-bold transition-colors ${o === value ? "bg-chip text-text" : "text-text-2 hover:text-text"}`}
         >
           {o}
         </button>

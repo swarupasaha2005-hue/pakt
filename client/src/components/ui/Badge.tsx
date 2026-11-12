@@ -9,7 +9,7 @@ const tones = {
 
 export function Badge({ tone = "accent", children }: { tone?: keyof typeof tones; children: ReactNode }) {
   return (
-    <span className={`inline-flex h-[18px] items-center rounded-md px-1.5 text-xs font-semibold ${tones[tone]}`}>
+    <span className={`inline-flex h-[18px] items-center rounded-md px-1.5 text-xs font-bold ${tones[tone]}`}>
       {children}
     </span>
   );

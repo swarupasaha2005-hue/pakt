@@ -7,7 +7,7 @@ import type { Token } from "@/lib/mock/types";
 function Split({ left, right, a, b }: { left: string; right: string; a: number; b: number }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex justify-between text-[15px]">
+      <div className="flex justify-between text-sm">
         <span>{left}</span>
         <span>{right}</span>
       </div>
@@ -25,11 +25,11 @@ export function AboutCard({ token: t }: { token: Token }) {
     <section className="space-y-4 border-b p-4">
       <div>
         <h2 className="text-lg font-medium">About {t.symbol}</h2>
-        <p className="text-[13px] text-text-2">{t.name} · {t.allowed ? "on the Pakt whitelist" : "not on the Pakt whitelist"}</p>
+        <p className="text-xs text-text-2">{t.name} · {t.allowed ? "on the Pakt whitelist" : "not on the Pakt whitelist"}</p>
       </div>
       <div className="grid grid-cols-4 gap-1.5">
         {TIMEFRAMES.map((tf) => (
-          <div key={tf} className="flex flex-col items-center rounded-lg bg-panel-2 py-1.5 text-[13px]">
+          <div key={tf} className="flex flex-col items-center rounded-lg bg-panel-2 py-1.5 text-xs">
             <span className="text-text-2 uppercase">{tf}</span>
             <Pct value={changeIn(t, tf)} />
           </div>

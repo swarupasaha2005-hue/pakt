@@ -8,7 +8,7 @@ import { tokens } from "@/lib/mock/tokens";
 import { AlertCard } from "./alerts/AlertCard";
 
 const SIDES = ["All", "Buy", "Sell"] as const;
-const toggle = "flex items-center gap-1.5 text-sm transition-colors hover:text-text";
+const toggle = "flex items-center gap-1.5 text-xs transition-colors hover:text-text";
 
 export function AlertsTab() {
   const [following, setFollowing] = useState(false);
@@ -23,7 +23,7 @@ export function AlertsTab() {
 
   return (
     <>
-      <div className="flex items-center gap-4 px-3 pt-1 pb-3">
+      <div className="flex items-center gap-4 px-3 pt-2.5 pb-3">
         <button type="button" aria-pressed={following} onClick={() => setFollowing(!following)} className={`${toggle} ${following ? "text-text" : "text-text-2"}`}>
           <UsersIcon className="size-4" /> Traders
         </button>

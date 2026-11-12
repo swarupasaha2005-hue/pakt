@@ -10,8 +10,8 @@ const variants = {
 };
 
 const sizes = {
-  sm: "h-6 rounded-lg px-2 text-[13px]",
-  md: "h-10 rounded-xl px-4 text-sm",
+  sm: "h-6 rounded-lg px-2 text-xs",
+  md: "h-10 rounded-xl px-4 text-xs",
   lg: "h-[52px] rounded-xl px-5 text-base",
 };
 
@@ -24,7 +24,7 @@ export function Button({ variant = "secondary", size = "md", className = "", ...
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-1.5 font-semibold transition disabled:bg-panel-2 disabled:text-text-3 disabled:brightness-100 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1.5 font-bold transition disabled:bg-panel-2 disabled:text-text-3 disabled:brightness-100 ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     />
   );

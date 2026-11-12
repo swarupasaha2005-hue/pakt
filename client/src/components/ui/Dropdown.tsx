@@ -32,7 +32,7 @@ export function Dropdown({ open, onOpenChange, trigger, className, children }: P
     <div ref={ref} className="relative">
       {trigger}
       {open && (
-        <div className={`absolute top-full z-40 mt-1 rounded-2xl border bg-panel shadow-2xl shadow-black/60 ${className}`}>
+        <div className={`absolute top-full z-40 mt-1 rounded-xl border bg-panel shadow-2xl shadow-black/60 ${className}`}>
           {children}
         </div>
       )}
@@ -41,4 +41,4 @@ export function Dropdown({ open, onOpenChange, trigger, className, children }: P
 }
 
 /** row style shared by dropdown menus; add a height */
-export const menuItem = "flex w-full items-center gap-2.5 rounded-lg px-2 text-left text-[15px] transition-colors hover:bg-panel-2";
+export const menuItem = "flex w-full items-center gap-2.5 rounded-lg px-2 text-left text-sm transition-colors hover:bg-panel-2";

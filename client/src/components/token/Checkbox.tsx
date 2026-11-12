@@ -5,7 +5,7 @@ type Props = { label: string; checked: boolean; onChange: (checked: boolean) => 
 /** 16px accent square + label */
 export function Checkbox({ label, checked, onChange }: Props) {
   return (
-    <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-text-2 hover:text-text">
+    <label className="flex cursor-pointer items-center gap-1.5 text-xs text-text-2 hover:text-text">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
       <span
         aria-hidden

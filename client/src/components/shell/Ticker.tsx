@@ -8,7 +8,7 @@ const LINKS = ["Privacy", "Terms", "Help", "𝕏"];
 
 export function Ticker() {
   return (
-    <footer className="flex h-7 shrink-0 items-center justify-between px-3.5 text-[13px]">
+    <footer className="flex h-7 shrink-0 items-center justify-between px-3.5 text-xs">
       <ul className="flex items-center gap-4">
         {tokens
           .filter((t) => TICKER.includes(t.symbol))
@@ -21,7 +21,7 @@ export function Ticker() {
           ))}
       </ul>
       <nav className="flex items-center">
-        <span className="flex items-center gap-1.5 pr-3 font-semibold text-up">
+        <span className="flex items-center gap-1.5 pr-3 font-bold text-up">
           <span className="size-1.5 rounded-full bg-up" />
           Testnet
         </span>

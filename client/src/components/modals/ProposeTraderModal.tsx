@@ -14,7 +14,7 @@ import type { NewVote } from "@/lib/mock/votes";
 type Props = { pakt: Pakt; onClose: () => void; onSubmit: (vote: NewVote) => void };
 
 const DEFAULT_FEE = 20;
-const field = "grid grid-cols-[1fr_10rem] items-center gap-3 text-sm text-text-2";
+const field = "grid grid-cols-[1fr_10rem] items-center gap-3 text-xs text-text-2";
 
 function candidates(pakt: Pakt) {
   const members = pakt.members.map((m) => ({
@@ -51,7 +51,7 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
         }}
         className="flex flex-col gap-3"
       >
-        <h2 className="text-xl font-semibold">Propose trader for {pakt.name}</h2>
+        <h2 className="text-xl font-bold">Propose trader for {pakt.name}</h2>
         <Input placeholder="Search members or traders" aria-label="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
         <div role="radiogroup" className="max-h-56 overflow-y-auto">
           {list
@@ -59,7 +59,7 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
             .map((c) => (
               <label key={c.account} className="flex h-14 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-panel-2">
                 <Avatar name={c.account} />
-                <span className="flex-1 text-sm">
+                <span className="flex-1 text-xs">
                   {c.account} <span className="text-text-2">· {c.note}</span>
                 </span>
                 <Badge>{c.fee}%</Badge>

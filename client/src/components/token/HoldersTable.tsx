@@ -34,7 +34,7 @@ function Trader({ account, meta }: { account: string; meta: ReactNode }) {
       <Avatar name={account} size={32} />
       <span className="flex flex-col leading-5">
         <span className="text-base">{account}</span>
-        <span className="flex items-center gap-1.5 text-sm text-text-2">{meta}</span>
+        <span className="flex items-center gap-1.5 text-xs text-text-2">{meta}</span>
       </span>
     </span>
   );
@@ -44,7 +44,7 @@ function Two({ top, bottom }: { top: ReactNode; bottom: ReactNode }) {
   return (
     <span className="flex flex-col leading-5">
       <span className="text-base">{top}</span>
-      <span className="text-sm text-text-2">{bottom}</span>
+      <span className="text-xs text-text-2">{bottom}</span>
     </span>
   );
 }
@@ -94,8 +94,8 @@ export function HoldersTable({ token }: { token: Token }) {
   const label: Record<Tab, string> = { holders: `Holders (${held.length})`, trades: "Trades", pakts: `Pakts (${new Set(byPakt.map((h) => h.paktId)).size})` };
 
   return (
-    <section className="shrink-0 overflow-hidden rounded-2xl border bg-panel">
-      <div className="flex h-[46px] items-center justify-between border-b px-3 text-[15px]">
+    <section className="shrink-0 overflow-hidden rounded-xl border bg-panel">
+      <div className="flex h-[46px] items-center justify-between border-b px-3 text-sm">
         <Tabs items={(["holders", "trades", "pakts"] as const).map((id) => ({ id, label: label[id] }))} value={tab} onChange={setTab} className="h-[18px]" />
         {tab !== "pakts" && (
           <div className="flex gap-4">
@@ -105,7 +105,7 @@ export function HoldersTable({ token }: { token: Token }) {
         )}
       </div>
       <table className="w-full table-fixed text-left">
-        {/* fomo column starts: 217 / 361 / 485 / 598px */}
+        {/* column starts: 217 / 361 / 485 / 598px */}
         <colgroup>
           <col className="w-[205px]" />
           <col className="w-[144px]" />
@@ -113,10 +113,10 @@ export function HoldersTable({ token }: { token: Token }) {
           <col className="w-[113px]" />
           <col />
         </colgroup>
-        <thead className="text-[13px] text-text-2">
+        <thead className="text-xs text-text-2">
           <tr className="h-[38px] border-b">
             {COLS[tab].map((c) => (
-              <th key={c} className="px-3 font-normal">{c}</th>
+              <th key={c} className="px-3">{c}</th>
             ))}
           </tr>
         </thead>
@@ -130,7 +130,7 @@ export function HoldersTable({ token }: { token: Token }) {
           ))}
         </tbody>
       </table>
-      {!rows[tab].length && <p className="py-8 text-center text-[15px] text-text-2">Nothing here yet</p>}
+      {!rows[tab].length && <p className="py-8 text-center text-sm text-text-2">Nothing here yet</p>}
     </section>
   );
 }
