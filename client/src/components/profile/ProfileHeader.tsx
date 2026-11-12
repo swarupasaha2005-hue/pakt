@@ -35,8 +35,8 @@ export function ProfileHeader({ profile: p, onEdit }: Props) {
           <ProfileAvatar account={p.account} src={p.avatar} size={72} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl leading-6 font-medium">{p.name}</h1>
-          <p className="flex items-center gap-1.5 text-base leading-6 text-text-2">
+          <h1 className="truncate text-lg leading-5 font-medium">{p.name}</h1>
+          <p className="flex items-center gap-1.5 text-base leading-5 text-text-2">
             @{p.account}
             {p.x && (
               <a href={`https://x.com/${p.x}`} target="_blank" rel="noreferrer" aria-label={`X: @${p.x}`} className="text-xs hover:text-text">
@@ -59,7 +59,7 @@ export function ProfileHeader({ profile: p, onEdit }: Props) {
           ).map(([label, n]) => (
             <div key={label} className="flex flex-col-reverse">
               <dt className="text-xs text-text-2">{label}</dt>
-              <dd className="text-base">{n.toLocaleString("en-US")}</dd>
+              <dd className="text-base leading-5">{n.toLocaleString("en-US")}</dd>
             </div>
           ))}
         </dl>
