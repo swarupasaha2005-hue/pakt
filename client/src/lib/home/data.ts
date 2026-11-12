@@ -1,7 +1,7 @@
 "use client";
 
 // Shared loaders for shell, home and left panel: tokens at oracle prices, pakts joined with vault state, user holdings.
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { pakts, type JoinMode } from "../api";
 import { BASE_TOKEN, TOKENS, token, type TokenInfo } from "../config";
 import { ftBalanceOf, getHolder, getPrices, getState, sharesValue, usdE6, vaultValue, type PriceData, type Trader, type VaultState } from "../near/contracts";
@@ -94,15 +94,16 @@ export function useLoad<T>(fn: (() => Promise<T>) | null, deps: unknown[]): Load
   return res.key === key ? res : {};
 }
 
+// one shared 30s clock; 0 while prerendering so the build never reads the time
+let clock = 0;
+const subscribe = (cb: () => void) => {
+  const t = setInterval(() => ((clock = Date.now()), cb()), 30_000);
+  return () => clearInterval(t);
+};
+const read = () => (clock ||= Date.now());
+
 /** Date.now that ticks every 30s, for "ago" labels */
-export function useNow() {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
-  }, []);
-  return now;
-}
+export const useNow = () => useSyncExternalStore(subscribe, read, () => 0);
 
 const STAR_KEY = "pakt:starred";
 /** starred pakt names in localStorage, synced across components */
