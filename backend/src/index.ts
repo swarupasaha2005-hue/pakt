@@ -22,13 +22,23 @@ function finish(res: Response, req: Request, env: Env): Response {
   for (const [k, v] of Object.entries(SECURITY)) r.headers.set(k, v);
   if (!r.headers.has("cache-control")) r.headers.set("cache-control", "no-store"); // errors, healthz, admin
   const origin = req.headers.get("origin");
-  if (origin && env.CORS_ORIGINS.split(",").map((s) => s.trim()).includes(origin)) {
+  if (origin && originAllowed(env.CORS_ORIGINS, origin)) {
     r.headers.set("access-control-allow-origin", origin);
     r.headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
     r.headers.set("access-control-allow-headers", "content-type");
   }
   r.headers.append("vary", "origin");
   return r;
+}
+
+// CORS_ORIGINS entries are exact origins; one `*` matches a single dns label (vercel preview urls)
+export function originAllowed(list: string, origin: string): boolean {
+  return list.split(",").some((raw) => {
+    const o = raw.trim();
+    if (!o.includes("*")) return o === origin;
+    const [head, tail] = o.split("*");
+    return origin.startsWith(head) && origin.endsWith(tail) && /^[a-z\d-]+$/.test(origin.slice(head.length, origin.length - tail.length));
+  });
 }
 
 const enc = new TextEncoder();

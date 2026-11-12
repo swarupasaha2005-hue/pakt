@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { LeftPanel } from "@/components/left/LeftPanel";
 import { Ticker } from "@/components/shell/Ticker";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
           <Ticker />
         </WalletProvider>
+        <Analytics />
       </body>
     </html>
   );
