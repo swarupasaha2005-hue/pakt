@@ -16,21 +16,18 @@
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
 }
-.near-loop { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.near-loop { position: absolute; inset: 0; opacity: 0; perspective: 900px; perspective-origin: 50% 50%; pointer-events: none; }
 .near-stage__logo[data-loop-active="true"] > .near-mark { opacity: 0; }
 .near-stage__logo[data-loop-active="true"] .near-loop { opacity: 1; }
-.near-loop-rotor, .near-loop-face { position: absolute; inset: 0; }
-.near-loop-rotor { transform-origin: 50% 50%; animation: near-loop-rotate 3s linear infinite paused; }
+.near-loop-rotor, .near-loop-face { position: absolute; inset: 0; transform-style: preserve-3d; }
+.near-loop-rotor { transform-origin: 50% 50%; animation: near-loop-flip 3s linear infinite paused; }
 .near-loop-face { display: grid; place-items: center; }
-.near-loop-face--near { animation: near-loop-near 3s linear infinite paused; }
-.near-loop-face--pakt { animation: near-loop-pakt 3s linear infinite paused; }
+.near-loop-face--near { backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: translateZ(1px); }
+.near-loop-face--pakt { backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: rotateY(180deg) translateZ(1px); }
 .near-loop-face--near .near-mark { width: 100%; height: 100%; }
 .near-loop-face--pakt .brand-mark { width: 100%; height: 100%; }
 .near-stage__logo[data-loop-active="true"] .near-loop-rotor { animation-play-state: running; }
-.near-stage__logo[data-loop-active="true"] .near-loop-face { animation-play-state: running; }
-@keyframes near-loop-rotate { from { transform: rotateZ(0deg); } to { transform: rotateZ(360deg); } }
-@keyframes near-loop-near { 0%, 12.5% { opacity: 1; } 50%, 62.5% { opacity: 0; } 100% { opacity: 1; } }
-@keyframes near-loop-pakt { 0%, 12.5% { opacity: 0; } 50%, 62.5% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes near-loop-flip { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
 .near-mark { display: block; width: 100%; height: 100%; }
 .near-copy { position: absolute; top: 66svh; left: 50%; width: min(100% - 40px, 1050px); transform: translateX(-50%); text-align: center; }
 .near-label { margin: 0; color: var(--teal); font-size: 15px; font-weight: 550; line-height: 1.3; letter-spacing: .06em; text-transform: uppercase; }
