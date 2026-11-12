@@ -5,6 +5,7 @@ import type { FinalExecutionOutcome, WalletSelector } from "@near-wallet-selecto
 import type { WalletSelectorModal } from "@near-wallet-selector/modal-ui";
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
 import { NETWORK } from "../config";
+import { refreshBalances } from "../home/data";
 import type { Tx } from "./contracts";
 import { freeTxs, NoDelegates, sendSponsored, sponsorable, topup } from "./sponsor";
 
@@ -86,7 +87,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         let walletCant = walletId === noDelegates || !publicKey;
         if (!walletCant) {
           try {
-            return { outs: await sendSponsored(w, accountId, publicKey!, txs), sponsored: true };
+            const outs = await sendSponsored(w, accountId, publicKey!, txs);
+            refreshBalances();
+            return { outs, sponsored: true };
           } catch (e) {
             if (!(e instanceof NoDelegates)) throw e;
             if (e.walletCant) {
@@ -99,7 +102,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         if (walletCant) toppedUp = await topup(accountId);
         freeTxs(accountId).then(setLeft);
       }
-      return { outs: (await w.signAndSendTransactions({ transactions: txs })) ?? [], sponsored: toppedUp };
+      const outs = (await w.signAndSendTransactions({ transactions: txs })) ?? [];
+      refreshBalances();
+      return { outs, sponsored: toppedUp };
     },
   };
   return <Ctx value={value}>{children}</Ctx>;

@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Pct } from "@/components/ui/Pct";
 import { Segmented } from "@/components/ui/Segmented";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { RowsSkeleton } from "@/components/ui/Skeleton";
 import { leaderboard } from "@/lib/api";
 import { compact } from "@/lib/format";
 import { loadHoldings, loadPakts, useLoad, type PaktInfo } from "@/lib/home/data";
@@ -44,7 +44,7 @@ export function PaktsTab() {
         {error ? (
           <li className="py-10 text-center text-sm text-text-2">Could not load pakts</li>
         ) : loading ? (
-          [0, 1].map((i) => <li key={i}><Skeleton className="h-[53px] rounded-lg" /></li>)
+          <li><RowsSkeleton n={5} className="px-0 py-0" /></li>
         ) : (
           !list.length && <li className="py-10 text-center text-sm text-text-2">{chip === "Mine" ? "You are not in a pakt yet. Join an open one or create your own." : "No pakts here"}</li>
         )}
