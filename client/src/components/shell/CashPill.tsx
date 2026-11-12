@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { DepositModal, WALLET } from "@/components/modals/DepositModal";
 import { Dropdown, menuItem } from "@/components/ui/Dropdown";
-import { BankIcon, PlusCircleIcon, SwapIcon } from "@/components/ui/icons";
+import { PlusCircleIcon, SwapIcon } from "@/components/ui/icons";
 import { usd } from "@/lib/format";
 import { me } from "@/lib/mock/me";
 
@@ -51,10 +51,6 @@ export function CashPill() {
         <div className="mt-3 border-t pt-1">
           <button type="button" onClick={() => deposit(WALLET)} className={`${menuItem} -mx-2 h-10`}>
             <PlusCircleIcon className="size-4" /> Deposit
-          </button>
-          {/* shortcut: withdraw is visual only, flow lands with chain wiring */}
-          <button type="button" onClick={() => setOpen(false)} className={`${menuItem} -mx-2 h-10`}>
-            <BankIcon className="size-4" /> Withdraw
           </button>
         </div>
       </Dropdown>

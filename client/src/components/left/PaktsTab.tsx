@@ -12,8 +12,8 @@ import { Segmented } from "@/components/ui/Segmented";
 import { compact, signed } from "@/lib/format";
 import { me } from "@/lib/mock/me";
 import { pakts } from "@/lib/mock/pakts";
-import { getCreatedPakts, saveCreatedPakt, subscribeCreatedPakts } from "@/lib/mock/runtimePakts";
-import type { Pakt } from "@/lib/mock/types";
+import { getAllPakts, subscribeCreatedPakts } from "@/lib/mock/runtimePakts";
+import { createDemoPakt } from "@/lib/mock/createPakt";
 
 const CHIPS = ["All", "Open to join", "Mine", "Hiring"] as const;
 type Chip = (typeof CHIPS)[number];
@@ -24,39 +24,15 @@ const VIEW: Record<Chip, (p: (typeof pakts)[number]) => boolean> = {
   Mine: (p) => me.paktIds.includes(p.id),
   Hiring: (p) => !p.trader,
 };
-const NO_CREATED_PAKTS: Pakt[] = [];
 
 export function PaktsTab() {
   const [chip, setChip] = useState<Chip>("All");
   const [creating, setCreating] = useState(false);
-  const createdPakts = useSyncExternalStore(subscribeCreatedPakts, getCreatedPakts, () => NO_CREATED_PAKTS);
+  const createdPakts = useSyncExternalStore(subscribeCreatedPakts, getAllPakts, () => pakts);
   const pathname = usePathname();
   const { connected, requestConnect } = useMockSession();
-  const visiblePakts = [...createdPakts, ...pakts].filter(VIEW[chip]);
+  const visiblePakts = createdPakts.filter((pakt) => chip === "Mine" && !connected ? false : VIEW[chip](pakt));
 
-  function createPakt({ name, open, firstDeposit, stopLoss }: { name: string; open: boolean; firstDeposit: number; stopLoss: number }) {
-    if ([...createdPakts, ...pakts].some((item) => item.id === name)) return false;
-    const pakt: Pakt = {
-      id: name,
-      name,
-      members: [{ account: me.account, shares: firstDeposit }],
-      vaultValue: firstDeposit,
-      trader: null,
-      budget: 0,
-      budgetUsed: 0,
-      maxPerTrade: 0,
-      fee: 0,
-      stopLoss,
-      pnl7d: 0,
-      pnl7dPct: 0,
-      open,
-    };
-    const inviteToken = crypto.randomUUID();
-    if (!saveCreatedPakt(pakt, inviteToken)) return;
-    me.cash = Math.max(0, me.cash - firstDeposit);
-    me.paktIds = [...new Set([...me.paktIds, name])];
-    return inviteToken;
-  }
 
   return (
     <>
@@ -115,7 +91,7 @@ export function PaktsTab() {
           </li>
         )}
       </ul>
-      {creating && <CreatePaktModal onClose={() => setCreating(false)} onCreate={createPakt} />}
+      {creating && <CreatePaktModal onClose={() => setCreating(false)} onCreate={createDemoPakt} />}
     </>
   );
 }

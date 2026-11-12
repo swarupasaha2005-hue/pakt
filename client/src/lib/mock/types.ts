@@ -32,6 +32,7 @@ export type Member = { account: string; shares: number };
 export type Pakt = {
   id: string;
   name: string;
+  pendingOffer?: { to: string; budget: number; maxPerTrade: number; stopLoss: number; fee: number } | null;
   members: Member[];
   /** usd */
   vaultValue: number;

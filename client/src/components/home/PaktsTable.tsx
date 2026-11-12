@@ -1,3 +1,7 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+import { getAllPakts, subscribeCreatedPakts } from "@/lib/mock/runtimePakts";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -9,6 +13,7 @@ import { pakts } from "@/lib/mock/pakts";
 const COLS = ["Pakt name", "Trader", "Vault value", "7D PnL", "Members", "Fee"];
 
 export function PaktsTable() {
+  const allPakts = useSyncExternalStore(subscribeCreatedPakts, getAllPakts, () => pakts);
   return (
     <div className="min-h-0 flex-1 overflow-auto">
       <table className="w-full min-w-[760px] text-left">
@@ -20,7 +25,7 @@ export function PaktsTable() {
           </tr>
         </thead>
         <tbody>
-          {pakts.toSorted((a, b) => b.vaultValue - a.vaultValue).map((p) => (
+          {allPakts.toSorted((a, b) => b.vaultValue - a.vaultValue).map((p) => (
             <tr key={p.id} className="relative h-14 text-base hover:bg-panel-2/60">
               <td className="px-3">
                 <span className="flex items-center gap-3">

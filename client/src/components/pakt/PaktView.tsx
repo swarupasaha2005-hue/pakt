@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { LeavePaktModal } from "@/components/modals/LeavePaktModal";
 import { DepositModal } from "@/components/modals/DepositModal";
 import { ProposeTraderModal } from "@/components/modals/ProposeTraderModal";
@@ -16,6 +16,9 @@ import { me } from "@/lib/mock/me";
 import { offers } from "@/lib/mock/offers";
 import { settlements } from "@/lib/mock/settlements";
 import type { Pakt } from "@/lib/mock/types";
+import { approvedVoteChange } from "@/lib/paktWorkflow";
+import { loadPaktSession, savePaktSession } from "@/lib/mock/paktSession";
+import { getCreatedPakt, savePaktState, subscribeCreatedPakts } from "@/lib/mock/runtimePakts";
 import { votes as allVotes, type NewVote, type Vote } from "@/lib/mock/votes";
 import { MembersTable } from "./MembersTable";
 import { OfferCard } from "./OfferCard";
@@ -41,16 +44,25 @@ function initialAssets(pakt: Pakt): Holding[] {
 /** pakt page center + right; all actions mutate local mock state */
 export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInvite?: boolean }) {
   const { connected, requestConnect } = useMockSession();
-  const [pakt, setPakt] = useState(initial);
-  const [rows, setRows] = useState(() => settlements.filter((s) => s.paktId === initial.id));
-  const [hwm, setHwm] = useState(() => rows.at(-1)?.hwm ?? initial.vaultValue);
-  const [votes, setVotes] = useState(() => allVotes.filter((v) => v.paktId === initial.id));
-  const [assets, setAssets] = useState(() => initialAssets(initial));
-  const [offer, setOffer] = useState(() => offers.find((o) => o.paktId === initial.id && o.to === me.account) ?? null);
-  const [paused, setPaused] = useState(!!initial.trader && 1 - initial.vaultValue / hwm >= initial.stopLoss / 100);
+  const [savedSession] = useState(() => loadPaktSession(initial.id));
+  const pakt = useSyncExternalStore(subscribeCreatedPakts, () => getCreatedPakt(initial.id) ?? initial, () => initial);
+  function setPakt(update: (current: Pakt) => Pakt) {
+    savePaktState(update(getCreatedPakt(initial.id) ?? initial));
+  }
+  const [rows, setRows] = useState(() => savedSession?.settlements ?? settlements.filter((s) => s.paktId === initial.id));
+  const [hwm, setHwm] = useState(() => savedSession?.hwm ?? rows.at(-1)?.hwm ?? initial.vaultValue);
+  const [votes, setVotes] = useState(() => savedSession?.votes ?? allVotes.filter((v) => v.paktId === initial.id));
+  const [assets, setAssets] = useState(() => savedSession?.assets ?? initialAssets(initial));
+  const [offer, setOffer] = useState(() => initial.pendingOffer === null ? null : initial.pendingOffer ? { ...initial.pendingOffer, paktId: initial.id } : offers.find((o) => o.paktId === initial.id) ?? null);
+  const [paused, setPaused] = useState(!!initial.paused || (!!initial.trader && 1 - initial.vaultValue / hwm >= initial.stopLoss / 100));
   const [tab, setTab] = useState<Tab>("members");
   const [modal, setModal] = useState<ModalKind | null>(null);
   const [depositing, setDepositing] = useState(false);
+
+  useEffect(() => {
+    if (paused && !pakt.paused) savePaktState({ ...pakt, paused: true });
+  }, [pakt, paused]);
+  useEffect(() => { savePaktSession(pakt.id, { votes, settlements: rows, hwm, assets }); }, [pakt.id, votes, rows, hwm, assets]);
 
   const trades = feed.filter((e) => e.paktId === pakt.id && (e.kind === "buy" || e.kind === "sell"));
   const total = pakt.members.reduce((s, m) => s + m.shares, 0);
@@ -75,13 +87,14 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
       setDepositing(false);
       return;
     }
+    const mintedShares = total > 0 && pakt.vaultValue > 0 ? amount * total / pakt.vaultValue : amount;
     me.cash = Math.max(0, me.cash - amount);
     setPakt((p) => ({
       ...p,
       vaultValue: p.vaultValue + amount,
       members: mine
-        ? p.members.map((m) => (m === mine ? { ...m, shares: m.shares + amount } : m))
-        : [...p.members, { account: me.account, shares: amount }],
+        ? p.members.map((m) => (m === mine ? { ...m, shares: m.shares + mintedShares } : m))
+        : [...p.members, { account: me.account, shares: mintedShares }],
     }));
     setHwm((h) => h + amount);
     setAssets((current) => {
@@ -115,7 +128,10 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
     const needed = Math.floor(n / 2) + 1;
     if (next.yes >= needed) {
       next.status = "Passed";
-      setPakt((p) => ({ ...p, ...v.change }));
+      const change = approvedVoteChange(pakt, v);
+      if (change.pendingOffer) setOffer({ ...change.pendingOffer, paktId: pakt.id });
+      if (v.kind === "fire") settle();
+      setPakt((p) => ({ ...p, ...change }));
       if (v.kind !== "raise") setPaused(false);
     } else if (next.no >= needed) next.status = "Rejected";
     setVotes((list) => list.map((x) => (x.id === id ? next : x)));
@@ -125,8 +141,8 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
     setVotes((list) => [{ ...v, id: `new-${list.length}`, paktId: pakt.id, yes: 0, no: 0, endsIn: "3d left", status: "Open" }, ...list]);
 
   function accept() {
-    if (!offer) return;
-    setPakt((p) => ({ ...p, trader: me.account, budget: offer.budget, budgetUsed: 0, maxPerTrade: offer.maxPerTrade, stopLoss: offer.stopLoss, fee: offer.fee }));
+    if (!connected || !offer || offer.to !== me.account) return;
+    setPakt((p) => ({ ...p, trader: offer.to, pendingOffer: null, budget: offer.budget, budgetUsed: 0, maxPerTrade: offer.maxPerTrade, stopLoss: offer.stopLoss, fee: offer.fee }));
     setOffer(null);
   }
 
@@ -137,11 +153,12 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
     settlements: <SettlementsTable rows={rows} />,
   }[tab];
 
+
   return (
-    <>
-      <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto xl:flex-row">
+      <main className="flex min-w-0 shrink-0 flex-1 flex-col gap-4 xl:overflow-y-auto">
         <PaktHeader pakt={pakt} trades={trades.length} />
-        {connected && offer && <OfferCard offer={offer} pakt={pakt} onAccept={accept} onDecline={() => setOffer(null)} />}
+        {connected && offer?.to === me.account && <OfferCard offer={offer} pakt={pakt} onAccept={accept} onDecline={() => { setOffer(null); setPakt((p) => ({ ...p, pendingOffer: null })); }} />}
         {paused && pakt.trader && (
           <div role="alert" className="flex items-center gap-3 rounded-xl bg-warn-bg px-4 py-3 text-xs text-down">
             <span className="flex-1">
@@ -177,7 +194,7 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
       </main>
       <RightPanel>
         <ShareCard share={share} value={myValue} pnl7d={(share ?? 0) * pakt.pnl7d} open={canJoin} connected={connected} onLeave={() => setModal("leave")} onDeposit={() => setDepositing(true)} onConnect={requestConnect} />
-        <TraderCard pakt={pakt} member={connected && !!mine} onPropose={() => setModal("propose")} onRaise={() => setModal("raise")} onFire={() => setModal("fire")} />
+        <TraderCard pakt={pakt} offer={offer} trading={connected && pakt.trader === me.account && !paused} member={connected && !!mine} onPropose={() => setModal("propose")} onRaise={() => setModal("raise")} onFire={() => setModal("fire")} />
         <SettlementCard profit={profit} fee={pakt.fee} connected={connected} onSettle={settle} onConnect={requestConnect} />
         <OpenVotesCard votes={open} members={pakt.members.length} canVote={connected && !!mine} connected={connected} onConnect={requestConnect} onVote={cast} />
       </RightPanel>
@@ -189,6 +206,6 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
       {(modal === "raise" || modal === "fire" || modal === "resume") && (
         <VoteModal pakt={pakt} kind={modal} onClose={() => setModal(null)} onSubmit={propose} />
       )}
-    </>
+    </div>
   );
 }

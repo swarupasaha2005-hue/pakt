@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Dropdown, menuItem } from "@/components/ui/Dropdown";
-import { EyeOffIcon, GearIcon, HistoryIcon, LogOutIcon, MailIcon, ShieldIcon, SlidersIcon, UserIcon } from "@/components/ui/icons";
+import { EyeOffIcon, LogOutIcon, ShieldIcon, UserIcon } from "@/components/ui/icons";
 import { Pct } from "@/components/ui/Pct";
 import { Toggle } from "@/components/ui/Toggle";
 import { usd } from "@/lib/format";
@@ -13,13 +13,6 @@ import { useMockSession } from "@/components/session/MockSessionProvider";
 
 const row = `${menuItem} h-9`;
 const icon = "size-4 shrink-0";
-
-// Keep menu stubs.
-const VISUAL = [
-  { label: "Manage account", Icon: GearIcon },
-  { label: "Settings", Icon: SlidersIcon },
-  { label: "Transfers", Icon: HistoryIcon },
-] as const;
 
 export function AccountPill() {
   const { disconnect } = useMockSession();
@@ -58,19 +51,11 @@ export function AccountPill() {
       <Link href={`/u/${me.account}?tab=pakts`} onClick={close} className={row}>
         <ShieldIcon className={icon} /> Your pakts
       </Link>
-      {VISUAL.map(({ label, Icon }) => (
-        <button key={label} type="button" onClick={close} className={row}>
-          <Icon className={icon} /> {label}
-        </button>
-      ))}
       <div className={`${row} hover:bg-transparent`}>
         <EyeOffIcon className={icon} />
         <span className="flex-1">Blur balances</span>
         <Toggle label="Blur balances" checked={blur} onChange={toggleBlur} />
       </div>
-      <button type="button" onClick={close} className={row}>
-        <MailIcon className={icon} /> Contact support
-      </button>
       <button type="button" onClick={() => { close(); disconnect(); }} className={`${row} text-down`}>
         <LogOutIcon className={icon} /> Log out
       </button>

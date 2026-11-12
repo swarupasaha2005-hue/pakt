@@ -6,7 +6,7 @@ type Props = { votes: Vote[]; members: number; canVote: boolean; connected: bool
 export function OpenVotesCard({ votes, members, canVote, connected, onConnect, onVote }: Props) {
   const needed = Math.floor(members / 2) + 1;
   return (
-    <section className="p-4">
+    <section id="open-votes" className="p-4">
       <h2 className="text-xs font-bold tracking-wide text-text-2 uppercase">Open votes ({votes.length})</h2>
       {votes.map((v) => (
         <div key={v.id} className="mt-3 text-xs">

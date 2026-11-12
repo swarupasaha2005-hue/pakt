@@ -1,12 +1,13 @@
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { usd } from "@/lib/format";
 import type { Pakt } from "@/lib/mock/types";
 
-type Props = { pakt: Pakt; member: boolean; onPropose: () => void; onRaise: () => void; onFire: () => void };
+type Props = { pakt: Pakt; offer?: Pakt["pendingOffer"]; trading?: boolean; member: boolean; onPropose: () => void; onRaise: () => void; onFire: () => void };
 
-export function TraderCard({ pakt, member, onPropose, onRaise, onFire }: Props) {
+export function TraderCard({ pakt, offer, trading, member, onPropose, onRaise, onFire }: Props) {
   return (
     <section className="border-b p-4">
       <h2 className="text-xs font-bold tracking-wide text-text-2 uppercase">Trader</h2>
@@ -30,6 +31,7 @@ export function TraderCard({ pakt, member, onPropose, onRaise, onFire }: Props) 
               <dd>{usd(pakt.maxPerTrade)}</dd>
             </div>
           </dl>
+          {trading && <Link href={`/token/NEAR?pakt=${pakt.id}`} className="mt-3 flex h-10 items-center justify-center rounded-xl bg-accent text-xs font-bold text-white">Trade for this pakt</Link>}
           {member && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               <Button onClick={onRaise}>Raise budget</Button>
@@ -41,8 +43,8 @@ export function TraderCard({ pakt, member, onPropose, onRaise, onFire }: Props) 
         </>
       ) : (
         <>
-          <p className="mt-3 text-xs text-text-2">No trader yet</p>
-          {member && (
+          <p className="mt-3 text-xs text-text-2">{offer ? `Awaiting ${offer.to} to accept` : "No trader yet"}</p>
+          {member && !offer && (
             <Button variant="primary" className="mt-3 w-full" onClick={onPropose}>
               Propose trader
             </Button>

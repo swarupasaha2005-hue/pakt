@@ -102,17 +102,10 @@ export function CreatePaktModal({ onClose, onCreate }: Props) {
         {invalidName && <p className="-mt-2 text-xs text-down">Use 1–32 lowercase letters, numbers or dashes.</p>}
         {createError && <p className="-mt-2 text-xs text-down">{createError}</p>}
         {name && <p className="-mt-2 text-xs text-text-3">becomes {name}.sputnikv2.testnet</p>}
-        <Input aria-label="Description" placeholder="Description" />
         <div className={label}>
           Join mode <Segmented options={VISIBILITY} value={visibility} onChange={setVisibility} />
         </div>
-        <label className={label}>
-          Voting
-          <select className="h-10 rounded-lg bg-panel-2 px-3 text-xs text-text outline-none focus:ring-1 focus:ring-accent">
-            <option>Majority (50%+)</option>
-            <option>Two thirds (66%+)</option>
-          </select>
-        </label>
+        <p className="text-xs text-text-2">One member, one vote. A simple majority decides.</p>
         <label className={label}>
           Stop-loss %
           <Input type="number" min={5} max={90} required value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} />
