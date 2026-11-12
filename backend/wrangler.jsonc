@@ -1,0 +1,44 @@
+// Zone protection (dashboard, not automated): Security > WAF managed ruleset on, plus a rule that
+// blocks every method but GET/OPTIONS except POST /admin/start. Turn on Bot Fight Mode, set Security
+// Level to medium, and put the Worker on a custom domain: the Cache API is a no-op on workers.dev.
+// Add an L7 DDoS override at high sensitivity if floods still reach the Worker.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pakt-backend",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-10",
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "vars": {
+    "PAKT_FACTORY": "pakt.testnet",
+    "NEARDATA_URL": "https://testnet.neardata.xyz",
+    // set to poll a node instead of neardata, e.g. http://localhost:3030 for a sandbox
+    "NEAR_RPC_URL": "",
+    // first block when no cursor is stored; 0 = the final tip
+    "START_HEIGHT": "0",
+    // upstream requests per minute: neardata free tier is 30, raise it with FASTNEAR_API_KEY
+    "UPSTREAM_PER_MIN": "30",
+    "CORS_ORIGINS": "https://pakt.example.com",
+    // price relay, off while any is empty: {"<testnet token>": {"pyth": "<feed id hex>", "coingecko": "<coin id>"}}
+    "PRICE_MAP": "",
+    "PRICE_ORACLE": "",
+    "HERMES_URL": "https://hermes.pyth.network",
+    "COINGECKO_URL": "https://api.coingecko.com",
+    "TESTNET_RPC_URL": "https://rpc.testnet.fastnear.com"
+  },
+  // FASTNEAR_API_KEY: optional, raises neardata/RPC limits. ADMIN_TOKEN guards POST /admin/start.
+  // relay secrets (optional, `wrangler secret put`): ORACLE_REPORTER `account_id:ed25519:<secret>` signs
+  // report_prices; HERMES_API_KEY (Pyth bearer key) switches the source from keyless CoinGecko to Hermes.
+  "secrets": { "required": ["FASTNEAR_API_KEY", "ADMIN_TOKEN"] },
+  "d1_databases": [
+    // REPLACE database_id with the id printed by `wrangler d1 create pakt`
+    { "binding": "DB", "database_name": "pakt", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+  ],
+  "durable_objects": { "bindings": [{ "name": "INDEXER", "class_name": "Indexer" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Indexer"] }],
+  // daily: re-arms the indexer alarm if its chain ever dies. minutely: price relay
+  "triggers": { "crons": ["0 3 * * *", "* * * * *"] },
+  "ratelimits": [
+    { "name": "API_LIMIT", "namespace_id": "4101", "simple": { "limit": 60, "period": 60 } },
+    { "name": "STREAM_LIMIT", "namespace_id": "4102", "simple": { "limit": 10, "period": 60 } }
+  ]
+}
