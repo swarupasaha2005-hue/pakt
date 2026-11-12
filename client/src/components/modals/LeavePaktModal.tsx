@@ -81,7 +81,7 @@ export function LeavePaktModal({ name, vault, state, shares, value, onClose, onD
         </Button>
       ) : (
         <Button variant="down-outline" size="lg" className="w-full" disabled={!!blocked || tx.pending} onClick={submit}>
-          {tx.pending ? "Confirm in wallet…" : (blocked ?? `Leave with ${portion}`)}
+          {tx.pending ? "Confirming…" : (blocked ?? `Leave with ${portion}`)}
         </Button>
       )}
       <TxStatus {...tx} done="Left" />

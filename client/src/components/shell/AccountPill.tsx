@@ -15,7 +15,7 @@ const icon = "size-4 shrink-0";
 
 export function AccountPill() {
   const { accountId, ready, signIn, signOut } = useWallet();
-  const { cash, inPakts } = useTotal(accountId);
+  const { wallet, inPakts } = useTotal(accountId);
   const [open, setOpen] = useState(false);
   const [blur, setBlur] = useState(false);
   const close = () => setOpen(false);
@@ -37,7 +37,7 @@ export function AccountPill() {
       </button>
     );
   }
-  const total = cash !== undefined && inPakts !== undefined ? cash + inPakts : undefined;
+  const total = wallet !== undefined && inPakts !== undefined ? wallet + inPakts : undefined;
 
   return (
     <Dropdown

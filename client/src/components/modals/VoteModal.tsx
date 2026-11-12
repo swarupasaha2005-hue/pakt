@@ -81,7 +81,7 @@ export function VoteModal({ kind, trader, name, vault, dao, onClose, onDone }: P
           </Button>
         ) : (
           <Button variant={kind === "fire" ? "down" : "primary"} size="lg" disabled={!!blocked || tx.pending} onClick={submit}>
-            {tx.pending ? "Confirm in wallet…" : (blocked ?? "Start vote")}
+            {tx.pending ? "Confirming…" : (blocked ?? "Start vote")}
           </Button>
         )}
         <TxStatus {...tx} done="Vote started" />

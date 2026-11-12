@@ -145,7 +145,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
         </p>
         {accountId ? (
           <Button type="submit" variant="primary" size="lg" disabled={!!blocked || tx.pending}>
-            {tx.pending ? "Confirm in wallet…" : (blocked ?? "Create pakt")}
+            {tx.pending ? "Confirming…" : (blocked ?? "Create pakt")}
           </Button>
         ) : (
           <Button variant="primary" size="lg" onClick={signIn}>

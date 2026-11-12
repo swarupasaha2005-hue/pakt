@@ -32,7 +32,7 @@ export function PaktHeader({ info, state, value, trades }: Props) {
       <p className="mt-3 flex gap-4 px-2 text-xs text-text-2">
         <span>◷ Since {since}</span>
         <span>⇄ {trades} trades</span>
-        <span>⛨ Stop-loss {info.stop_loss_bps / 100}%</span>
+        <span>⛨ Stop-loss {(state.trader?.stop_loss_bps ?? info.stop_loss_bps) / 100}%</span>
         <span>{state.join_mode === "Open" ? "Open to join" : "Invite only"}</span>
       </p>
     </header>

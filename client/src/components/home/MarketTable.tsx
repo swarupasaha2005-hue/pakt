@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { Segmented } from "@/components/ui/Segmented";
+import { usePersisted } from "@/lib/home/data";
 import { PaktsTable, PAKT_FILTERS, type PaktFilter } from "./PaktsTable";
+import { Positions } from "./Positions";
 import { TokensTable } from "./TokensTable";
 
-const TABS = [{ id: "pakts", label: "Pakts" }, { id: "tokens", label: "Tokens" }] as const;
+const TABS = [{ id: "pakts", label: "Pakts" }, { id: "positions", label: "Positions" }, { id: "tokens", label: "Tokens" }] as const;
+
+type Tab = (typeof TABS)[number]["id"];
 
 export function MarketTable() {
-  const [tab, setTab] = useState<"tokens" | "pakts">("pakts");
+  const [tab, setTab] = usePersisted<Tab>("pakt:market-tab", "pakts", (v): v is Tab => TABS.some((t) => t.id === v));
   const [filter, setFilter] = useState<PaktFilter>("All");
   return (
     <section data-tour="market" className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-panel">
@@ -18,6 +22,7 @@ export function MarketTable() {
             <button
               key={t.id}
               type="button"
+              data-tour={t.id === "positions" ? "positions" : undefined}
               role="tab"
               aria-selected={t.id === tab}
               onClick={() => setTab(t.id)}
@@ -29,7 +34,7 @@ export function MarketTable() {
         </div>
         {tab === "pakts" && <Segmented options={PAKT_FILTERS} value={filter} onChange={setFilter} />}
       </div>
-      {tab === "tokens" ? <TokensTable /> : <PaktsTable filter={filter} />}
+      {tab === "tokens" ? <TokensTable /> : tab === "positions" ? <Positions /> : <PaktsTable filter={filter} />}
     </section>
   );
 }

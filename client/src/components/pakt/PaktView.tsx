@@ -89,7 +89,7 @@ export function PaktView({ name }: { name: string }) {
         <h1 className="text-xl font-bold">No pakt named “{name}”</h1>
         <p className="text-xs text-text-2">Check the link, or create it yourself.</p>
         <Link href="/" className="text-xs font-bold text-accent hover:underline">
-          Back to Discover
+          Back to Explore
         </Link>
       </main>
     );

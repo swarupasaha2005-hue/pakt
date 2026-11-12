@@ -3,22 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { ChevronsLeftIcon } from "@/components/ui/icons";
 import { Segmented } from "@/components/ui/Segmented";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { accountFeed } from "@/lib/api";
-import { ago, count, usd } from "@/lib/format";
+import { ago, usd } from "@/lib/format";
 import { loadHoldings, paktName, useLoad, useNow } from "@/lib/home/data";
 import { useWallet } from "@/lib/near/wallet";
 
 const KINDS = ["All", "Member", "Fee only"] as const;
 type Kind = (typeof KINDS)[number];
 
-/** home: » button that hides the panel */
-type Props = { onCollapse?: () => void };
+const pct = (s: string, total: string) => (total === "0" ? "0%" : `${((Number(s) / Number(total)) * 100).toFixed(1)}%`);
 
-/** "Your positions": the connected account's shares in each pakt */
-export function Positions({ onCollapse }: Props) {
+/** Positions tab: the connected account's shares in each pakt */
+export function Positions() {
   const { accountId } = useWallet();
   const [open, setOpen] = useState(true);
   const [kind, setKind] = useState<Kind>("All");
@@ -75,7 +73,7 @@ export function Positions({ onCollapse }: Props) {
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="text-sm leading-5">{h.pakt.name}</span>
                 <span className="truncate text-xs leading-5 text-text-2">
-                  {count(Number(h.shares))} shares{h.member ? "" : " · fee only"}
+                  {pct(h.shares, h.pakt.state.total_shares)} of pakt{h.member ? "" : " · fee only"}
                 </span>
               </span>
               <span className="text-sm leading-5">{h.value === null ? "—" : usd(h.value)}</span>
@@ -87,16 +85,8 @@ export function Positions({ onCollapse }: Props) {
   }
 
   return (
-    <section className="p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">Your positions</h2>
-        {onCollapse && (
-          <button type="button" aria-label="Hide positions" onClick={onCollapse} className="text-text-2 hover:text-text">
-            <ChevronsLeftIcon className="size-4 rotate-180" />
-          </button>
-        )}
-      </div>
-      <div className="mt-3 flex items-center gap-2">
+    <section className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <div className="flex items-center gap-2">
         {(["Open", "Closed"] as const).map((o) => {
           const on = (o === "Open") === open;
           return (

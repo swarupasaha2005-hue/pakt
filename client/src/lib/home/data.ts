@@ -1,7 +1,7 @@
 "use client";
 
 // Shared loaders for shell, home and left panel: tokens at oracle prices, pakts joined with vault state, user holdings.
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { pakts, type JoinMode } from "../api";
 import { BASE_TOKEN, TOKENS, token, type TokenInfo } from "../config";
 import { ftBalanceOf, getHolder, getPrices, getState, sharesValue, usdE6, vaultValue, type PriceData, type Trader, type VaultState } from "../near/contracts";
@@ -138,12 +138,21 @@ export function useStarred() {
   return { starred, toggle };
 }
 
-/** wallet tUSDC cash and Σ pakt holdings, usd; undefined while loading or logged out */
+/** wallet tUSDC cash, all wallet tokens in usd, and Σ pakt holdings; undefined while loading or logged out */
 export function useTotal(account: string | null) {
   const cash = useLoad(account ? () => ftBalanceOf(BASE_TOKEN.id, account).then((r) => Number(r) / 10 ** BASE_TOKEN.decimals) : null, [account]);
   const held = useLoad(account ? () => loadHoldings(account) : null, [account]);
+  // every wallet token at oracle prices (unpriced = $0), same as the profile's Total cash
+  const wallet = useLoad(
+    account
+      ? () => Promise.all([prices(), ...TOKENS.map((t) => ftBalanceOf(t.id, account))]).then(([pd, ...bals]) =>
+          TOKENS.reduce((a, t, i) => a + usdNum(usdE6(pd as PriceData, t.id, bals[i] as string) ?? "0"), 0))
+      : null,
+    [account],
+  );
   return {
     cash: cash.data,
+    wallet: wallet.data,
     holdings: held.data,
     inPakts: held.data?.reduce((a, h) => a + (h.value ?? 0), 0),
   };
@@ -155,4 +164,28 @@ export function tokenAmount(id: string, raw: string) {
   if (!t) return `${raw} ${id}`;
   const n = Number(raw) / 10 ** t.decimals;
   return `${n.toLocaleString("en-US", { maximumSignificantDigits: 4 })} ${t.symbol}`;
+}
+
+/** useState backed by localStorage; read after mount so server and first client render match */
+export function usePersisted<T extends string | boolean>(key: string, initial: T, ok: (v: unknown) => v is T) {
+  const [value, setValue] = useState<T>(initial);
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(key) ?? "null");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- storage only exists after mount
+      if (ok(v)) setValue(v);
+    } catch {
+      // storage blocked or bad json: keep initial
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- read once per key
+  }, [key]);
+  const set = useCallback((v: T) => {
+    setValue(v);
+    try {
+      localStorage.setItem(key, JSON.stringify(v));
+    } catch {
+      // storage blocked: keep in memory only
+    }
+  }, [key]);
+  return [value, set] as const;
 }

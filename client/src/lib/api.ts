@@ -54,8 +54,6 @@ export type LeaderPakt = { vault: string; from_share_price: string; to_share_pri
 export type Leaderboard = { traders: Page<LeaderTrader>; pakts: Page<LeaderPakt> };
 export type Range = "7d" | "30d" | "all";
 
-/** 2+ distinct traders on one token and side */
-export type Alert = { token: string; side: "buy" | "sell"; traders: string[]; count: number; total_value: string; first_at: number; last_at: number };
 
 /** before: feeds take the last event id, rankings the `next` offset */
 export type PageQuery = { limit?: number; before?: number };
@@ -79,7 +77,6 @@ export const paktConfig = (vault: string) => orNull(get<CloneConfig>(`/pakts/${e
 export const trader = (account: string) => get<TraderRecord>(`/traders/${enc(account)}`);
 export const leaderboard = (q: PageQuery & { range?: Range } = {}) => get<Leaderboard>("/leaderboard", q);
 /** window like 15m, 1h, 7d; max 30d */
-export const alerts = (q: PageQuery & { window?: string } = {}) => get<Page<Alert>>("/alerts", q);
 
 /** testnet faucet: mints test tokens to the account; throws the server's message */
 export async function requestTokens(account: string): Promise<void> {

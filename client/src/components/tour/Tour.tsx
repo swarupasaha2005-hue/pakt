@@ -8,7 +8,7 @@ export const openTour = () => window.dispatchEvent(new Event("pakt:tour"));
 
 // each step spotlights the element tagged data-tour="<spot>"; missing ones are skipped
 const STEPS: { spot: string; tab?: string; title: string; body: string }[] = [
-  { spot: "market", title: "Discover pakts and tokens", body: "Every pakt with its vault value, trader and share price." },
+  { spot: "market", title: "Explore pakts and tokens", body: "Every pakt with its vault value, trader and share price." },
   { spot: "pins", title: "Star to pin", body: "Starred tokens sit here so their price is one glance away." },
   { spot: "left", tab: "feed", title: "Live feed", body: "Every deposit, trade and vote across pakts, as it lands on chain." },
   { spot: "left", tab: "leaderboard", title: "Leaderboard", body: "Top traders and pakts ranked by returns." },
@@ -16,7 +16,7 @@ const STEPS: { spot: string; tab?: string; title: string; body: string }[] = [
   { spot: "left", tab: "tokens", title: "Tokens", body: "Allowed tokens with live oracle prices. Hover one for details." },
   { spot: "search", title: "Find anything with ⌘K", body: "Tokens, pakts and traders, or any NEAR account." },
   { spot: "create", title: "Start your own pakt", body: "One transaction deploys a vault and its DAO. Invite friends with a link." },
-  { spot: "positions", title: "Track your positions", body: "Connect a wallet to see your shares in every pakt." },
+  { spot: "positions", title: "Your positions", body: "Your shares in every pakt, open and closed. Connect a wallet to see them." },
   { spot: "help", title: "How it works", body: "The contracts behind a pakt. Replay this tour from here." },
 ];
 const PAD = 6, CARD = 320;

@@ -1,22 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #060510;
-  --panel: #060510;
-  --panel-2: #12111a;
-  --chip: #161522;
-  --border: rgb(203 208 235 / 0.1);
-  --text: #f7f7f7;
-  --text-2: #9899a3;
-  --text-3: #474b52;
-  --accent: #516af6;
-  --accent-bg: rgb(81 106 246 / 0.16);
-  --up: #21c95e;
-  --up-bg: rgb(33 201 94 / 0.2);
-  --down: #ff622e;
-  --warn-bg: rgb(255 98 46 / 0.2);
+  /* palette read from app.hyperliquid.xyz/trade */
+  --bg: #0f1a1f;
+  --panel: #0f1a1f;
+  --panel-2: #1b2429;
+  --chip: #273035;
+  --border: #303030;
+  --text: #f6fefd;
+  --text-2: #949e9c;
+  --text-3: #575e62;
+  --accent: #50d2c1;
+  --accent-bg: rgb(80 210 193 / 0.16);
+  --up: #1fa67d;
+  --up-bg: rgb(31 166 125 / 0.2);
+  --down: #ed7088;
+  --warn-bg: rgb(237 112 136 / 0.2);
   --pink: #e85db0;
   color-scheme: dark;
+}
+/* light teal accent needs dark label text */
+.bg-accent.text-white {
+  color: #04060c;
 }
 
 @theme inline {
