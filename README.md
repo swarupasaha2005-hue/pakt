@@ -96,14 +96,19 @@ Live demo: <URL>
 
 Deployed accounts (testnet):
 
-| Contract | Account |
-|---|---|
-| Factory | `<factory account>` (script default `pakt.<OWNER>`) |
-| Price oracle | `<oracle account>` (script default `oracle.<OWNER>`) |
-| Tokens | `<tusdc account>`, `<tbtc account>`, `<tnear account>` |
-| Ref exchange | `ref-finance-101.testnet` |
-| Sputnik DAO factory | `sputnikv2.testnet` |
-| Backend Worker | `<worker URL>` |
+| Contract | Account | Explorer |
+|---|---|---|
+| Factory | `pakt.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/pakt.pakt-0mxhjh.testnet) |
+| Price oracle | `oracle.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/oracle.pakt-0mxhjh.testnet) |
+| tUSDC token | `tusdc.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/tusdc.pakt-0mxhjh.testnet) |
+| tBTC token | `tbtc.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/tbtc.pakt-0mxhjh.testnet) |
+| tNEAR token | `tnear.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/tnear.pakt-0mxhjh.testnet) |
+| Platform fees | `pakt-fees.testnet` | [nearblocks](https://testnet.nearblocks.io/address/pakt-fees.testnet) |
+| Price reporter | `pakt-83p1jb.testnet` | [nearblocks](https://testnet.nearblocks.io/address/pakt-83p1jb.testnet) |
+| Ref exchange | `ref-finance-101.testnet` | [nearblocks](https://testnet.nearblocks.io/address/ref-finance-101.testnet) |
+| Sputnik DAO factory | `sputnikv2.testnet` | [nearblocks](https://testnet.nearblocks.io/address/sputnikv2.testnet) |
+| Ref pools | tUSDC/tBTC `2958`, tUSDC/tNEAR `2959` | [tBTC pool](https://testnet.app.ref.finance/pool/2958), [tNEAR pool](https://testnet.app.ref.finance/pool/2959) |
+| Backend Worker | `https://pakt-backend.debanjanspider5.workers.dev` | [/healthz](https://pakt-backend.debanjanspider5.workers.dev/healthz) |
 
 ## Architecture
 
