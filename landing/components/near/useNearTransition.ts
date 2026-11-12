@@ -33,6 +33,7 @@ export function useNearTransition() {
     const savedHeader = { position: header.style.position, top: header.style.top, left: header.style.left, right: header.style.right };
     const savedPadding = hero.style.paddingTop;
     const savedVisibility = original.style.visibility;
+    const savedLoopState = destination.dataset.loopActive;
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
     let scheduled = 0;
     let disposed = false;
@@ -78,18 +79,24 @@ export function useNearTransition() {
         floating!.style.visibility = "hidden";
         floating!.style.display = "none";
         destination!.style.visibility = "visible";
+        destination!.dataset.loopActive = "false";
         reveal(eyebrow!, 1, 0); reveal(title!, 1, 0); reveal(detail!, 1, 0);
         return;
       }
       const position = logoPosition(y, { start, boundary, center: pinCenter, drop, initialSize, finalSize, finalCenter, settleDistance: window.innerHeight * .28 });
       const state = nearTimeline(progress, position.crossing);
       const active = y >= start && y < release - .5;
-      const entering = active && floating!.style.display !== "block";
-      floating!.style.display = active ? "block" : "none";
+      const continuous = y >= boundary && position.settle >= .999;
+      const showingTransition = active && !continuous;
+      const resetLoop = destination!.dataset.loopActive === "true" && !continuous;
+      if (resetLoop) destination!.querySelectorAll(".near-loop-rotor, .near-loop-face").forEach((node) => node.getAnimations()[0] && (node.getAnimations()[0].currentTime = 0));
+      const entering = showingTransition && floating!.style.display !== "block";
+      destination!.dataset.loopActive = String(continuous);
+      floating!.style.display = showingTransition ? "block" : "none";
       if (entering) synchronizeScan();
-      original!.style.visibility = active ? "hidden" : savedVisibility;
-      floating!.style.visibility = active ? "visible" : "hidden";
-      destination!.style.visibility = y >= release - .5 ? "visible" : "hidden";
+      original!.style.visibility = showingTransition ? "hidden" : savedVisibility;
+      floating!.style.visibility = showingTransition ? "visible" : "hidden";
+      destination!.style.visibility = continuous || y >= release - .5 ? "visible" : "hidden";
       const centerX = sourceCenterX + (finalCenterX - sourceCenterX) * position.settle;
       floating!.style.transform = `translate3d(${centerX - initialSize / 2}px, ${position.center - initialSize / 2}px, 0) scale(${position.size / initialSize})`;
       floating!.style.setProperty("--near-boundary", `${Math.max(-.2, Math.min(1.2, position.cut)) * 100}%`);
@@ -159,6 +166,8 @@ export function useNearTransition() {
       Object.assign(header.style, savedHeader);
       hero.style.paddingTop = savedPadding;
       original.style.visibility = savedVisibility;
+      if (savedLoopState === undefined) delete destination.dataset.loopActive;
+      else destination.dataset.loopActive = savedLoopState;
       delete root.dataset.enhanced;
     };
   }, [section, overlay, rotor, upperRotor, scan, settled, label, headline, description]);
