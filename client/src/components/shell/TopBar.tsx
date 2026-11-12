@@ -6,7 +6,7 @@ import { SessionActions } from "./SessionActions";
 
 export function TopBar() {
   return (
-    <header className="grid h-[68px] shrink-0 grid-cols-[1fr_minmax(0,480px)_1fr] items-center gap-6 px-5">
+    <header className="flex min-h-[72px] shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
       <div className="flex items-center gap-6">
         <Logo />
         {/* why: usePathname suspends on unprerendered dynamic routes */}
@@ -14,7 +14,7 @@ export function TopBar() {
           <DiscoverLink />
         </Suspense>
       </div>
-      <Search />
+      <div className="hidden max-w-sm flex-1 lg:block"><Search /></div>
       <SessionActions />
     </header>
   );

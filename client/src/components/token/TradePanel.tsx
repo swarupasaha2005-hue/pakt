@@ -1,11 +1,12 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { usd } from "@/lib/format";
 import { me } from "@/lib/mock/me";
+import { getAllPakts, savePaktState, subscribeCreatedPakts } from "@/lib/mock/runtimePakts";
 import { pakts } from "@/lib/mock/pakts";
 import { positions } from "@/lib/mock/positions";
 import type { Token } from "@/lib/mock/types";
@@ -14,7 +15,6 @@ import { useMockSession } from "@/components/session/MockSessionProvider";
 
 const SLIPPAGES = [0.5, 1, 3, 5];
 const CHIPS = [10, 50, 100];
-const myPakts = pakts.filter((p) => p.trader === me.account);
 
 const select = "h-7 appearance-none rounded-lg border bg-panel-2 pr-7 pl-2.5 text-xs font-bold text-text";
 
@@ -30,9 +30,14 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 /** Buy/Sell for Solo or a pakt you trade for; tradeError mirrors the vault rules */
 export function TradePanel({ token }: { token: Token }) {
   const { connected, requestConnect } = useMockSession();
+  const allPakts = useSyncExternalStore(subscribeCreatedPakts, getAllPakts, () => pakts);
+  const myPakts = allPakts.filter((pakt) => pakt.trader === me.account);
+  const params = useSearchParams();
   const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [paktId, setPaktId] = useState("");
-  const [amount, setAmount] = useState(useSearchParams().get("amount") ?? "");
+  const requestedPakt = params.get("pakt") ?? "";
+  const [selection, setSelection] = useState({ source: requestedPakt, value: requestedPakt });
+  const paktId = selection.source === requestedPakt ? selection.value : requestedPakt;
+  const [amount, setAmount] = useState(params.get("amount") ?? "");
   const [slippage, setSlippage] = useState(0.5);
   const [sent, setSent] = useState("");
 
@@ -43,10 +48,12 @@ export function TradePanel({ token }: { token: Token }) {
     .reduce((sum, p) => sum + p.amount * token.price, 0);
   const left = pakt ? pakt.budget - pakt.budgetUsed : me.cash;
   const max = Math.floor(Math.min(side === "sell" ? held : left, pakt?.maxPerTrade ?? Infinity));
-  const error = tradeError({ side, usd: usdAmount, token, pakt, slippage, cash: me.cash, held });
+  const error = paktId && !pakt ? "Trader access required" : tradeError({ side, usd: usdAmount, token, pakt, slippage, cash: me.cash, held });
   const verb = side === "buy" ? "Buy" : "Sell";
 
   const submit = () => {
+    if (!connected || error || !usdAmount) return;
+    if (pakt) savePaktState({ ...pakt, budgetUsed: pakt.budgetUsed + usdAmount });
     setSent(`Mock order: ${verb.toLowerCase()} ${usd(usdAmount)} of ${token.symbol} for ${pakt?.name ?? "Solo"}`);
     setAmount("");
   };
@@ -72,7 +79,7 @@ export function TradePanel({ token }: { token: Token }) {
       <label className="flex items-center justify-between text-xs text-text-2">
         Trading for
         <span className="relative">
-          <select value={paktId} onChange={(e) => setPaktId(e.target.value)} className={select}>
+          <select value={paktId} onChange={(e) => setSelection({ source: requestedPakt, value: e.target.value })} className={select}>
             <option value="">Solo</option>
             {myPakts.map((p) => (
               <option key={p.id} value={p.id}>

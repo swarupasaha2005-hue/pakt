@@ -9,8 +9,7 @@ export function PaktHeader({ pakt, trades }: { pakt: Pakt; trades: number }) {
   ] as const;
   return (
     <header className="border-b pb-4">
-      <div className="h-[100px] rounded-xl bg-panel-2" />
-      <div className="-mt-4 flex items-end gap-3 px-2">
+      <div className="flex flex-wrap items-center gap-3 px-2 pt-3">
         <span className="rounded-full ring-4 ring-bg">
           <Avatar name={pakt.name} size={60} />
         </span>

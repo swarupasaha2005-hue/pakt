@@ -39,6 +39,7 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
   const [pick, setPick] = useState<string | null>(null);
   const [budget, setBudget] = useState(500);
   const [maxPerTrade, setMaxPerTrade] = useState(50);
+  const [stopLoss, setStopLoss] = useState(pakt.stopLoss);
   const list = candidates(pakt);
   const chosen = list.find((c) => c.account === pick);
 
@@ -63,7 +64,7 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
           onSubmit({
             kind: "hire",
             title: `Hire ${chosen.account} at ${chosen.fee}%`,
-            change: { trader: chosen.account, fee: chosen.fee, budget, budgetUsed: 0, maxPerTrade },
+            change: { trader: chosen.account, fee: chosen.fee, budget, budgetUsed: 0, maxPerTrade, stopLoss },
           });
           onClose();
         }}
@@ -93,6 +94,10 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
         <label className={field}>
           Max per trade $
           <Input type="number" min={1} max={budget} required value={maxPerTrade} onChange={(e) => setMaxPerTrade(+e.target.value)} />
+        </label>
+        <label className={field}>
+          Stop-loss %
+          <Input type="number" min={5} max={90} required value={stopLoss} onChange={(e) => setStopLoss(Number(e.target.value))} />
         </label>
         <p className={field}>
           Fee

@@ -1,3 +1,4 @@
+import { pakts } from "./pakts";
 import type { Pakt } from "./types";
 
 type StoredPakt = { pakt: Pakt; inviteToken: string };
@@ -65,4 +66,21 @@ export function subscribeCreatedPakts(onChange: () => void) {
     window.removeEventListener(CHANGE_EVENT, onChange);
     window.removeEventListener("storage", onChange);
   };
+}
+
+let allPaktsSource: Pakt[] | undefined;
+let allPaktsCache: Pakt[] = pakts;
+
+export function getAllPakts() {
+  const stored = getCreatedPakts();
+  if (stored !== allPaktsSource) {
+    allPaktsSource = stored;
+    allPaktsCache = [...new Map([...pakts, ...stored].map((pakt) => [pakt.id, pakt])).values()];
+  }
+  return allPaktsCache;
+}
+
+export function savePaktState(pakt: Pakt) {
+  const token = readStoredPakts().find((item) => item.pakt.id === pakt.id)?.inviteToken ?? "";
+  return saveCreatedPakt(pakt, token);
 }

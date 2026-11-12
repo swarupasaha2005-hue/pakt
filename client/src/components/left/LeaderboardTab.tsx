@@ -7,7 +7,6 @@ import { me } from "@/lib/mock/me";
 import { pakts } from "@/lib/mock/pakts";
 import { traders } from "@/lib/mock/traders";
 import type { Range } from "@/lib/mock/types";
-import { PaktGrid } from "./leaderboard/PaktGrid";
 import { TraderRow } from "./leaderboard/TraderRow";
 import { YourRank } from "./leaderboard/YourRank";
 
@@ -29,7 +28,6 @@ export function LeaderboardTab() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <PaktGrid />
       <Segmented options={KINDS} value={kind} onChange={setKind} className="px-3 pt-2.5" />
       <div className="flex items-center justify-between px-3 pt-2">
         <Select label="Show" options={SHOW} value={show} onChange={setShow} />

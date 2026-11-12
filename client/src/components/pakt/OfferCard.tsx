@@ -8,7 +8,7 @@ type Props = { offer: Offer; pakt: Pakt; onAccept: () => void; onDecline: () => 
 
 export function OfferCard({ offer, pakt, onAccept, onDecline }: Props) {
   return (
-    <section aria-label="Trader offer" className="rounded-xl border border-accent bg-panel-2 p-4">
+    <section id="trader-offer" aria-label="Trader offer" className="rounded-xl border border-accent bg-panel-2 p-4">
       <div className="flex items-center gap-3">
         <Avatar name={pakt.name} size={36} />
         <h3 className="text-base font-bold">{pakt.name} wants to hire you</h3>

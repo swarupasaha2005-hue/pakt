@@ -12,8 +12,6 @@ export function CashCard({ cash, onDeposit }: { cash: number; onDeposit: () => v
         <p className="text-xs leading-5 text-text-2">Total cash</p>
         <p data-balance className="text-base leading-5">{usd(cash)}</p>
       </div>
-      {/* shortcut: withdraw is visual only, flow lands with chain wiring */}
-      <Button className="h-9! text-sm">Withdraw</Button>
       <Button variant="primary" onClick={onDeposit} className="h-9! text-sm">
         Deposit
       </Button>
