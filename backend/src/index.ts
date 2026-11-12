@@ -3,7 +3,7 @@
 // The first request arms the indexer alarm: `curl localhost:8787/healthz`. /__scheduled exists in dev only.
 // Deploy: `wrangler d1 create pakt`, paste the id into wrangler.jsonc, `wrangler d1 migrations apply pakt --remote`,
 // `wrangler secret put ADMIN_TOKEN` (and FASTNEAR_API_KEY), then `wrangler deploy`.
-import { BadInput, cacheKey, route } from "./api";
+import { BadInput, cacheKey, clientKey, route } from "./api";
 import { relay } from "./relay";
 
 export { Indexer } from "./indexer";
@@ -19,6 +19,7 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
 function finish(res: Response, req: Request, env: Env): Response {
   const r = new Response(res.body, res); // cached responses have immutable headers
   for (const [k, v] of Object.entries(SECURITY)) r.headers.set(k, v);
+  if (!r.headers.has("cache-control")) r.headers.set("cache-control", "no-store"); // errors, healthz, admin
   const origin = req.headers.get("origin");
   if (origin && env.CORS_ORIGINS.split(",").map((s) => s.trim()).includes(origin)) {
     r.headers.set("access-control-allow-origin", origin);
@@ -45,8 +46,7 @@ let booted = false; // per isolate, not request state: poke the idempotent start
 async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(req.url);
   const stream = url.pathname === "/stream";
-  const ip = req.headers.get("cf-connecting-ip") ?? "local";
-  if (!(await (stream ? env.STREAM_LIMIT : env.API_LIMIT).limit({ key: ip })).success)
+  if (!(await (stream ? env.STREAM_LIMIT : env.API_LIMIT).limit({ key: clientKey(req) })).success)
     return json({ error: "rate limited" }, 429, { "retry-after": "60" });
   if (!booted) {
     booted = true;

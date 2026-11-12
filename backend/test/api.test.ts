@@ -1,7 +1,7 @@
 import { createExecutionContext, waitOnExecutionContext } from "cloudflare:test";
 import { env } from "cloudflare:workers";
 import { beforeAll, describe, expect, it } from "vitest";
-import { cacheKey, route } from "../src/api";
+import { cacheKey, clientKey, route } from "../src/api";
 import type { Block, NewEvent, Source } from "../src/chain";
 import { BadBlock, Upstream } from "../src/chain";
 import worker from "../src/index";
@@ -93,6 +93,23 @@ describe("guards", () => {
     const res = await get("/feed", {}, limited);
     expect(res.status).toBe(429);
     expect(res.headers.get("retry-after")).toBe("60");
+  });
+
+  it("keys IPv6 clients by /64 and marks errors no-store", async () => {
+    const k = (ip: string) => clientKey(new Request("http://h/", { headers: { "cf-connecting-ip": ip } }));
+    expect(k("2001:DB8:0:1::5")).toBe(k("2001:db8:0000:1:ffff:1:2:3"));
+    expect(k("2001:db8::1")).toBe("2001:db8:0:0::/64");
+    expect(k("2001:db8:0:2::1")).not.toBe(k("2001:db8:0:1::1"));
+    expect(k("1.2.3.4")).toBe("1.2.3.4");
+    expect((await get("/nope")).headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("filters alerts by window from the shared scan", async () => {
+    const t = (n: string, trader: string, ago: number) => ({ ...ev(3, "trade", "alpha.pakt.testnet", trader,
+      { trader, token_in: "usdc.testnet", token_out: "wnear.testnet", value: "1" }), tx_hash: n, receipt_id: n, ts_ms: Date.now() - ago });
+    await save(env.DB, 3, [t("a1", "carol.testnet", 0), t("a2", "dave.testnet", 3_600_000)]);
+    expect((await (await get("/alerts?window=1m")).json<{ items: unknown[] }>()).items).toEqual([]);
+    expect((await (await get("/alerts?window=2h")).json<{ items: { count: number }[] }>()).items[0].count).toBe(2);
   });
 
   it("normalizes cache keys", () => {
