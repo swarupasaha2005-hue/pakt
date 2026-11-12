@@ -57,7 +57,7 @@ impl Vault {
         );
     }
 
-    fn mint_fee(&mut self, to: &AccountId, shares: u128) {
+    pub(crate) fn mint_fee(&mut self, to: &AccountId, shares: u128) {
         if shares == 0 {
             return;
         }

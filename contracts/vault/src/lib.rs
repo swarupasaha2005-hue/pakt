@@ -35,6 +35,8 @@ pub const MIN_SETTLE_PERIOD_MS: u64 = 60_000;
 pub const MIN_TRADE_DELAY_MS: u64 = 60_000;
 /// a lock older than this is dead (its callback failed); anyone may `unlock`
 pub const LOCK_TTL_MS: u64 = 10 * 60_000;
+/// after a drain hits 0 flows, new flows wait this long so the refused exclusive op can retry first
+pub const DRAIN_GRACE_MS: u64 = 60_000;
 /// free NEAR kept for leave + sync callbacks; deposits refuse below it
 pub const STORAGE_RESERVE: NearToken = NearToken::from_millinear(500);
 /// usd floor per deposit, whatever the token's decimals
@@ -128,7 +130,26 @@ pub struct Vault {
     flows: u32,
     /// bumped when unlock drops dead flows; flow callbacks carry it
     flow_gen: u64,
+    /// when flows went 0→1, or last drained to 0 (drain grace)
     flow_since_ms: u64,
+    /// an exclusive op was refused for flows: new flows wait until it runs
+    draining: bool,
+    /// ref shortfall at resync, aligned with whitelist; may be home already, `reconcile` credits what is provable
+    suspense: Vec<u128>,
+    /// leaver ious still inside ref, aligned with whitelist; not pool value
+    dex_iou: Vec<u128>,
+    /// leaver ious pulled home by dex_recover, waiting for `claim`
+    iou_home: Vec<u128>,
+    /// home tokens not ours: owed rows + payouts in flight, aligned with whitelist
+    out: Vec<u128>,
+    /// false once a dex hop died or resolved unknown: at_dex may be off until dex_recover resyncs
+    dex_synced: bool,
+    /// last block a token hit ft_on_transfer; reconcile skips if one raced its balance read
+    inbound_block: u64,
+    /// account → ious at ref, claimable once home
+    dex_owed: LookupMap<AccountId, Vec<(AccountId, U128)>>,
+    /// payouts in flight per account; storage_unregister waits for 0
+    paying: LookupMap<AccountId, u32>,
     /// NEP-145 style: yocto each account prepaid for its rows + dao syncs
     storage: LookupMap<AccountId, u128>,
     trader: Option<Trader>,
@@ -174,6 +195,11 @@ pub struct StateView {
     pub fire_pending: bool,
     pub flows: u32,
     pub slip_since_ms: u64,
+    pub draining: bool,
+    pub suspense: Vec<(AccountId, U128)>,
+    pub dex_iou: Vec<(AccountId, U128)>,
+    pub iou_home: Vec<(AccountId, U128)>,
+    pub dex_synced: bool,
 }
 
 #[near]
@@ -197,6 +223,10 @@ impl Vault {
             factory: env::predecessor_account_id(),
             balances: vec![0; c.whitelist.len()],
             at_dex: vec![0; c.whitelist.len()],
+            suspense: vec![0; c.whitelist.len()],
+            dex_iou: vec![0; c.whitelist.len()],
+            iou_home: vec![0; c.whitelist.len()],
+            out: vec![0; c.whitelist.len()],
             dao: c.dao,
             oracle: c.oracle,
             base_token: c.base_token,
@@ -219,6 +249,11 @@ impl Vault {
             flows: 0,
             flow_gen: 0,
             flow_since_ms: 0,
+            draining: false,
+            dex_synced: true,
+            inbound_block: 0,
+            dex_owed: LookupMap::new(b"d"),
+            paying: LookupMap::new(b"p"),
             storage: LookupMap::new(b"t"),
             trader: None,
             offer: None,
@@ -236,6 +271,7 @@ impl Vault {
 
     /// NEP-141 receiver: base token deposits only, everything else refunded.
     pub fn ft_on_transfer(&mut self, sender_id: AccountId, amount: U128, msg: String) -> PromiseOrValue<U128> {
+        self.inbound_block = env::block_height();
         if env::predecessor_account_id() != self.base_token {
             env::log_str("refund: not base token");
             return PromiseOrValue::Value(amount);
@@ -269,6 +305,11 @@ impl Vault {
             fire_pending: self.fire_pending,
             flows: self.flows,
             slip_since_ms: self.slip_since_ms,
+            draining: self.is_draining(),
+            suspense: self.per_token(&self.suspense),
+            dex_iou: self.per_token(&self.dex_iou),
+            iou_home: self.per_token(&self.iou_home),
+            dex_synced: self.dex_synced,
         }
     }
 
@@ -286,6 +327,11 @@ impl Vault {
         self.owed.get(&account).cloned().unwrap_or_default()
     }
 
+    /// ious left at ref by a leave; `claim` once dex_recover brought them home
+    pub fn get_dex_owed(&self, account: AccountId) -> Vec<(AccountId, U128)> {
+        self.dex_owed.get(&account).cloned().unwrap_or_default()
+    }
+
     pub fn get_pending_sync(&self) -> Vec<AccountId> {
         self.pending_sync.iter().cloned().collect()
     }
@@ -298,30 +344,52 @@ impl Vault {
         require!(op.is_some() || flows > 0, "nothing stale to unlock");
         if op.is_some() {
             self.op = None;
+            // a dead hop may have moved funds at ref without booking them
+            self.dex_synced = false;
         }
         if flows > 0 {
             self.flows = 0;
             self.flow_gen += 1;
+            self.flow_since_ms = now;
         }
         self.emit("unlocked", json!({"op": op, "flows": flows}));
     }
 }
 
 impl Vault {
-    fn lock(&mut self, op: Op, gas: Gas) {
-        require!(self.op.is_none() && self.flows == 0, "busy, retry");
+    /// false: flows in flight, so it sets `draining` (no panic, the flag must stick) and the caller retries
+    #[must_use]
+    fn lock(&mut self, op: Op, gas: Gas) -> bool {
+        require!(self.op.is_none(), "busy, retry");
         require!(env::prepaid_gas() >= gas, format!("attach at least {gas}"));
+        if self.flows > 0 {
+            self.draining = true;
+            env::log_str("busy: draining flows, retry");
+            return false;
+        }
+        self.draining = false;
         self.op = Some(op);
         self.op_since_ms = env::block_timestamp_ms();
         self.op_id += 1;
+        true
     }
 
-    /// Deposit/leave/settle start: only exclusive ops block it. Returns the gen its callback must carry.
+    /// flows in flight, or drained less than DRAIN_GRACE_MS ago, with an exclusive op waiting
+    fn is_draining(&self) -> bool {
+        self.draining && (self.flows > 0 || env::block_timestamp_ms() < self.flow_since_ms + DRAIN_GRACE_MS)
+    }
+
+    /// Deposit/leave/settle start: exclusive ops and drains block it. Returns the gen its callback must carry.
     fn start_flow(&mut self, gas: Gas) -> u64 {
         require!(self.op.is_none(), "busy, retry");
+        require!(!self.is_draining(), "draining, retry");
         require!(env::prepaid_gas() >= gas, format!("attach at least {gas}"));
+        // grace over: the waiting op had its chance
+        self.draining = false;
+        if self.flows == 0 {
+            self.flow_since_ms = env::block_timestamp_ms();
+        }
         self.flows += 1;
-        self.flow_since_ms = env::block_timestamp_ms();
         self.flow_gen
     }
 
@@ -332,6 +400,9 @@ impl Vault {
             return false;
         }
         self.flows = self.flows.saturating_sub(1);
+        if self.flows == 0 {
+            self.flow_since_ms = env::block_timestamp_ms();
+        }
         true
     }
 
@@ -347,6 +418,10 @@ impl Vault {
     /// NEAR left after paying for current storage
     fn free_near(&self) -> NearToken {
         env::account_balance().saturating_sub(env::storage_byte_cost().saturating_mul(env::storage_usage() as u128))
+    }
+
+    fn per_token(&self, v: &[u128]) -> Vec<(AccountId, U128)> {
+        self.whitelist.iter().cloned().zip(v.iter().map(|b| U128(*b))).collect()
     }
 
     fn token_index(&self, token: &AccountId) -> usize {

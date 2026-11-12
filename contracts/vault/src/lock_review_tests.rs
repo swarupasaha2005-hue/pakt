@@ -3,7 +3,7 @@
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::{json, to_vec};
 use near_sdk::test_utils::VMContextBuilder;
-use near_sdk::{testing_env, AccountId, Gas, NearToken, PromiseResult, RuntimeFeesConfig};
+use near_sdk::{testing_env, AccountId, Gas, NearToken, PromiseOrValue, PromiseResult, RuntimeFeesConfig};
 
 use super::*;
 
@@ -28,6 +28,32 @@ fn ctx_full(pred: &str, ms: u64, tgas: u64, near: NearToken, results: Vec<Promis
         Default::default(),
         results
     );
+}
+
+fn ctx_h(pred: &str, ms: u64, height: u64, results: Vec<PromiseResult>) {
+    testing_env!(
+        VMContextBuilder::new()
+            .current_account_id(acc("vault"))
+            .predecessor_account_id(acc(pred))
+            .prepaid_gas(Gas::from_tgas(300))
+            .account_balance(NearToken::from_near(10))
+            .block_timestamp(ms * 1_000_000)
+            .block_height(height)
+            .build(),
+        near_sdk::test_vm_config(),
+        RuntimeFeesConfig::test(),
+        Default::default(),
+        results
+    );
+}
+
+fn ok_u128(x: u128) -> PromiseResult {
+    PromiseResult::Successful(to_vec(&U128(x)).unwrap())
+}
+
+fn deps(pairs: &[(&str, u128)]) -> PromiseResult {
+    let m: std::collections::HashMap<_, _> = pairs.iter().map(|(t, a)| (t.to_string(), U128(*a))).collect();
+    PromiseResult::Successful(to_vec(&m).unwrap())
 }
 
 fn ctx_gas(pred: &str, ms: u64, tgas: u64, results: Vec<PromiseResult>) {
@@ -88,10 +114,11 @@ fn panics(f: impl FnOnce()) -> String {
     e.downcast_ref::<String>().cloned().or_else(|| e.downcast_ref::<&str>().map(|s| s.to_string())).unwrap_or_default()
 }
 
-/// H1: a full member exit from a vault holding 7-8 tokens needs more than GAS_LEAVE_CB (230 Tgas) in host costs alone.
+/// Gas measurement only. The mock charges the pre-protocol-66 function-call fee (2.32+2.32 Tgas vs 0.2+0.78 on
+/// mainnet) and 3x host costs, so it overstates; static gas of the spawned promises is exact. Not a proof of OOG.
 #[test]
-fn full_leave_many_tokens_exceeds_callback_gas() {
-    for n in [6usize, 7, 8] {
+fn full_leave_gas_by_token_count() {
+    for n in [4usize, 6] {
         let mut v = vault(n);
         deposit(&mut v, "aa", 100, 1_000, n);
         deposit(&mut v, "bb", 100, 1_000, n);
@@ -103,25 +130,8 @@ fn full_leave_many_tokens_exceeds_callback_gas() {
         let gen = v.flow_gen;
         ctx_gas("vault", 2_000, 300, vec![prices(n)]);
         v.on_leave(acc("aa"), U128(100 * USD), gen);
-        let used = env::used_gas().as_tgas();
-        println!("on_leave full exit, {n} tokens: {used} Tgas host-side (budget {})", shares::GAS_LEAVE_CB.as_tgas());
-        if n >= 7 {
-            assert!(used > shares::GAS_LEAVE_CB.as_tgas(), "{n} tokens should overflow 230 Tgas, used {used}");
-        }
+        println!("on_leave full exit, {n} tokens: {} Tgas in mock (budget {})", env::used_gas().as_tgas(), shares::GAS_LEAVE_CB.as_tgas());
     }
-    // and at the real 230 Tgas budget the callback dies (on chain: reverts, flow stays counted)
-    let mut v = vault(8);
-    deposit(&mut v, "aa", 100, 1_000, 8);
-    deposit(&mut v, "bb", 100, 1_000, 8);
-    for i in 1..8 {
-        v.balances[i] = 10 * USD;
-    }
-    ctx_at("aa", 2_000, vec![]);
-    v.leave(U128(100 * USD));
-    let gen = v.flow_gen;
-    ctx_gas("vault", 2_000, shares::GAS_LEAVE_CB.as_tgas(), vec![prices(8)]);
-    let msg = panics(|| v.on_leave(acc("aa"), U128(100 * USD), gen));
-    println!("on_leave at 230 Tgas: {msg}");
 }
 
 /// Gas lower bounds of the other tight callbacks, for the report.
@@ -139,9 +149,10 @@ fn measure_other_callbacks() {
     println!("on_proposed: {} Tgas (static 40)", env::used_gas().as_tgas());
 }
 
-/// H2: one dead flow + any flow started every <10 min keeps `flows` > 0 forever: unlock refuses, every exclusive op is busy.
+/// H1 (was dead_flow_kept_alive_by_fresh_flows): fresh flows no longer refresh `flow_since_ms`, so the dead one goes stale.
+/// A refused exclusive op drains: no new flows, and after 0 flows deposits wait out the grace so it can run.
 #[test]
-fn dead_flow_kept_alive_by_fresh_flows() {
+fn dead_flow_goes_stale_despite_fresh_flows() {
     let mut v = vault(2);
     deposit(&mut v, "aa", 100, 1_000, 2);
     deposit(&mut v, "bb", 100, 1_000, 2);
@@ -156,47 +167,94 @@ fn dead_flow_kept_alive_by_fresh_flows() {
         ctx_at("vault", t, vec![prices(2)]);
         v.on_leave(acc("bb"), U128(1), gen);
     }
-    // dead flow is 54 minutes old
-    assert_eq!(v.flows, 1);
-    ctx_at("anyone", t + 60_000, vec![]);
-    assert!(panics(|| v.unlock()).contains("nothing stale"));
-    ctx_at("dao", t + 60_000, vec![]);
+    assert_eq!((v.flows, v.flow_since_ms), (1, 1_000));
+    ctx_at("dao", t, vec![]);
     v.offer_trader(acc("tt"), U128(500 * USD), U128(50 * USD), 2_000, 9_000);
+    // refused accept sets the drain: deposits refund, leaves wait
+    ctx_at("tt", t, vec![]);
+    v.accept_offer();
+    assert!(v.op.is_none() && v.draining);
+    v.storage.insert(acc("cc"), storage::STORAGE_FEE.as_yoctonear());
+    ctx_at("usdc", t, vec![]);
+    assert!(matches!(v.ft_on_transfer(acc("cc"), U128(10 * USD), String::new()), PromiseOrValue::Value(_)));
+    assert!(near_sdk::test_utils::get_logs().iter().any(|l| l.contains("refund: draining, retry")));
+    ctx_at("bb", t, vec![]);
+    assert!(panics(|| v.leave(U128(1))).contains("draining"));
+    // dead flow is 54 minutes old: stale
+    ctx_at("anyone", t + 60_000, vec![]);
+    v.unlock();
+    assert_eq!(v.flows, 0);
+    // flows at 0 but inside the grace: a deposit spammer can't jump ahead of the accept
+    ctx_at("usdc", t + 60_000, vec![]);
+    assert!(matches!(v.ft_on_transfer(acc("cc"), U128(10 * USD), String::new()), PromiseOrValue::Value(_)));
     ctx_at("tt", t + 60_000, vec![]);
-    assert!(panics(|| v.accept_offer()).contains("busy"));
+    v.accept_offer();
+    assert_eq!((v.op, v.draining), (Some(Op::Accept), false));
+    ctx_at("vault", t + 60_000, vec![prices(2)]);
+    v.on_accept(acc("tt"), v.op_id);
+    deposit(&mut v, "cc", 10, t + 60_000, 2);
 }
 
-/// M1: dao fire on an idle vault does not pause; if on_fire dies, unlock hands the trader back full trading rights.
+/// H1 grief check: a drain nobody follows up lapses after DRAIN_GRACE_MS.
 #[test]
-fn unlocked_fire_leaves_trader_live() {
+fn unused_drain_lapses() {
+    let mut v = vault(2);
+    deposit(&mut v, "aa", 100, 1_000, 2);
+    hire(&mut v, 2);
+    v.at_dex[1] = 1;
+    ctx_at("aa", 1_000, vec![]);
+    v.leave(U128(USD));
+    ctx_at("anyone", 1_000, vec![]);
+    v.dex_recover(acc("t1")); // anyone may set the drain
+    assert!(v.draining);
+    ctx_at("vault", 2_000, vec![prices(2)]);
+    v.on_leave(acc("aa"), U128(USD), v.flow_gen);
+    ctx_at("aa", 2_000 + DRAIN_GRACE_MS - 1, vec![]);
+    assert!(panics(|| v.leave(U128(USD))).contains("draining"));
+    ctx_at("aa", 2_000 + DRAIN_GRACE_MS, vec![]);
+    v.leave(U128(USD));
+    assert_eq!((v.flows, v.draining), (1, false));
+}
+
+/// M1 (was unlocked_fire_leaves_trader_live): idle fire pauses first, so a lost on_fire is finished by anyone.
+#[test]
+fn unlocked_fire_stays_paused_then_finishes() {
     let mut v = vault(2);
     deposit(&mut v, "aa", 100, 1_000, 2);
     hire(&mut v, 2);
     ctx_at("dao", 2_000, vec![]);
     v.fire();
-    assert!(!v.trader.as_ref().unwrap().paused && !v.fire_pending);
+    assert!(v.trader.as_ref().unwrap().paused && v.fire_pending && v.op == Some(Op::Fire));
     // on_fire never lands
     ctx_at("anyone", 2_000 + LOCK_TTL_MS, vec![]);
     v.unlock();
     ctx_at("tt", 2_000 + LOCK_TTL_MS, vec![]);
-    v.trade(7, acc("usdc"), acc("t1"), U128(50 * USD), U128(0));
-    assert_eq!(v.op, Some(Op::Trade));
-    assert!(panics(|| v.finish_fire()).contains("no fire pending"));
+    assert!(panics(|| v.trade(7, acc("usdc"), acc("t1"), U128(50 * USD), U128(0))).contains("trader paused"));
+    ctx_at("anyone", 2_000 + LOCK_TTL_MS, vec![]);
+    v.finish_fire();
+    ctx_at("vault", 2_000 + LOCK_TTL_MS, vec![prices(2)]);
+    v.on_fire(v.op_id);
+    assert!(v.trader.is_none() && !v.fire_pending && v.op.is_none());
 }
 
-/// M1b: the idle fire path needs 250 Tgas from the dao proposal; the busy path needs none.
+/// M1b (was fire_idle_path_needs_250_tgas): a dao proposal under 250 Tgas pauses + defers, never fails.
 #[test]
-fn fire_idle_path_needs_250_tgas() {
+fn fire_short_gas_defers_to_finish_fire() {
     let mut v = vault(2);
     deposit(&mut v, "aa", 100, 1_000, 2);
     hire(&mut v, 2);
     ctx_gas("dao", 2_000, 150, vec![]);
-    assert!(panics(|| v.fire()).contains("attach at least"));
+    v.fire();
+    assert!(v.trader.as_ref().unwrap().paused && v.fire_pending && v.op.is_none());
+    assert!(near_sdk::test_utils::get_logs().iter().any(|l| l.contains(r#""event":"fire_pending""#)));
+    ctx_at("anyone", 2_000, vec![]);
+    v.finish_fire();
+    assert_eq!(v.op, Some(Op::Fire));
 }
 
-/// L: last holder's failed payout with no free NEAR goes back to the pool at total_shares 0; next depositor takes it.
+/// L1 (was orphan_payout_windfall_to_next_depositor): the orphaned pool goes to the platform as shares.
 #[test]
-fn orphan_payout_windfall_to_next_depositor() {
+fn orphan_pool_minted_to_platform() {
     let mut v = vault(2);
     deposit(&mut v, "aa", 100, 1_000, 2);
     ctx_at("aa", 1_000, vec![]);
@@ -207,26 +265,132 @@ fn orphan_payout_windfall_to_next_depositor() {
     assert_eq!(v.total_shares, 0);
     ctx_full("vault", 1_000, 300, NearToken::from_yoctonear(0), vec![PromiseResult::Failed]);
     v.on_payout(acc("aa"), acc("usdc"), U128(100 * USD));
-    assert_eq!((v.balances[0], v.total_shares), (100 * USD, 0));
+    assert_eq!((v.balances[0], v.total_shares, v.out[0]), (100 * USD, 0, 0));
     deposit(&mut v, "bb", 10, 2_000, 2);
-    // bb owns 100% of 110 usdc for a 10 usdc deposit
-    assert_eq!(v.total_shares, v.holders.get(&acc("bb")).unwrap().shares.0);
-    assert_eq!(v.balances[0], 110 * USD);
+    // bb owns its own 10 of the 110, platform the orphaned 100
+    let bb = v.holders.get(&acc("bb")).unwrap().shares.0;
+    assert_eq!(math::mul_div(110 * USD, bb, v.total_shares), 10 * USD);
+    assert_eq!(v.holders.get(&acc("platform")).unwrap().shares.0, 100 * USD);
 }
 
-/// L: the slippage window is fixed, not rolling: the full 3% budget twice within a minute.
+/// L2 (was slip_window_tumbles): leaky bucket, no reset: a full spend leaves ~nothing a minute later, half after 12h.
 #[test]
-fn slip_window_tumbles() {
+fn slip_budget_refills_linearly() {
     let mut v = vault(2);
     deposit(&mut v, "aa", 1_000, 1_000, 2);
     hire(&mut v, 2);
-    let total = 1_000 * USD;
-    let cap = total * trade::MAX_PERIOD_SLIP_BPS / BPS;
-    v.slip_used = cap; // budget spent just before the window ends
-    let t = v.slip_since_ms + DAY_MS;
+    // bucket = half the 24h budget: $15 of $1000; it refills $15/day, so any 24h span spends at most 3%
+    let bucket = 1_000 * USD * trade::MAX_PERIOD_SLIP_BPS / BPS / 2;
+    let t0 = v.slip_since_ms + DAY_MS;
+    (v.slip_used, v.slip_since_ms) = (bucket, t0);
+    ctx_at("tt", t0 + 60_000, vec![]);
+    v.trade(7, acc("usdc"), acc("t1"), U128(50 * USD), U128(0));
+    ctx_at("vault", t0 + 60_000, vec![prices(2)]);
+    v.on_trade_prices(7, 0, 1, U128(50 * USD), U128(0), v.op_id);
+    assert_eq!(v.op, None, "a minute after a full spend: refused");
+    assert_eq!(v.slip_used, bucket - bucket * 60_000 / DAY_MS as u128);
+    let t = t0 + DAY_MS / 2;
     ctx_at("tt", t, vec![]);
     v.trade(7, acc("usdc"), acc("t1"), U128(50 * USD), U128(0));
     ctx_at("vault", t, vec![prices(2)]);
     v.on_trade_prices(7, 0, 1, U128(50 * USD), U128(0), v.op_id);
-    assert_eq!((v.slip_used, v.op), (0, Some(Op::Trade)), "budget fully reset one ms after a full spend");
+    assert!(v.op == Some(Op::Trade) && v.slip_used.abs_diff(bucket / 2) <= 1, "half refilled after 12h");
+}
+
+/// M2: resync parks Ref's shortfall in suspense; reconcile credits only what the token proves is home.
+#[test]
+fn resync_shortfall_reconciled_up_to_onchain() {
+    let mut v = vault(2);
+    deposit(&mut v, "aa", 100, 1_000, 2);
+    // a dead withdraw: 50 t1 came home but at_dex still says 50
+    v.at_dex[1] = 50 * USD;
+    ctx_at("anyone", 1_000, vec![]);
+    v.dex_recover(acc("t1"));
+    ctx_at("vault", 1_000, vec![deps(&[])]);
+    v.on_dex_deposits(1, v.op_id);
+    assert_eq!((v.at_dex[1], v.suspense[1], v.op), (0, 50 * USD, None));
+    ctx_h("anyone", 1_000, 100, vec![]);
+    v.reconcile(acc("t1"));
+    // a refund raced the read: nothing credited
+    v.inbound_block = 98;
+    ctx_h("vault", 1_000, 101, vec![ok_u128(50 * USD)]);
+    v.on_reconcile(1, 100, v.op_id);
+    assert_eq!((v.balances[1], v.suspense[1], v.op), (0, 50 * USD, None));
+    // token says only 30 are ours beyond the ledger: credit 30, keep 20
+    ctx_h("anyone", 1_000, 200, vec![]);
+    v.reconcile(acc("t1"));
+    ctx_h("vault", 1_000, 201, vec![ok_u128(30 * USD)]);
+    v.on_reconcile(1, 200, v.op_id);
+    assert_eq!((v.balances[1], v.suspense[1]), (30 * USD, 20 * USD));
+    // never more than suspense, however much the token shows
+    ctx_h("anyone", 1_000, 300, vec![]);
+    v.reconcile(acc("t1"));
+    ctx_h("vault", 1_000, 301, vec![ok_u128(500 * USD)]);
+    v.on_reconcile(1, 300, v.op_id);
+    assert_eq!((v.balances[1], v.suspense[1]), (50 * USD, 0));
+}
+
+/// M2 mirror: an unreadable ft_transfer_call result keeps the input in at_dex, not home too; resync + reconcile fix it once.
+#[test]
+fn failed_dex_deposit_resolve_not_double_counted() {
+    let mut v = vault(2);
+    deposit(&mut v, "aa", 100, 1_000, 2);
+    hire(&mut v, 2);
+    ctx_at("tt", 1_000, vec![]);
+    v.trade(7, acc("usdc"), acc("t1"), U128(50 * USD), U128(0));
+    ctx_at("vault", 1_000, vec![prices(2)]);
+    v.on_trade_prices(7, 0, 1, U128(50 * USD), U128(0), v.op_id);
+    let p = oracle::read().unwrap();
+    ctx_at("vault", 1_000, vec![PromiseResult::Failed]);
+    v.on_dex_deposit(7, 0, 1, U128(50 * USD), U128(0), U128(50 * USD), p, v.op_id);
+    assert_eq!((v.balances[0], v.at_dex[0], v.op, v.dex_synced), (50 * USD, 50 * USD, None, false));
+    ctx_at("aa", 1_000, vec![]);
+    assert!(panics(|| v.leave(U128(USD))).contains("funds at dex"));
+    // the transfer never moved: ref has nothing, the 50 are home
+    ctx_at("anyone", 1_000, vec![]);
+    v.dex_recover(acc("usdc"));
+    ctx_at("vault", 1_000, vec![deps(&[])]);
+    v.on_dex_deposits(0, v.op_id);
+    ctx_h("anyone", 1_000, 100, vec![]);
+    v.reconcile(acc("usdc"));
+    ctx_h("vault", 1_000, 101, vec![ok_u128(100 * USD)]);
+    v.on_reconcile(0, 100, v.op_id);
+    assert_eq!((v.balances[0], v.at_dex[0], v.suspense[0], v.dex_synced), (100 * USD, 0, 0, true));
+}
+
+/// M3: leave with a token stuck at ref: balances paid now, the at_dex slice becomes an iou claimed after dex_recover.
+#[test]
+fn leave_with_stuck_token_gets_iou() {
+    let mut v = vault(2);
+    deposit(&mut v, "aa", 100, 1_000, 2);
+    deposit(&mut v, "bb", 100, 1_000, 2);
+    v.balances[0] -= 60 * USD;
+    v.at_dex[1] = 60 * USD; // parked after a failed withdraw: synced
+    let paid = v.storage.get(&acc("aa")).copied().unwrap();
+    ctx_at("aa", 1_000, vec![]);
+    v.leave(U128(100 * USD));
+    ctx_at("vault", 1_000, vec![prices(2)]);
+    v.on_leave(acc("aa"), U128(100 * USD), v.flow_gen);
+    assert_eq!((v.balances[0], v.at_dex[1], v.dex_iou[1]), (70 * USD, 30 * USD, 30 * USD));
+    assert_eq!(v.get_dex_owed(acc("aa")), vec![(acc("t1"), U128(30 * USD))]);
+    // row paid by aa's deposit (plus the leave sync)
+    assert!(v.storage.get(&acc("aa")).copied().unwrap() < paid - dao::DAO_STORAGE.as_yoctonear());
+    // bb's value is exact: 70 usdc + 30 t1 at ref
+    assert_eq!(v.vault_value(&oracle::read().unwrap()), Some(100 * USD));
+    ctx_at("aa", 1_000, vec![]);
+    assert!(panics(|| v.claim(acc("t1"))).contains("iou still at dex"));
+    ctx_at("anyone", 1_000, vec![]);
+    v.dex_recover(acc("t1"));
+    ctx_at("vault", 1_000, vec![deps(&[("t1", 60 * USD)])]);
+    v.on_dex_deposits(1, v.op_id);
+    ctx_at("vault", 1_000, vec![ok_u128(60 * USD)]);
+    v.on_dex_withdraw(1, U128(60 * USD), v.op_id);
+    assert_eq!((v.balances[1], v.at_dex[1], v.dex_iou[1], v.iou_home[1]), (30 * USD, 0, 0, 30 * USD));
+    ctx_at("aa", 1_000, vec![]);
+    v.claim(acc("t1"));
+    assert_eq!((v.iou_home[1], v.out[1]), (0, 30 * USD));
+    assert!(v.get_dex_owed(acc("aa")).is_empty());
+    ctx_at("vault", 1_000, vec![PromiseResult::Successful(vec![])]);
+    v.on_payout(acc("aa"), acc("t1"), U128(30 * USD));
+    assert_eq!(v.out[1], 0);
 }
