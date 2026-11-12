@@ -19,7 +19,7 @@ export function OfferCard({ offer, name, vault, members, value, now, onDone }: P
     <section aria-label="Trader offer" className="rounded-xl border border-accent bg-panel-2 p-4">
       <div className="flex items-center gap-3">
         <Avatar name={name} size={36} />
-        <h3 className="text-base font-bold">{name} wants to hire you</h3>
+        <h3 className="text-base font-medium">{name} wants to hire you</h3>
       </div>
       <p className="mt-2 text-xs text-text-2">
         Budget {usd(e6(t.budget))} · max {usd(e6(t.max_per_trade))}/trade

@@ -5,16 +5,16 @@ import { useEffect, useState } from "react";
 import { TxStatus } from "@/components/pakt/TxStatus";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { CheckIcon } from "@/components/ui/icons";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { BASE_TOKEN, daoId, TOKENS } from "@/lib/config";
 import { createPakt, getPakt, requiredDeposit } from "@/lib/near/contracts";
 import { useWallet } from "@/lib/near/wallet";
 import { useTx } from "@/lib/pakt/tx";
+import { LOGOS } from "@/lib/home/data";
 import { fromRaw, toRaw } from "@/lib/pakt/units";
 
-const label = "grid grid-cols-[1fr_12rem] items-center gap-3 text-xs text-text-2";
+const label = "grid grid-cols-[1fr_12rem] items-center gap-3 text-sm font-medium text-text";
 // factory rule: 2-32 of a-z 0-9 - _, and a valid account label (no leading, trailing or double separators)
 const NAME = /^[a-z\d]+([-_][a-z\d]+)*$/;
 
@@ -104,25 +104,27 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
           onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))}
         />
         {name && <p className="-mt-2 text-xs text-text-3">{taken === name ? "name taken" : `becomes ${daoId(name)}`}</p>}
-        <div className={label}>
+        <div className="flex flex-col gap-2 text-sm font-medium">
           Tokens
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2">
             {TOKENS.map((t) => {
               const on = picked.includes(t.id);
               const base = t.id === BASE_TOKEN.id;
               return (
-                <label key={t.id} className={`flex items-center gap-1.5 ${base ? "cursor-not-allowed" : "cursor-pointer hover:text-text"}`} title={base ? "Deposit token, always on" : undefined}>
+                <label
+                  key={t.id}
+                  title={base ? "Deposit token, always on" : undefined}
+                  className={`flex h-9 items-center gap-2 rounded-lg border px-2.5 transition-colors has-focus-visible:ring-1 has-focus-visible:ring-accent ${on ? "border-accent bg-accent/10 text-text" : "text-text-2 hover:text-text"} ${base ? "cursor-not-allowed" : "cursor-pointer"}`}
+                >
                   <input
                     type="checkbox"
                     checked={on}
                     disabled={base}
                     onChange={(e) => setPicked((p) => (e.target.checked ? [...p, t.id] : p.filter((x) => x !== t.id)))}
-                    className="peer sr-only"
+                    className="sr-only"
                   />
-                  <span aria-hidden className={`flex size-4 items-center justify-center rounded border peer-focus-visible:ring-1 peer-focus-visible:ring-accent ${on ? "border-accent bg-accent text-white" : "border-text-3"}`}>
-                    {on && <CheckIcon className="size-3" strokeWidth={3} />}
-                  </span>
-                  <span className={on ? "text-text" : ""}>{t.symbol}</span>
+                  <Avatar name={t.symbol} src={LOGOS[t.symbol]} size={20} />
+                  {t.symbol}
                 </label>
               );
             })}
@@ -136,7 +138,7 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
           Min deposit $
           <Input inputMode="decimal" value={minDeposit} onChange={(e) => setMinDeposit(e.target.value.replace(/[^\d.]/g, ""))} />
         </label>
-        <p className="rounded-xl bg-panel-2 p-3 text-xs text-text-2">
+        <p className="rounded-xl bg-panel-2 p-3 text-xs leading-5 text-text-2">
           ⓘ Creates a Sputnik DAO + vault, open to anyone. Network cost{" "}
           <span className="font-bold text-text">{cost ? `${fromRaw(cost, 24).toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR` : "…"}</span>{" "}
           pays their storage and is not refunded. If setup fails, it comes back.

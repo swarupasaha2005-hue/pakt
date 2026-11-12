@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
+import { HoverCard } from "@/components/ui/HoverCard";
 import { CheckIcon, CopyIcon } from "@/components/ui/icons";
 import { usd } from "@/lib/format";
 import type { PaktInfo, TokenPrice } from "@/lib/home/data";
+import { TokenHoverCard } from "./TokenHoverCard";
 
 type Props = {
   token: TokenPrice;
@@ -9,7 +12,7 @@ type Props = {
   held?: { pakt: PaktInfo; value: number }[];
 };
 
-/** 56px row; tokens have no page, so the row is not a link */
+/** 56px row; symbol link stretches over the row, the copy button sits above it */
 export function TokenRow({ token: t, held }: Props) {
   const top = held?.[0]?.pakt;
   const total = held?.reduce((a, h) => a + h.value, 0);
@@ -18,12 +21,17 @@ export function TokenRow({ token: t, held }: Props) {
     <tr className="group relative h-14 text-base hover:bg-panel-2/60">
       <td className="border-r px-3">
         <span className="flex items-center gap-3">
-          <Avatar name={t.symbol} src={t.logo} badge={<CheckIcon className="size-3.5 rounded-full bg-accent p-0.5 text-white" strokeWidth={3} />} />
+          {/* z-10: above the stretched row link so the avatar gets hover */}
+          <HoverCard className="relative z-10" card={<TokenHoverCard token={t} held={held} />}>
+            <Avatar name={t.symbol} src={t.logo} badge={<CheckIcon className="size-3.5 rounded-full bg-accent p-0.5 text-white" strokeWidth={3} />} />
+          </HoverCard>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="leading-6">{t.symbol}</span>
+            <Link href={`/token/${t.symbol}`} className="leading-6 after:absolute after:inset-0">
+              {t.symbol}
+            </Link>
             <span className="flex items-center gap-1.5 text-xs leading-4 text-text-2">
               <span className="truncate">{t.id}</span>
-              <button type="button" aria-label={`Copy ${t.symbol} contract`} onClick={() => navigator.clipboard.writeText(t.id)} className="text-text-3 hover:text-text">
+              <button type="button" aria-label={`Copy ${t.symbol} contract`} onClick={() => navigator.clipboard.writeText(t.id)} className="relative z-10 text-text-3 hover:text-text">
                 <CopyIcon className="size-3.5" />
               </button>
             </span>

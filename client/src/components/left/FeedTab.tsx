@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FilterIcon } from "@/components/ui/icons";
 import { Segmented } from "@/components/ui/Segmented";
 import { Select } from "@/components/ui/Select";
@@ -28,7 +28,12 @@ export function FeedTab() {
   const [live, setLive] = useState<PaktEvent[]>([]);
   const { data, error } = useLoad(() => feed({ limit: 100 }), []);
   const mine = useLoad(accountId ? () => loadHoldings(accountId) : null, [accountId]);
-  useStream((e) => setLive((l) => (l.some((x) => x.id === e.id) ? l : [e, ...l])));
+  const list = useRef<HTMLDivElement>(null);
+  const [fresh, setFresh] = useState(false); // live events landed above the scrolled view
+  useStream((e) => {
+    setLive((l) => (l.some((x) => x.id === e.id) ? l : [e, ...l]));
+    if ((list.current?.scrollTop ?? 0) > 40) setFresh(true);
+  });
 
   const myVaults = mine.data?.map((h) => h.pakt.vault) ?? [];
   const seen = new Set<number>();
@@ -51,7 +56,16 @@ export function FeedTab() {
         </button>
       </div>
       {filtering && <Segmented options={FILTERS} value={filter} onChange={setFilter} className="px-3 pb-2" />}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={list} onScroll={(e) => e.currentTarget.scrollTop < 40 && setFresh(false)} className="relative flex-1 overflow-y-auto">
+        {fresh && (
+          <button
+            type="button"
+            onClick={() => list.current?.scrollTo({ top: 0, behavior: "smooth" })}
+            className="sticky top-1 z-10 mx-auto block h-6 animate-fade-in rounded-full bg-accent px-2.5 text-xs font-bold text-white shadow-[0_4px_12px_rgb(0_0_0/0.4)]"
+          >
+            New activity
+          </button>
+        )}
         {!data && !error && (
           <div className="space-y-2 px-3 py-2">
             {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}
@@ -59,7 +73,7 @@ export function FeedTab() {
         )}
         {error && <p className="py-10 text-center text-sm text-text-2">Could not load the feed</p>}
         {data && !events.length && <p className="py-10 text-center text-sm text-text-2">No activity yet</p>}
-        <ul>
+        <ul className="px-1">
           {events.map((e) => (
             <FeedRow key={e.id} event={e} now={now} />
           ))}

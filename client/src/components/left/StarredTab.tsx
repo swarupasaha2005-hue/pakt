@@ -16,7 +16,7 @@ export function StarredTab() {
   return (
     <ul className="flex-1 space-y-1 overflow-y-auto px-2">
       <li className="px-2 pt-2 pb-1 text-xs font-bold text-text-3">Pakts</li>
-      {!data && starred.length > 0 && <li><Skeleton className="h-[52px] rounded-xl" /></li>}
+      {!data && starred.length > 0 && <li><Skeleton className="h-[53px] rounded-lg" /></li>}
       {data && !list.length && <li className="py-10 text-center text-sm text-text-2">Star pakts on Discover to keep them here</li>}
       {list.map((p) => (
         <li key={p.vault}>

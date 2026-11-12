@@ -2,11 +2,13 @@
 import { accountFeed, pakts, trader, type PaktEvent, type TraderRecord } from "../api";
 import { RPC_URL, TOKENS, type TokenInfo } from "../config";
 import { ftBalanceOf, getHolder, getPrices, getState, sharesValue, usdE6, vaultValue } from "../near/contracts";
+import { costBasis } from "./cost";
 import { e6, paktName } from "./format";
 
 export type Cash = { token: TokenInfo; raw: string; usd: number | null };
 /** value null when a held token has no oracle price */
-export type Position = { vault: string; name: string; shares: string; member: boolean; joinedMs: number; value: number | null; pct: number };
+/** cost: usd paid in for the shares still held (average cost); null when no deposit is indexed */
+export type Position = { vault: string; name: string; shares: string; member: boolean; joinedMs: number; value: number | null; pct: number; cost: number | null };
 export type ProfileData = { cash: Cash[]; positions: Position[]; events: PaktEvent[]; trader: TraderRecord | null };
 
 /** false only for UNKNOWN_ACCOUNT; other rpc errors throw */
@@ -33,17 +35,31 @@ async function allVaults() {
   return out;
 }
 
+// shortcut: cost basis reads the newest 1000 events, enough for any testnet account; page further if accounts get busier
+async function accountHistory(account: string) {
+  const out: PaktEvent[] = [];
+  for (let before: number | undefined, i = 0; i < 10; i++) {
+    const page = await accountFeed(account, { limit: 100, before });
+    out.push(...page.items);
+    if (page.next === null) break;
+    before = page.next;
+  }
+  return out;
+}
+
 /** null = no such account on chain */
 export async function loadProfile(account: string): Promise<ProfileData | null> {
   if (!(await accountExists(account))) return null;
   const ids = TOKENS.map((t) => t.id);
-  const [prices, balances, vaults, feed, record] = await Promise.all([
+  const [prices, balances, vaults, feed, record, history] = await Promise.all([
     getPrices(ids),
     Promise.all(ids.map((id) => ftBalanceOf(id, account))),
     allVaults(),
     accountFeed(account, { limit: 50 }),
     trader(account),
+    accountHistory(account),
   ]);
+  const costs = costBasis(history, account);
 
   const cash = TOKENS.map((t, i) => {
     const v = usdE6(prices, t.id, balances[i]);
@@ -60,6 +76,7 @@ export async function loadProfile(account: string): Promise<ProfileData | null> 
         vault, name: paktName(vault), shares: h.shares, member: h.member, joinedMs: h.joined_ms,
         value: total === null ? null : e6(sharesValue(h.shares, s, total)),
         pct: s.total_shares === "0" ? 0 : (Number(h.shares) / Number(s.total_shares)) * 100,
+        cost: costs.get(vault) ?? null,
       };
     }),
   );

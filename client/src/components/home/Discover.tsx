@@ -16,6 +16,7 @@ export function Discover() {
       <PinStrip />
       <div className="flex min-h-0 flex-1 gap-3">
         <MarketTable />
+        <div data-tour="positions" className="flex shrink-0">
         {positionsOpen ? (
           <RightPanel>
             <Positions onCollapse={() => setPositionsOpen(false)} />
@@ -27,6 +28,7 @@ export function Discover() {
             </button>
           </aside>
         )}
+        </div>
       </div>
     </main>
   );

@@ -55,6 +55,8 @@ export const getHolders = (vault: string, from?: number, limit?: number) => view
 export const getHolder = (vault: string, account: string) => view<Holder | null>(vault, "get_holder", { account });
 /** payouts that failed (e.g. not registered on the token); `claim` them */
 export const getOwed = (vault: string, account: string) => view<[string, string][]>(vault, "get_owed", { account });
+/** accounts whose dao membership sync failed; `syncMember` retries */
+export const getPendingSync = (vault: string) => view<string[]>(vault, "get_pending_sync");
 export const getDexOwed = (vault: string, account: string) => view<[string, string][]>(vault, "get_dex_owed", { account });
 /** vault or any NEP-145 token */
 export const storageBalanceOf = (contract: string, account: string) => view<StorageBalance | null>(contract, "storage_balance_of", { account_id: account });
@@ -168,6 +170,22 @@ export const deposit = (vault: string, amount: string, msg = "", token = BASE_TO
 export const leave = (vault: string, shares: string): Tx[] => [{ receiverId: vault, actions: [call("leave", { shares }, 300)] }];
 /** retry a parked payout (get_owed) */
 export const claim = (vault: string, token: string): Tx[] => [{ receiverId: vault, actions: [call("claim", { token }, 300)] }];
+
+// ---- recovery, callable by anyone
+/** pays out a fire the dao vote couldn't finish (busy vault or low gas) */
+export const finishFire = (vault: string): Tx[] => [{ receiverId: vault, actions: [call("finish_fire", {}, 300)] }];
+/** pulls funds parked at ref back into the vault */
+export const dexRecover = (vault: string, token: string): Tx[] => [{ receiverId: vault, actions: [call("dex_recover", { token }, 300)] }];
+/** credits tokens the vault holds beyond its ledger back to the pool */
+export const reconcile = (vault: string, token: string): Tx[] => [{ receiverId: vault, actions: [call("reconcile", { token }, 100)] }];
+/** clears a lock whose callback died, after the 10 min ttl */
+export const unlock = (vault: string): Tx[] => [{ receiverId: vault, actions: [call("unlock", {}, 30)] }];
+/** retries a failed dao sync; needs dao bond + 0.003 NEAR, the excess is refunded */
+export const syncMember = (vault: string, account: string): Tx[] => [
+  { receiverId: vault, actions: [call("sync_member", { account }, 300, SYNC_DEPOSIT)] },
+];
+const SYNC_DEPOSIT = "250000000000000000000000"; // 0.25 NEAR covers any bond a pakt sets today; refunded above need
+export const LOCK_TTL_MS = 10 * 60_000;
 
 /** member proposal: dao runs `vault.method(args)` once approved */
 export const propose = (dao: string, vault: string, method: string, args: object, description: string, bond = DAO_BOND): Tx[] => [{

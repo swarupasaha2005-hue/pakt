@@ -68,7 +68,7 @@ export function TradePanel({ vault, state, prices, account, now, onDone }: Props
             type="button"
             aria-pressed={side === s}
             onClick={() => setSide(s)}
-            className={`h-9 rounded-xl text-base font-bold capitalize transition-colors ${
+            className={`h-9 rounded-xl text-base font-medium capitalize transition-colors ${
               side !== s ? "bg-panel-2 text-text-2 hover:text-text" : s === "buy" ? "bg-up-bg text-up" : "bg-down/15 text-down"
             }`}
           >
@@ -92,7 +92,7 @@ export function TradePanel({ vault, state, prices, account, now, onDone }: Props
       </label>
 
       <label className="flex h-[69px] items-center justify-between rounded-xl bg-panel-2 px-4">
-        <span className="flex items-center text-[30px] leading-9 font-medium">
+        <span className="flex items-center text-[28px] leading-9 font-medium">
           $
           <input
             inputMode="decimal"

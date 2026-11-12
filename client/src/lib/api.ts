@@ -80,3 +80,9 @@ export const trader = (account: string) => get<TraderRecord>(`/traders/${enc(acc
 export const leaderboard = (q: PageQuery & { range?: Range } = {}) => get<Leaderboard>("/leaderboard", q);
 /** window like 15m, 1h, 7d; max 30d */
 export const alerts = (q: PageQuery & { window?: string } = {}) => get<Page<Alert>>("/alerts", q);
+
+/** testnet faucet: mints test tokens to the account; throws the server's message */
+export async function requestTokens(account: string): Promise<void> {
+  const res = await fetch(`${API_URL}/faucet?account=${enc(account)}`, { method: "POST" });
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? `faucet: ${res.status}`);
+}

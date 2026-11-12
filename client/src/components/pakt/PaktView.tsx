@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Tabs } from "@/components/ui/Tabs";
 import type { PaktEvent } from "@/lib/api";
-import { daoMembers, getOwed, sharesValue } from "@/lib/near/contracts";
+import { daoMembers, getDexOwed, getOwed, getPendingSync, sharesValue } from "@/lib/near/contracts";
 import { useWallet } from "@/lib/near/wallet";
 import { usePakt, useNow } from "@/lib/pakt/load";
+import { recoveries } from "@/lib/pakt/recover";
 import { e6, PRICE_SCALE, sharePrice } from "@/lib/pakt/units";
 import { needed, voteRows } from "@/lib/pakt/votes";
 import { MembersTable } from "./MembersTable";
@@ -21,6 +22,7 @@ import { OfferCard } from "./OfferCard";
 import { OpenVotesCard } from "./OpenVotesCard";
 import { OwedCard } from "./OwedCard";
 import { PaktHeader } from "./PaktHeader";
+import { RecoveryCard } from "./RecoveryCard";
 import { SettlementCard } from "./SettlementCard";
 import { SettlementsTable } from "./SettlementsTable";
 import { ShareCard } from "./ShareCard";
@@ -51,12 +53,19 @@ export function PaktView({ name }: { name: string }) {
   const [tab, setTab] = useState<Tab>("members");
   const [modal, setModal] = useState<ModalKind | null>(null);
   const [owed, setOwed] = useState<[string, string][]>([]);
+  const [pendingSync, setPendingSync] = useState<string[]>([]);
   const vault = data?.info.vault;
 
   useEffect(() => {
     if (!vault || !accountId) return;
-    getOwed(vault, accountId).then(setOwed).catch(() => setOwed([]));
+    // failed payouts and ious from a leave while funds sat at ref; `claim` takes both
+    Promise.all([getOwed(vault, accountId), getDexOwed(vault, accountId)])
+      .then(([a, b]) => setOwed([...a, ...b]))
+      .catch(() => setOwed([]));
   }, [vault, accountId, data]);
+  useEffect(() => {
+    if (vault) getPendingSync(vault).then(setPendingSync).catch(() => setPendingSync([]));
+  }, [vault, data]);
 
   if (data === undefined) {
     return (
@@ -113,6 +122,7 @@ export function PaktView({ name }: { name: string }) {
         ? "Settles after the period"
         : busy;
   const voteBlocked = !accountId ? "Connect wallet to vote" : daoMember ? null : "Only members vote";
+  const fixes = recoveries(info.vault, state, now, accountId, pendingSync);
   const props = { name: info.name, vault: info.vault, dao: info.dao, onClose: () => setModal(null), onDone: refresh };
 
   const body = {
@@ -169,6 +179,7 @@ export function PaktView({ name }: { name: string }) {
           onLeave={() => setModal("leave")}
           onDeposit={() => setModal("deposit")}
         />
+        {fixes.length > 0 && <RecoveryCard fixes={fixes} onDone={refresh} />}
         {accountId && owed.length > 0 && <OwedCard vault={info.vault} account={accountId} owed={owed} onDone={refresh} />}
         <TraderCard state={state} member={daoMember} onPropose={() => setModal("propose")} onRaise={() => setModal("raise")} onFire={() => setModal("fire")} />
         <SettlementCard vault={info.vault} profit={profit} fee={(state.trader?.fee_bps ?? 0) / 100} dueMs={dueMs} now={now} blocked={settleBlocked} onDone={refresh} />

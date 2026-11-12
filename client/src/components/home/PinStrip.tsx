@@ -1,29 +1,46 @@
 "use client";
 
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { StarIcon } from "@/components/ui/icons";
 import { usd } from "@/lib/format";
-import { loadTokens, useLoad } from "@/lib/home/data";
+import { loadTokens, useLoad, useStarred } from "@/lib/home/data";
 
-/** the pakt token whitelist at oracle prices */
+/** starred tokens as 176x66 cards; a hint box when none are starred */
 export function PinStrip() {
-  const { data, error } = useLoad(loadTokens, []);
-  if (error) {
-    return <div className="flex h-16 w-fit shrink-0 items-center rounded-xl border px-3 text-sm text-text-3">Prices unavailable</div>;
+  const { data } = useLoad(loadTokens, []);
+  const { starred, toggle } = useStarred();
+  const pinned = data?.filter((t) => starred.includes(t.symbol)) ?? [];
+
+  if (!pinned.length) {
+    return <div data-tour="pins" className="flex h-[66px] w-fit shrink-0 items-center rounded-xl border px-3 text-sm text-text-3">Star assets to pin them here</div>;
   }
   return (
-    <div className="flex h-16 shrink-0 gap-2 overflow-x-auto">
-      {data
-        ? data.map((t) => (
-            <div key={t.id} className="flex shrink-0 items-center gap-2.5 rounded-xl border px-3">
-              <Avatar name={t.symbol} src={t.logo} size={32} />
-              <span className="flex flex-col">
-                <span className="text-sm leading-5">{t.symbol}</span>
-                <span className="text-xs leading-5 text-text-2">{t.price === null ? "Price stale" : usd(t.price)}</span>
-              </span>
-            </div>
-          ))
-        : [0, 1, 2].map((i) => <Skeleton key={i} className="h-16 w-36 rounded-xl" />)}
-    </div>
+    <section data-tour="pins" className="flex h-[66px] shrink-0 gap-3 overflow-x-auto">
+      {pinned.map((t) => (
+        <Link key={t.id} href={`/token/${t.symbol}`} className="flex w-44 shrink-0 animate-fade-in flex-col gap-2 rounded-xl border p-2 text-sm font-medium hover:bg-panel-2">
+          <span className="flex h-5 items-center justify-between gap-2">
+            <Avatar name={t.symbol} src={t.logo} size={20} />
+            <span className="flex items-center gap-1 text-text-2">
+              {t.symbol}
+              <button
+                type="button"
+                aria-label={`Unstar ${t.symbol}`}
+                onClick={(e) => {
+                  e.preventDefault(); // inside the card link
+                  toggle(t.symbol);
+                }}
+              >
+                <StarIcon className="size-3 fill-current text-yellow-400" />
+              </button>
+            </span>
+          </span>
+          <span className="flex h-5 items-center justify-between gap-2">
+            <span>{t.price === null ? "—" : usd(t.price)}</span>
+            <span className="text-text-3">{t.price === null ? "stale" : "oracle"}</span>
+          </span>
+        </Link>
+      ))}
+    </section>
   );
 }

@@ -5,8 +5,21 @@ import { Row } from "@/components/left/Row";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { SortIcon } from "@/components/ui/icons";
-import { usd } from "@/lib/format";
+import { signed, usd } from "@/lib/format";
 import type { Position } from "@/lib/profile/load";
+
+/** profit vs usd paid in; trader fee shares cost nothing, so they count as profit */
+function Pnl({ value, cost }: { value: number | null; cost: number | null }) {
+  if (value === null || cost === null) return <span className="text-text-2">—</span>;
+  const pnl = value - cost;
+  const tone = Math.abs(pnl) < 0.005 ? "text-text-2" : pnl > 0 ? "text-up" : "text-down";
+  return (
+    <span className={tone}>
+      {signed(pnl)}
+      {cost > 0 && ` (${((pnl / cost) * 100).toFixed(2)}%)`}
+    </span>
+  );
+}
 
 type Props = {
   /** pakts where the account holds shares, newest first */
@@ -14,7 +27,6 @@ type Props = {
   title: string;
 };
 
-// shortcut: no per-holding pnl, a usd cost basis needs leave values the feed lacks
 export function PositionsCard({ positions, title }: Props) {
   const [sort, setSort] = useState<"Recent" | "Value">("Recent");
   const rows = sort === "Value" ? positions.toSorted((a, b) => (b.value ?? 0) - (a.value ?? 0)) : positions;
@@ -33,7 +45,7 @@ export function PositionsCard({ positions, title }: Props) {
       </div>
       <div className="flex justify-between border-b px-3 pt-2.5 pb-1.5 text-xs text-text-2">
         <span>Pakt</span>
-        <span>Value</span>
+        <span>Value · P/L</span>
       </div>
       {rows.length === 0 ? (
         <p className="py-6 text-center text-sm text-text-2">No holdings</p>
@@ -47,7 +59,7 @@ export function PositionsCard({ positions, title }: Props) {
                 title={<>{p.name}{p.member ? <Badge tone="neutral">Member</Badge> : <Badge tone="neutral">Fee shares</Badge>}</>}
                 subtitle={`Joined ${new Date(p.joinedMs).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
                 value={p.value === null ? "--" : usd(p.value)}
-                change={<span className="text-text-2">{p.pct.toFixed(2)}% of pakt</span>}
+                change={<Pnl value={p.value} cost={p.cost} />}
               />
             </li>
           ))}

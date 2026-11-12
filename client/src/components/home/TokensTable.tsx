@@ -24,10 +24,11 @@ export function TokensTable() {
   const pakts = useLoad(loadPakts, []);
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    // the column divider is painted on the scroller so it runs to the bottom, past the last row
+    <div className="min-h-0 flex-1 overflow-auto bg-[linear-gradient(var(--color-border),var(--color-border))] bg-size-[1px_100%] bg-position-[299px_0] bg-no-repeat bg-local">
       <table className="w-full min-w-[640px] text-left">
         <thead className="sticky top-0 z-20 bg-panel text-xs text-text-3 [&_th]:font-medium">
-          <tr className="h-[38px] border-b">
+          <tr className="h-8 border-b">
             <th className="w-[300px] border-r px-3">Token name</th>
             <th className="px-3">Price</th>
             <th className="px-3">Held by pakts</th>

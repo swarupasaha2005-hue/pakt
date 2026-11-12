@@ -21,6 +21,8 @@ type Props = {
   members: string[];
   /** pakt default stop-loss */
   stopLossBps: number;
+  /** prefilled trader, e.g. hired from the leaderboard */
+  trader?: string;
   onClose: () => void;
   onDone: () => void;
 };
@@ -30,8 +32,8 @@ const field = "grid grid-cols-[1fr_10rem] items-center gap-3 text-xs text-text-2
 const ACCOUNT = /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 
 /** member proposal: once approved the dao calls vault.offer_trader, then the trader accepts */
-export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, onClose, onDone }: Props) {
-  const [query, setQuery] = useState("");
+export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, trader, onClose, onDone }: Props) {
+  const [query, setQuery] = useState(trader ?? "");
   const [traders, setTraders] = useState<{ account: string; note: string }[]>([]);
   const [budget, setBudget] = useState("500");
   const [maxPerTrade, setMaxPerTrade] = useState("50");

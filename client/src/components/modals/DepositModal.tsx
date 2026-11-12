@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { TxStatus } from "@/components/pakt/TxStatus";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Segmented } from "@/components/ui/Segmented";
 import { pakts } from "@/lib/api";
 import { BASE_TOKEN, vaultId } from "@/lib/config";
 import { usd } from "@/lib/format";
+import { LOGOS } from "@/lib/home/data";
 import { deposit, ftBalanceOf, getHolder, getState, type Holder, type VaultState } from "@/lib/near/contracts";
 import { useWallet } from "@/lib/near/wallet";
 import { useTx } from "@/lib/pakt/tx";
@@ -18,7 +20,7 @@ export const WALLET = "wallet";
 /** vault refunds first deposits under $5 */
 const MIN_USD = 5;
 const QUICK = ["$10", "$50", "$100", "$500"] as const;
-const select = "h-8 rounded-lg px-2 text-xs font-bold text-text outline-none focus:ring-1 focus:ring-accent";
+const select = "h-8 rounded-lg px-2 text-sm font-medium text-text outline-none focus:ring-1 focus:ring-accent";
 
 type Props = {
   /** WALLET (pick a pakt) or a pakt name */
@@ -86,8 +88,8 @@ export function DepositModal({ to: initialTo, onClose, onDone }: Props) {
 
   return (
     <Modal open onClose={onClose} label="Deposit">
-      <h2 className="text-xl font-bold">Deposit</h2>
-      <label className="mt-4 flex items-center gap-2 text-xs text-text-2">
+      <h2 className="text-lg font-medium">Deposit</h2>
+      <label className="mt-4 flex items-center gap-2 text-sm font-medium text-text-2">
         To
         <select
           value={to}
@@ -106,16 +108,19 @@ export function DepositModal({ to: initialTo, onClose, onDone }: Props) {
         </select>
       </label>
       <div className="mt-3 flex h-16 items-center gap-2 rounded-xl bg-panel-2 px-4 focus-within:ring-1 focus-within:ring-accent">
-        <span className="text-[28px] text-text-2">$</span>
+        <span className="text-[28px] font-medium text-text-2">$</span>
         <input
           aria-label={`Amount in ${BASE_TOKEN.symbol}`}
           inputMode="decimal"
           placeholder="0"
           value={amount}
           onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-          className="min-w-0 flex-1 bg-transparent text-[28px] outline-none placeholder:text-text-3"
+          className="min-w-0 flex-1 bg-transparent text-[28px] font-medium outline-none placeholder:text-text-3"
         />
-        <span className={`${select} flex items-center bg-panel`}>{BASE_TOKEN.symbol}</span>
+        <span className={`${select} flex items-center gap-1.5 bg-panel`}>
+          <Avatar name={BASE_TOKEN.symbol} src={LOGOS[BASE_TOKEN.symbol]} size={18} />
+          {BASE_TOKEN.symbol}
+        </span>
       </div>
       <Segmented<string> options={QUICK} value={`$${amount}`} onChange={(q) => setAmount(q.slice(1))} className="mt-3" />
       <p className="mt-3 text-xs text-text-2">
@@ -123,11 +128,11 @@ export function DepositModal({ to: initialTo, onClose, onDone }: Props) {
         Min {usd(min)} · plus 0.01 NEAR vault storage (excess refunded)
       </p>
       {!accountId ? (
-        <Button variant="primary" onClick={signIn} className="mt-4 h-11! w-full text-base!">
+        <Button variant="primary" onClick={signIn} className="mt-4 h-11! w-full text-sm! font-medium!">
           Connect wallet
         </Button>
       ) : done ? (
-        <Button variant="primary" onClick={onClose} className="mt-4 h-11! w-full text-base!">
+        <Button variant="primary" onClick={onClose} className="mt-4 h-11! w-full text-sm! font-medium!">
           Close
         </Button>
       ) : (
@@ -135,7 +140,7 @@ export function DepositModal({ to: initialTo, onClose, onDone }: Props) {
           variant="primary"
           disabled={!!blocked || tx.pending}
           onClick={() => vault && raw && tx.run(deposit(vault, raw))}
-          className="mt-4 h-11! w-full text-base!"
+          className="mt-4 h-11! w-full text-sm! font-medium!"
         >
           {tx.pending ? "Confirm in wallet…" : (blocked ?? "Deposit")}
         </Button>

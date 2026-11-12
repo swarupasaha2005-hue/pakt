@@ -29,7 +29,7 @@ export function ProfileView({ account }: { account: string }) {
   if (data === null)
     return (
       <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-1 py-20 text-center">
-        <h1 className="text-lg font-medium">Account not found</h1>
+        <h1 className="text-xl font-bold">Account not found</h1>
         <p className="text-sm text-text-2">{account} does not exist on chain.</p>
       </main>
     );

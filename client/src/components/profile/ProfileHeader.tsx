@@ -29,7 +29,7 @@ export function ProfileHeader({ account, data }: { account: string; data?: Profi
           <Avatar name={account} size={72} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg leading-5 font-medium">{account}</h1>
+          <h1 className="truncate text-lg leading-6 font-bold">{account}</h1>
           <p className="flex items-center gap-1.5 text-base leading-5 text-text-2">
             <a href={explorer + account} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs hover:text-text">
               Explorer <ExternalIcon className="size-3.5" />
