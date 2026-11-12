@@ -2,7 +2,7 @@
 // FAUCET_SIGNER tx, so we pay the gas; attached deposits still come from the user. FREE_TXS per account, ever.
 import { account } from "./api";
 import { Rpc, trusted, Upstream } from "./chain";
-import { signer } from "./faucet";
+import { nextNonce, signer } from "./faucet";
 import { b58decode, b58encode, parseKey, signedTx } from "./relay";
 
 export const FREE_TXS = 2;
@@ -143,7 +143,7 @@ export async function sponsor(env: Env, body: string): Promise<Sponsored> {
       request_type: "view_access_key", finality: "final", account_id: key.account, public_key: `ed25519:${b58encode(key.pub)}`,
     });
     if (!Number.isInteger(ak?.nonce)) throw new Error(`no access key on ${key.account}`);
-    const tx = await signedTx(key, BigInt(ak!.nonce) + 1n, d.sender, b58decode(ak!.block_hash), [{ delegate: raw }]);
+    const tx = await signedTx(key, nextNonce(ak!.nonce), d.sender, b58decode(ak!.block_hash), [{ delegate: raw }]);
     const out = await rpc.call<{ transaction: { hash: string } }>(up, "send_tx", { signed_tx_base64: b64(tx), wait_until: "EXECUTED_OPTIMISTIC" }).catch((e) => {
       landed = !/INVALID_TRANSACTION/.test(String(e)); // a timeout may still land; only a rejected tx surely did not
       throw e;
@@ -187,7 +187,7 @@ export async function topup(env: Env, who: string, ip: string): Promise<Sponsore
         request_type: "view_access_key", finality: "final", account_id: key.account, public_key: `ed25519:${b58encode(key.pub)}`,
       });
       if (!Number.isInteger(ak?.nonce)) throw new Error(`no access key on ${key.account}`);
-      const tx = await signedTx(key, BigInt(ak!.nonce) + 1n, who, b58decode(ak!.block_hash), [{ transfer: TOPUP }]);
+      const tx = await signedTx(key, nextNonce(ak!.nonce), who, b58decode(ak!.block_hash), [{ transfer: TOPUP }]);
       const out = await rpc.call<{ transaction: { hash: string } }>(up, "send_tx", { signed_tx_base64: b64(tx), wait_until: "EXECUTED_OPTIMISTIC" }).catch((e) => {
         landed = !/INVALID_TRANSACTION/.test(String(e));
         throw e;
