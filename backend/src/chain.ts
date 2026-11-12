@@ -20,9 +20,10 @@ export const FIELDS: Record<string, string[]> = {
   cap_set: ["budget", "max_per_trade"],
   trade: ["trader", "token_in", "amount_in", "token_out", "amount_out", "value"],
   settled: ["share_price", "hwm", "profit", "trader_fee_shares", "platform_fee_shares"],
-  paused: ["reason"], resumed: [], unlocked: ["op"], fire_pending: ["trader"],
+  paused: ["reason"], resumed: [], unlocked: ["op", "flows"], fire_pending: ["trader"],
   member_synced: ["account", "added"],
   claim: ["account", "token", "amount"],
+  dex_iou: ["account"], reconciled: ["token", "amount"], orphan_swept: ["platform", "shares", "value"],
 };
 
 export function parseLog(line: string): { kind: string; data: unknown[] } | null {
