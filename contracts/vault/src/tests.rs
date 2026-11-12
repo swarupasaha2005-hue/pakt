@@ -297,7 +297,12 @@ fn flows_overlap_but_exclusive_ops_wait() {
     assert!(matches!(v.ft_on_transfer(acc("bb"), U128(10 * USD), String::new()), PromiseOrValue::Promise(_)));
     assert_eq!(v.flows, 2);
     ctx("tt");
-    assert!(panics(|| v.trade(7, acc("usdc"), acc("btc"), U128(USD), U128(0))).contains("busy, retry"));
+    // refused without panic so the drain flag sticks: no new flows until the trade runs
+    v.trade(7, acc("usdc"), acc("btc"), U128(USD), U128(0));
+    assert!(v.op.is_none() && v.draining && get_logs().iter().any(|l| l.contains("busy: draining flows")));
+    ctx("usdc");
+    assert!(matches!(v.ft_on_transfer(acc("bb"), U128(10 * USD), String::new()), PromiseOrValue::Value(_)));
+    assert!(get_logs().iter().any(|l| l.contains("refund: draining, retry")));
     ctx_at("vault", 1_000, vec![prices(1.0)]);
     assert_eq!(v.on_deposit(acc("bb"), U128(10 * USD), v.flow_gen).0, 0);
     ctx_at("vault", 1_000, vec![prices(1.0)]);
@@ -569,9 +574,10 @@ fn failed_withdraw_parks_then_recover() {
 
 #[test]
 #[should_panic(expected = "funds at dex")]
-fn leave_blocked_while_funds_parked() {
+fn leave_blocked_while_funds_parked_unsynced() {
     let mut v = traded_vault();
     v.at_dex[1] = 5;
+    v.dex_synced = false;
     ctx("aa");
     v.leave(U128(USD));
 }
@@ -739,19 +745,19 @@ fn slippage_budget_per_24h_window() {
     v.on_swap(0, 1, U128(50 * USD), U128(50 * USD), price_data(1.0), v.op_id);
     assert_eq!(v.slip_used, 50 * USD - 49_059_256);
     v.op = None;
-    // vault ~$99.06: budget $2.97; 2 used + worst 2% of $50 = 3 → refused
-    v.slip_used = 2 * USD;
-    start_trade(&mut v, 50, 0);
+    // vault ~$99.06: bucket $1.486; 1 used + worst 2% of $25 = 1.5 → refused
+    v.slip_used = USD;
+    start_trade(&mut v, 25, 0);
     assert!(get_logs().iter().any(|l| l.contains("trade refused: period slippage budget")));
     assert_eq!((v.op, v.balances[0]), (None, 50 * USD));
-    start_trade(&mut v, 40, 0);
-    assert_eq!(v.at_dex[0], 40 * USD, "smaller trade fits");
+    start_trade(&mut v, 20, 0);
+    assert_eq!(v.at_dex[0], 20 * USD, "smaller trade fits");
     v.op = None;
-    // set_cap and settle don't reset it; only the 24h window does
+    // set_cap and settle don't reset it; only time refills it
     ctx("dao");
     v.set_cap(U128(500 * USD), U128(50 * USD));
     settle_at(&mut v, 1.0);
-    assert_eq!(v.slip_used, 2 * USD);
+    assert_eq!(v.slip_used, USD);
     v.trader.as_mut().unwrap().paused = false;
     ctx_at("tt", 1_000 + DAY_MS, vec![]);
     v.trade(7, acc("usdc"), acc("btc"), U128(USD), U128(0));
@@ -852,6 +858,14 @@ fn storage_gates_joining_pays_syncs_and_refunds() {
     .contains("member sync pending"));
     ctx_at("vault", 1_000, vec![PromiseResult::Successful(b"null".to_vec())]);
     v.on_synced(acc("aa"), false);
+    // L3: payout still in flight, its failure would need an owed row
+    ctx_near("aa", NearToken::from_near(10), NearToken::from_yoctonear(1), vec![]);
+    assert!(panics(|| {
+        v.storage_unregister(None);
+    })
+    .contains("payouts in flight"));
+    ctx_at("vault", 1_000, vec![PromiseResult::Successful(vec![])]);
+    v.on_payout(acc("aa"), acc("usdc"), U128(100 * USD));
     ctx_near("aa", NearToken::from_near(10), NearToken::from_yoctonear(1), vec![]);
     assert!(v.storage_unregister(None));
     assert!(sent(&acc("aa"), NearToken::from_yoctonear(left)) && v.storage_balance_of(acc("aa")).is_none());

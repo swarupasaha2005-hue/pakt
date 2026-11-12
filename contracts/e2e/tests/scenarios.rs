@@ -359,12 +359,20 @@ async fn failed_dex_withdraw_parks_funds_then_recover() -> anyhow::Result<()> {
     // parked value still counts: a fresh deposit gets ~1 share per $1
     ok(e.deposit(&b, &p.vault, 10, "").await?)?;
     assert!(e.shares(&p.vault, b.id()).await?.abs_diff(210 * D) < D / 100);
+    // stuck btc no longer blocks leave: tUSDC now, the btc slice as an iou
     let r = a.call(&p.vault, "leave").args_json(json!({"shares": D.to_string()})).gas(TGAS300).transact().await?;
-    assert!(r.is_failure() && format!("{r:?}").contains("funds at dex"), "{r:?}");
+    assert!(logs(&r).contains("dex_iou"), "{r:?}");
+    let iou: u128 = e.view(&p.vault, "get_dex_owed", json!({"account": a.id()})).await?[0][1].as_str().unwrap().parse()?;
+    assert!(iou > 0);
+    let r = a.call(&p.vault, "claim").args_json(json!({"token": e.btc.id()})).gas(TGAS300).transact().await?;
+    assert!(r.is_failure() && format!("{r:?}").contains("iou still at dex"), "{r:?}");
 
     ok(e.root.call(e.btc.id(), "set_blocked").args_json(json!({"account": null})).transact().await?)?;
     ok(b.call(&p.vault, "dex_recover").args_json(json!({"token": e.btc.id()})).gas(TGAS300).transact().await?)?;
-    assert_eq!(e.ledger(&p.vault).await?.0, [560 * D, at_dex[1]]);
+    assert_eq!(e.ledger(&p.vault).await?.0[1], at_dex[1] - iou);
+    ok(a.call(e.btc.id(), "storage_deposit").args_json(json!({})).deposit(near_workspaces::types::NearToken::from_millinear(10)).transact().await?)?;
+    ok(a.call(&p.vault, "claim").args_json(json!({"token": e.btc.id()})).gas(TGAS300).transact().await?)?;
+    assert_eq!(e.ft_of(&e.btc, a.id()).await?, iou);
     e.ledger_matches_chain(&p.vault).await?;
     ok(a.call(&p.vault, "leave").args_json(json!({"shares": D.to_string()})).gas(TGAS300).transact().await?)?;
     Ok(())
