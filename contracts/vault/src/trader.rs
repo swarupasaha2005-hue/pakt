@@ -1,15 +1,17 @@
 //! Trader lifecycle. Dao proposals offer / cap / fire / resume; the offered account must sign accept.
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::{env, near, require, AccountId, Gas};
+use near_sdk::{env, near, require, AccountId, Gas, GasWeight, NearToken, Promise};
 
 use crate::oracle;
-use crate::{Op, Vault, VaultExt, DAY_MS, GAS_OP};
+use crate::{Op, Vault, VaultExt, DAY_MS, GAS_OP, STORAGE_RESERVE};
 
 pub const FEE_MIN_BPS: u16 = 1_000;
 pub const FEE_MAX_BPS: u16 = 3_000;
 const OFFER_TTL_MS: u64 = 3 * DAY_MS;
 const GAS_CB: Gas = Gas::from_tgas(30);
+/// factory reputation row for a first-time trader (~300 bytes); excess refunded
+const RECORD_DEPOSIT: NearToken = NearToken::from_millinear(10);
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
@@ -82,6 +84,8 @@ impl Vault {
         self.crystallize(value, false);
         self.emit("hired", json!({"trader": o.terms.account}));
         self.trader = Some(o.terms);
+        self.trader_mark = self.share_price(value);
+        self.record(&account, "Hire", 0, 0);
         self.trade_after_ms = env::block_timestamp_ms() + self.trade_delay_ms;
     }
 
@@ -126,6 +130,7 @@ impl Vault {
         }
         if let Some(t) = self.trader.take() {
             self.emit("fired", json!({"trader": t.account}));
+            self.record(&t.account, "Fire", 0, 0);
         }
     }
 
@@ -154,6 +159,16 @@ impl Vault {
 }
 
 impl Vault {
+    /// Factory reputation, fire and forget: static gas 0 + weight takes only leftover gas, so it never stalls the op.
+    pub(crate) fn record(&self, trader: &AccountId, kind: &str, pnl: i128, fee: u128) {
+        // only a hire may create the row; never dip into the reserve leaves and syncs need
+        let deposit = if kind == "Hire" && self.free_near() >= STORAGE_RESERVE { RECORD_DEPOSIT } else { NearToken::from_yoctonear(0) };
+        let args = json!({"trader": trader, "kind": kind, "pnl_usd_e6": pnl.to_string(), "fee_usd_e6": U128(fee)});
+        Promise::new(self.factory.clone())
+            .function_call_weight("record_trader".to_string(), args.to_string().into_bytes(), deposit, Gas::from_tgas(0), GasWeight(1))
+            .detach();
+    }
+
     fn fetch_fire(&self) {
         oracle::fetch(&self.oracle, self.whitelist.clone())
             .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CB).on_fire(self.op_id))

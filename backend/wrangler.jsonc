@@ -26,7 +26,7 @@
     "COINGECKO_URL": "https://api.coingecko.com",
     "COINBASE_URL": "https://api.coinbase.com",
     "TESTNET_RPC_URL": "https://rpc.testnet.fastnear.com",
-    // faucet drip per request, raw units: 1000 tUSDC, 0.01 tBTC, 50 tNEAR; needs the FAUCET_SIGNER secret (pre-funded faucet account, not the owner)
+    // faucet drip per request, raw units: 1000 tUSDC, 0.01 tBTC, 50 tNEAR; needs the FAUCET_SIGNER secret (pre-funded faucet account, not the owner), which also pays gas for POST /relay
     "FAUCET_DRIPS": "{\"tusdc.pakt-0mxhjh.testnet\":\"1000000000\",\"tbtc.pakt-0mxhjh.testnet\":\"1000000\",\"tnear.pakt-0mxhjh.testnet\":\"50000000000000000000000000\"}"
   },
   // FASTNEAR_API_KEY (optional secret): raises neardata/RPC limits. ADMIN_TOKEN guards POST /admin/start.
@@ -43,6 +43,8 @@
   "ratelimits": [
     { "name": "API_LIMIT", "namespace_id": "4101", "simple": { "limit": 60, "period": 60 } },
     { "name": "STREAM_LIMIT", "namespace_id": "4102", "simple": { "limit": 10, "period": 60 } },
-    { "name": "FAUCET_LIMIT", "namespace_id": "4103", "simple": { "limit": 1, "period": 60 } }
+    { "name": "FAUCET_LIMIT", "namespace_id": "4103", "simple": { "limit": 1, "period": 60 } },
+    // gas sponsor: a create or deposit flow posts a few delegates back to back
+    { "name": "RELAY_LIMIT", "namespace_id": "4104", "simple": { "limit": 6, "period": 60 } }
   ]
 }

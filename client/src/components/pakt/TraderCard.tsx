@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { usd } from "@/lib/format";
 import type { VaultState } from "@/lib/near/contracts";
 import { e6 } from "@/lib/pakt/units";
+import { PakterRecord } from "./PakterRecord";
 
 type Props = { state: VaultState; member: boolean; onPropose: () => void; onRaise: () => void; onFire: () => void };
 
@@ -33,6 +34,7 @@ export function TraderCard({ state, member, onPropose, onRaise, onFire }: Props)
               <dd>{usd(e6(t.max_per_trade))}</dd>
             </div>
           </dl>
+          <PakterRecord account={t.account} />
           {state.fire_pending ? (
             <p className="mt-3 text-xs text-down">Fire pending: waiting for the vault to settle fees.</p>
           ) : (
@@ -47,9 +49,12 @@ export function TraderCard({ state, member, onPropose, onRaise, onFire }: Props)
           )}
         </>
       ) : state.offer ? (
+        <>
         <p className="mt-3 text-xs text-text-2">
           Offer out to {state.offer.terms.account}, waiting for them to accept.
         </p>
+        <PakterRecord account={state.offer.terms.account} />
+        </>
       ) : (
         <>
           <p className="mt-3 text-xs text-text-2">No pakter yet</p>

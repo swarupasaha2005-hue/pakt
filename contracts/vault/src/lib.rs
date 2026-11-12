@@ -163,6 +163,8 @@ pub struct Vault {
     slip_since_ms: u64,
     /// fire hit a busy lock; trader paused until `finish_fire`
     fire_pending: bool,
+    /// share price at the live trader's last reputation mark
+    trader_mark: u128,
     owed: LookupMap<AccountId, Vec<(AccountId, U128)>>,
     pending_sync: IterableSet<AccountId>,
     events: LookupMap<u32, String>,
@@ -262,6 +264,7 @@ impl Vault {
             slip_used: 0,
             slip_since_ms: env::block_timestamp_ms(),
             fire_pending: false,
+            trader_mark: 0,
             owed: LookupMap::new(b"o"),
             pending_sync: IterableSet::new(b"s"),
             events: LookupMap::new(b"e"),

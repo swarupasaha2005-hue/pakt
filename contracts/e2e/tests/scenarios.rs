@@ -308,6 +308,45 @@ async fn trade_below_oracle_floor_is_refused() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn min_out_above_ref_refunds_input() -> anyhow::Result<()> {
+    let (e, p, _, t, pool) = trading().await?;
+    // fair pool pays ~83_000 sats for $50: asking for 84_000 makes ref's swap fail
+    let r = e.trade(&t, &p.vault, pool, &e.usdc, &e.btc, 50 * D, 84_000).await?;
+    assert!(logs(&r).contains("swap failed") && !logs(&r).contains(r#""event":"trade""#), "{r:?}");
+    assert_eq!(e.ledger(&p.vault).await?, ([600 * D, 0], [0, 0]));
+    e.ledger_matches_chain(&p.vault).await?;
+    let s = e.state(&p.vault).await?;
+    assert!(s["op"].is_null() && budget_used(&s) == 0 && s["dex_synced"] == json!(true), "{s}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn reputation_follows_trader_to_factory() -> anyhow::Result<()> {
+    let (e, p, [a, b, _], t, pool) = trading().await?;
+    let rec = || e.view(e.factory.id(), "get_trader_record", json!({"account": t.id()}));
+    assert_eq!(rec().await?["hires"], 1);
+    ok(e.trade(&t, &p.vault, pool, &e.usdc, &e.btc, 50 * D, 0).await?)?;
+    e.prices(12_000).await?;
+    settle(&e, &p).await?;
+    assert_eq!(e.dao_call(&p.dao, &[&a, &b], &p.vault, "fire", json!({})).await?, "Approved");
+    let r = rec().await?;
+    let n = |k: &str| r[k].as_str().unwrap().parse::<i128>().unwrap();
+    // 550 tUSDC +$0.20 each, less ref's 0.3% on the $50 swap
+    assert!((109 * D as i128..110 * D as i128).contains(&n("profit_usd_e6")), "{r}");
+    assert!(near(n("fees_earned_usd_e6") as u128, n("profit_usd_e6") as u128 / 5), "{r}");
+    assert_eq!((r["hires"].clone(), r["fires"].clone(), r["settlements"].clone()), (json!(1), json!(1), json!(1)), "{r}");
+    let all = e.view(e.factory.id(), "list_trader_records", json!({})).await?;
+    assert_eq!(all, json!([[t.id(), r]]));
+    // only registered vaults write
+    let x = t.call(e.factory.id(), "record_trader")
+        .args_json(json!({"trader": t.id(), "kind": "Hire", "pnl_usd_e6": "1", "fee_usd_e6": "0"}))
+        .transact()
+        .await?;
+    assert!(x.is_failure() && format!("{x:?}").contains("only pakt vaults"), "{x:?}");
+    Ok(())
+}
+
+#[tokio::test]
 async fn trade_caps_enforced() -> anyhow::Result<()> {
     let (e, p, [a, b, _], t, pool) = trading().await?;
     let r = e.trade(&t, &p.vault, pool, &e.usdc, &e.btc, 101 * D, 0).await?;

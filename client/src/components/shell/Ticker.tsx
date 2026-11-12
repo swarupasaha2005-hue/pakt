@@ -11,7 +11,7 @@ const LINKS = [
 
 export function Ticker() {
   return (
-    <footer className="flex h-7 shrink-0 items-center justify-between px-3.5 text-xs">
+    <footer className="hidden h-7 shrink-0 md:flex items-center justify-between px-3.5 text-xs">
       <p className="flex items-center gap-1 text-text-3">
         Group vaults on
         {/* eslint-disable-next-line @next/next/no-img-element -- 12px static icon */}

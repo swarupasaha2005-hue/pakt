@@ -26,7 +26,8 @@ export function txProblem(outs: FinalExecutionOutcome[]): string | null {
   return null;
 }
 
-export type TxState = { pending: boolean; error: string | null; hash: string | null };
+/** sponsored: the backend paid the gas */
+export type TxState = { pending: boolean; error: string | null; hash: string | null; sponsored?: boolean };
 
 /** run(txs) resolves true on success; onDone fires after every settled send so views refresh */
 export function useTx(onDone?: () => void) {
@@ -35,9 +36,9 @@ export function useTx(onDone?: () => void) {
   async function run(txs: Tx[]) {
     set({ pending: true, error: null, hash: null });
     try {
-      const outs = await signAndSend(txs);
+      const { outs, sponsored } = await signAndSend(txs);
       const error = txProblem(outs);
-      set({ pending: false, error, hash: outs.at(-1)?.transaction?.hash ?? null });
+      set({ pending: false, error, hash: outs.at(-1)?.transaction?.hash ?? null, sponsored });
       onDone?.();
       return !error;
     } catch (e) {

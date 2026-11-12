@@ -29,3 +29,4 @@ export const vaultId = (name: string) => `${name}.${FACTORY}`;
 export const daoId = (name: string) => `${name}.${SPUTNIK}`;
 
 export const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://paktdotfam.vercel.app";
+export const SOCIAL = process.env.NEXT_PUBLIC_SOCIAL || (NETWORK === "mainnet" ? "social.near" : "v1.social08.testnet");

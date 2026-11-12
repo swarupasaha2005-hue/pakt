@@ -15,7 +15,7 @@ export function MarketTable() {
   const [tab, setTab] = usePersisted<Tab>("pakt:market-tab", "pakts", (v): v is Tab => TABS.some((t) => t.id === v));
   const [filter, setFilter] = useState<PaktFilter>("All");
   return (
-    <section data-tour="market" className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border bg-panel">
+    <section data-tour="market" className="hidden min-w-0 flex-1 flex-col md:flex overflow-hidden rounded-xl border bg-panel">
       <div className="flex shrink-0 flex-col gap-2 border-b px-3 pt-3 pb-2">
         <div role="tablist" className="flex items-center gap-4">
           {TABS.map((t) => (

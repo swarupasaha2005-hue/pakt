@@ -1,10 +1,21 @@
 # Pakt
 
+[![ci](https://github.com/swarupasaha2005-hue/pakt/actions/workflows/ci.yml/badge.svg)](https://github.com/swarupasaha2005-hue/pakt/actions/workflows/ci.yml)
+
 A group trading vault on NEAR: friends pool tokens in a vault, vote one person in as trader, and the trader can swap the pool but can never withdraw it.
 
 **Problem.** Friend groups, Discord/Telegram groups and investment clubs often pool money with the one person who trades well. Today that means "send money and hope": the trader holds everything and the others have no control if the trader loses it, steals it or disappears. Pakt keeps the money in a contract that only lets the trader swap between allowed tokens within voted limits, and only lets members take money out.
 
 **Live app (NEAR testnet):** https://paktdotfam.vercel.app
+
+**Built on the NEAR ecosystem**
+- **Sputnik DAO**: every pakt gets its own DAO. Members vote the pakter in, change caps, and fire them.
+- **Ref Finance (Rhea)**: every trade is a real Ref swap with an oracle price floor.
+- **NearDeFi price oracle**: values the vault for shares, fees, caps and the swap floor.
+- **Gasless first 2 transactions**: a NEP-366 meta-transaction relayer pays the gas when the wallet can sign delegate actions. Wallets that can't yet get a one-time 0.05 NEAR gas top-up instead, so it works in every wallet today.
+- **On-chain pakter reputation**: the factory keeps every pakter's hires, fires, P/L and fees across all pakts, so a bad pakter can't start fresh in a new pakt.
+- **NEAR Social**: invite friends by account name (`alice.near`); they get a NEAR Social notification with the pakt link.
+- **Named accounts and Wallet Selector**: each pakt is `<name>.<factory>`; sign in with Meteor, MyNearWallet, HOT or HERE.
 
 ## Try it in 5 minutes
 
@@ -50,7 +61,24 @@ The **(i)** button in the top bar explains the contracts behind a pakt, and **Si
 | Account with no access keys | The factory creates, funds, deploys and inits the vault in one batch and adds no key, so the vault code cannot be changed. |
 | Ref (Rhea) exchange | All trades are Ref `swap` actions (`ref-finance-101.testnet`, `v2.ref-finance.near`). See `contracts/vault/src/trade.rs`. |
 | Price oracle | NearDeFi price-oracle `get_price_data` values the vault for shares, fees, caps and the swap floor. See `contracts/vault/src/oracle.rs`. |
+| Meta transactions (NEP-366) | A new account's first 2 transactions are sponsored. If the wallet signs a delegate action, the backend relayer (`POST /relay`) checks the signature, wraps it and sends it from the faucet account. Only Pakt contracts and methods are allowed, max 2 per account, counted atomically in D1. Any attached deposit still comes from the user. Meteor, MyNearWallet, HOT and HERE don't sign delegate actions yet (wallet-selector 10.1.4), so for them the backend sends a one-time 0.05 NEAR top-up to accounts holding less than that (`POST /relay/topup`, one per account, 3 per IP per day). See `backend/src/sponsor.ts`. |
+| Factory as reputation registry | Vaults report hire, fire and every fee mark to the factory (`record_trader`, callable only by vaults in the factory's own registry). `get_trader_record(account)` returns hires, fires, P/L and fees across all pakts; the pakt page shows it next to the pakter and on offers. The vault pays the record's storage. |
+| NEAR Social | "Invite" on a pakt posts a `social.near` (`v1.social08.testnet`) post that @mentions each invitee, so it shows in their notifications with the pakt link. See `client/src/lib/social.ts`. |
+| Wallet Selector | Meteor, MyNearWallet, HOT and HERE through `@near-wallet-selector`. |
 | NEP-297 events | Factory and vault log `EVENT_JSON` (`standard: "pakt"`). The backend indexes them for the feed and leaderboard. |
+
+## Threat model
+
+How someone could try to take the money, and what stops them. Details in the table below.
+
+| Attack | Who | What stops it |
+|---|---|---|
+| **Rug: the pakter withdraws the vault** | Pakter | There is no withdraw method for a pakter. `trade` only swaps between whitelisted tokens through Ref, and the output comes back to the vault. Try it on a pakt page as the pakter: the call fails on chain. |
+| **Thin-pool dump: swap at a terrible price into a pool the pakter controls** | Pakter | Every swap has a floor of oracle price minus 2%. Realized slippage is capped at 3% of vault value per 24h, and the stop-loss pauses trading. |
+| **Oracle push: fake a price to drain on deposit, leave or fee** | Price reporter | Not fully stopped: whoever reports prices is trusted, since a pushed price moves the swap floor, deposits and fees. On testnet that's one relay key, a known limit. Mainnet needs a public oracle with no team key. |
+| **Vote takeover: flood the DAO with fake members** | Outsider | $5 minimum deposit at oracle price plus a per-pakt minimum. Votes need a majority of members, and a new pakter waits out a trade delay, so members can leave first. |
+| **Griefing: lock the vault so nobody can leave** | Anyone | Deposits and leaves run as counted flows, not behind the trade lock. Any lock older than 10 min can be cleared by anyone with `unlock`. Fire always pauses first and can be finished by anyone. |
+| **Bad pakter, mid-trade** | Pakter | A fire vote pauses the pakter immediately, even with a trade in flight. The rest of the fire (fee to date, removal) is finished by anyone once the trade lock clears. |
 
 ## Security guarantees
 
@@ -88,11 +116,11 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 | Do | See |
 |---|---|
 | `make build-contracts` | `contracts/res/` lists `pakt_vault.wasm`, `pakt_factory.wasm`, `pakt_mock_ft.wasm`. |
-| `cd contracts && cargo test` | Unit tests for vault, factory and mock token: `67 passed` for vault, `19 passed` (plus 1 sandbox) for factory, `4 passed` for the mock, `0 failed`. |
-| `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 16 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
+| `cd contracts && cargo test` | Unit tests for vault, factory and mock token: `68 passed` for vault, `22 passed` (plus 1 sandbox) for factory, `4 passed` for the mock, `0 failed`. |
+| `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 18 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
 | `make smoke` | ~1 min. Sandbox + local Worker: one pakt, one deposit. Prints `smoke: <event kinds>` from `/feed`, including `pakt_created` and `deposit`. |
 | `make stack-e2e` | Sandbox runs one pakt through every event kind; the local Worker indexes it; checks HTTP routes, WebSocket push and restart catch-up. Ends with `STACK E2E PASS`. |
-| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 75 passed`. |
+| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 90 passed`. |
 | `make client` | Next.js dev server; open http://localhost:3000. |
 
 `make e2e` proves, on the sandbox:

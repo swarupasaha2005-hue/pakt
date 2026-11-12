@@ -54,7 +54,7 @@ export function CashPill() {
             data-tour="create"
             aria-label={involved ? "Cash and your pakts" : "Cash and create pakt"}
             onClick={() => setOpen(!open)}
-            className="flex h-12 items-center rounded-xl border px-3 text-base font-medium whitespace-nowrap transition hover:bg-panel-2"
+            className="flex h-10 items-center rounded-xl border px-3 text-sm font-medium md:h-12 md:text-base whitespace-nowrap transition hover:bg-panel-2"
           >
             {involved ? "Check pakts" : "Create pakt"}
           </button>

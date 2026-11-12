@@ -65,6 +65,10 @@ export const ftBalanceOf = (token: string, account: string) => view<string>(toke
 export type FactoryPakt = { name: string; vault: string; dao: string; creator: string; created_ms: number; stop_loss_bps: number };
 export const getPakt = (name: string) => view<FactoryPakt | null>(FACTORY, "get_pakt", { name });
 export const listPakts = (from?: number, limit?: number) => view<FactoryPakt[]>(FACTORY, "list_pakts", { from, limit });
+/** on-chain pakter record across every pakt (usd e6 strings; profit may be negative). Pakts made before the factory upgrade never write one */
+export type TraderRecord = { hires: number; fires: number; settlements: number; profit_usd_e6: string; fees_earned_usd_e6: string; last_ms: number };
+// an old factory has no such method: treat as no record
+export const getTraderRecord = (account: string) => view<TraderRecord | null>(FACTORY, "get_trader_record", { account }).catch(() => null);
 /** yocto NEAR to attach to create_pakt */
 export const requiredDeposit = (whitelistLen: number) => view<string>(FACTORY, "required_deposit", { whitelist_len: whitelistLen });
 

@@ -96,3 +96,15 @@ export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
 export const InfoIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></Icon>
 );
+export const HomeIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" /></Icon>
+);
+export const TrophyIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></Icon>
+);
+export const ActivityIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M3 12h4l3 8 4-16 3 8h4" /></Icon>
+);
+export const PieIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M21 12A9 9 0 1 1 12 3v9z" /><path d="M15 3.5A9 9 0 0 1 20.5 9H15z" /></Icon>
+);

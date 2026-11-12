@@ -50,7 +50,7 @@ export function ForYou() {
 
   if (!accountId) {
     return (
-      <section data-tour="pins" className="flex shrink-0 items-center justify-between gap-4 rounded-xl border bg-panel px-4 py-3">
+      <section data-tour="pins" className="flex shrink-0 flex-col gap-3 rounded-xl border bg-panel px-4 py-3 md:flex-row md:items-center md:justify-between md:gap-4">
         <div className="min-w-0">
           <h1 className="text-base font-medium">Pool money with friends. Hire a pakter: a trader who can never withdraw it.</h1>
           <p className="mt-0.5 text-xs text-text-2">Every pakt is a vault plus a DAO: members vote the pakter in and out, caps and a stop-loss are enforced on chain.</p>

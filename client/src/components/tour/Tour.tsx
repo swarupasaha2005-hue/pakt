@@ -20,7 +20,10 @@ const STEPS: { spot: string; tab?: string; title: string; body: string }[] = [
   { spot: "help", title: "How it works", body: "The contracts behind a pakt. Replay this tour from here." },
 ];
 const PAD = 6, CARD = 320;
-const find = (spot: string) => document.querySelector<HTMLElement>(`[data-tour="${spot}"]`);
+const find = (spot: string) => {
+  const el = document.querySelector<HTMLElement>(`[data-tour="${spot}"]`);
+  return el?.getClientRects().length ? el : null; // hidden at this width (phone layout)
+};
 
 /** first-visit spotlight tour over the live UI; reopen with openTour() */
 export function Tour() {

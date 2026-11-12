@@ -32,14 +32,29 @@ impl Vault {
         }
         let price = self.share_price(value);
         self.check_stop_loss(price);
+        let shares = self.total_shares;
+        let fee = self.mark_fees(value, price, charge);
+        let Some(t) = self.trader.as_ref().filter(|_| charge).map(|t| t.account.clone()) else { return };
+        // gross P/L since the trader's last mark; the next one starts from the post-fee price
+        let moved = mul_div(price.abs_diff(self.trader_mark), shares, PRICE_SCALE) as i128;
+        let pnl = if price >= self.trader_mark { moved } else { -moved };
+        self.trader_mark = self.share_price(value);
+        if pnl != 0 || fee != 0 {
+            self.record(&t, "Mark", pnl, fee);
+        }
+    }
+
+    /// trader usd e6 fee
+    fn mark_fees(&mut self, value: u128, price: u128, charge: bool) -> u128 {
         if price <= self.hwm {
-            return;
+            return 0;
         }
         let profit = mul_div(price - self.hwm, self.total_shares, PRICE_SCALE);
         let fee_bps = self.trader.as_ref().filter(|_| charge).map(|t| t.fee_bps as u128);
-        let (mut ts, mut ps) = (0, 0);
+        let (mut tf, mut ts, mut ps) = (0, 0, 0);
         if let Some(fee_bps) = fee_bps {
-            let (tf, pf) = (profit * fee_bps / BPS, profit * PLATFORM_FEE_BPS / BPS);
+            tf = profit * fee_bps / BPS;
+            let pf = profit * PLATFORM_FEE_BPS / BPS;
             // new shares worth exactly the fee after minting: fee * S / (V - fees)
             let rest = value - tf - pf;
             ts = mul_div(tf, self.total_shares, rest);
@@ -55,6 +70,7 @@ impl Vault {
             json!({"share_price": U128(self.hwm), "hwm": U128(self.hwm), "profit": U128(profit),
                    "trader_fee_shares": U128(ts), "platform_fee_shares": U128(ps)}),
         );
+        tf
     }
 
     pub(crate) fn mint_fee(&mut self, to: &AccountId, shares: u128) {

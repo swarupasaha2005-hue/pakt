@@ -210,3 +210,53 @@ fn stop_loss_in_vault_range() {
     testing_env!(ctx("alice.testnet", need(&f)).build());
     let _ = f.create_pakt("moon".into(), vec![acc("usdc.testnet")], 9_500, JoinMode::Open, None, U128(1));
 }
+
+fn record(f: &mut Factory, from: &str, kind: crate::RecordKind, pnl: i128, deposit: NearToken) {
+    testing_env!(ctx(from, deposit).build());
+    f.record_trader(acc("tt.testnet"), kind, near_sdk::json_types::I128(pnl), U128(7));
+}
+
+#[test]
+fn trader_record_from_vaults_only() {
+    use crate::RecordKind::*;
+    let mut f = setup();
+    let d = need(&f);
+    create(&mut f, "moon", d);
+    create(&mut f, "sun", d);
+    record(&mut f, "moon.pakt.testnet", Hire, 0, NearToken::from_millinear(10));
+    // excess storage deposit goes back to the vault
+    assert!(near_sdk::test_utils::get_created_receipts().iter().any(|r| r.receiver_id == acc("moon.pakt.testnet")));
+    record(&mut f, "moon.pakt.testnet", Mark, 5, NearToken::from_yoctonear(0));
+    record(&mut f, "sun.pakt.testnet", Mark, -8, NearToken::from_yoctonear(0));
+    record(&mut f, "sun.pakt.testnet", Fire, 0, NearToken::from_yoctonear(0));
+    let r = f.get_trader_record(acc("tt.testnet")).unwrap();
+    assert_eq!((r.hires, r.fires, r.settlements, r.profit_usd_e6.0, r.fees_earned_usd_e6.0), (1, 1, 2, -3, 28));
+    assert_eq!(f.list_trader_records(None, None).len(), 1);
+    assert!(f.get_trader_record(acc("other.testnet")).is_none());
+    for who in ["mallory.testnet", "fake.pakt.testnet", "moon.sputnikv2.testnet"] {
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| record(&mut f, who, Mark, 1, NearToken::from_yoctonear(0))));
+        assert!(r.is_err(), "{who} wrote a record");
+    }
+}
+
+#[test]
+fn migrate_keeps_pakts() {
+    let mut f = setup();
+    let d = need(&f);
+    create(&mut f, "moon", d);
+    let crate::Factory { owner, config, pakts, .. } = f;
+    near_sdk::env::state_write(&crate::FactoryV1 { owner, config, pakts });
+    with_results(vec![]);
+    let f = Factory::migrate();
+    assert_eq!(f.get_pakt("moon".into()).unwrap().vault.as_str(), "moon.pakt.testnet");
+    assert!(f.list_trader_records(None, None).is_empty());
+}
+
+#[test]
+#[should_panic(expected = "attach storage for a new record")]
+fn new_trader_record_needs_storage() {
+    let mut f = setup();
+    let d = need(&f);
+    create(&mut f, "moon", d);
+    record(&mut f, "moon.pakt.testnet", crate::RecordKind::Mark, 1, NearToken::from_yoctonear(0));
+}

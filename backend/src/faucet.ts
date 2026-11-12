@@ -13,7 +13,8 @@ declare global {
 const ACCOUNT = /^(?=.{2,64}$)(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 const b64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
 const STORAGE = 1_250_000_000_000_000_000_000n; // 0.00125 NEAR, the NEP-145 FT registration cost
-let busy = false; // shortcut: one drip per isolate so nonces don't race; queue it if traffic grows
+// shortcut: one FAUCET_SIGNER tx per isolate so nonces don't race (faucet and gas sponsor); queue it if traffic grows
+export const signer = { busy: false };
 
 export type Drip = { status: number; body: { sent?: string[]; error?: string } };
 
@@ -23,8 +24,8 @@ const PER_IP_DAY = 3; // a shared wifi gets a few claims, not unlimited
 export async function faucet(env: Env, account: string | null, ip: string): Promise<Drip> {
   if (!env.FAUCET_SIGNER || !env.FAUCET_DRIPS) return { status: 404, body: { error: "faucet off" } };
   if (!account || !ACCOUNT.test(account)) return { status: 400, body: { error: "bad account" } };
-  if (busy) return { status: 429, body: { error: "busy, retry in a few seconds" } };
-  busy = true;
+  if (signer.busy) return { status: 429, body: { error: "busy, retry in a few seconds" } };
+  signer.busy = true;
   try {
     const since = Date.now() - DAY_MS;
     const n = (sql: string, v: string) => env.DB.prepare(sql).bind(v, since).first<number>("n");
@@ -55,6 +56,6 @@ export async function faucet(env: Env, account: string | null, ip: string): Prom
     await env.DB.prepare("insert into faucet_claims (account, ip, at) values (?, ?, ?)").bind(account, ip, Date.now()).run();
     return { status: 200, body: { sent } };
   } finally {
-    busy = false;
+    signer.busy = false;
   }
 }
