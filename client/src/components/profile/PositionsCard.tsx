@@ -61,7 +61,7 @@ export function PositionsCard({ account, holdings, title }: Props) {
               <li key={p.id}>
                 <Row
                   href={`/token/${p.symbol}`}
-                  avatar={<Avatar name={p.symbol} glyph={t?.glyph} color={t?.color} size={32} />}
+                  avatar={<Avatar name={p.symbol} src={t?.logo} size={32} />}
                   title={p.symbol}
                   subtitle={`${p.amount.toLocaleString("en-US")} · ${p.owner === account ? "Solo" : p.owner}`}
                   value={<span className={p.pnl < 0 ? "text-down" : "text-up"}>{signed(p.pnl)}</span>}

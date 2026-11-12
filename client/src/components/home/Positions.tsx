@@ -67,7 +67,7 @@ export function Positions({ symbol, onCollapse }: Props) {
             const pnlPct = (t.price / p.avgEntry - 1) * 100;
             return (
               <li key={`${p.symbol}-${p.paktId}`} className="flex h-[52px] items-center gap-3 rounded-xl px-2 hover:bg-panel-2/60">
-                <Avatar name={t.symbol} glyph={t.glyph} color={t.color} size={32} />
+                <Avatar name={t.symbol} src={t.logo} size={32} />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-[15px] leading-5">{t.symbol}</span>
                   <span className="truncate text-[13px] leading-5 text-text-2">{pakts.find((x) => x.id === p.paktId)?.name ?? "Solo"}</span>

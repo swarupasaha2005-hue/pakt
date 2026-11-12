@@ -27,8 +27,7 @@ export function TokenRow({ token: t, tf, starred, onStar, quickBuy }: Props) {
           </button>
           <Avatar
             name={t.symbol}
-            glyph={t.glyph}
-            color={t.color}
+            src={t.logo}
             badge={t.allowed && <CheckIcon className="size-3.5 rounded-full bg-accent p-0.5 text-white" strokeWidth={3} />}
           />
           <span className="flex min-w-0 flex-1 flex-col">
