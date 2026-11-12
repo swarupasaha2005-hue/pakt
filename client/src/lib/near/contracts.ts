@@ -1,6 +1,6 @@
 // Chain views over RPC and transaction builders for every pakt action. Args, deposits and gas mirror contracts/e2e.
 import { actionCreators, type Action } from "@near-js/transactions";
-import { BASE_TOKEN, FACTORY, ORACLE, RPC_URL } from "../config";
+import { BASE_TOKEN, FACTORY, ORACLE, rpcFetch } from "../config";
 import type { JoinMode } from "../api";
 
 export type Tx = { receiverId: string; actions: Action[] };
@@ -17,7 +17,7 @@ const PROPOSAL_GAS = String(250 * TGAS);
 // ---- views
 
 async function view<T>(contract: string, method: string, args: object = {}): Promise<T> {
-  const res = await fetch(RPC_URL, {
+  const res = await rpcFetch({
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
