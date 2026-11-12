@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { FilterIcon } from "@/components/ui/icons";
 import { Segmented } from "@/components/ui/Segmented";
 import { Select } from "@/components/ui/Select";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { RowsSkeleton } from "@/components/ui/Skeleton";
 import { feed, type EventKind, type PaktEvent } from "@/lib/api";
 import { loadHoldings, useLoad, useNow } from "@/lib/home/data";
 import { useWallet } from "@/lib/near/wallet";
@@ -67,9 +67,7 @@ export function FeedTab() {
           </button>
         )}
         {!data && !error && (
-          <div className="space-y-2 px-3 py-2">
-            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}
-          </div>
+          <RowsSkeleton n={6} />
         )}
         {error && <p className="py-10 text-center text-sm text-text-2">Could not load the feed</p>}
         {data && !events.length && <p className="py-10 text-center text-sm text-text-2">No activity yet</p>}
