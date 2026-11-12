@@ -11,6 +11,9 @@ export default defineConfig(async () => ({
           TEST_MIGRATIONS: await readD1Migrations(path.join(import.meta.dirname, "migrations")),
           NEARDATA_URL: "http://127.0.0.1:1", // the booted indexer must not reach the network in tests
           CORS_ORIGINS: "http://localhost:3000",
+          PAKT_FACTORY: "pakt.testnet", // fixtures use this, not the deployed factory
+          PRICE_MAP: "",
+          PRICE_ORACLE: "",
         },
       },
     }),

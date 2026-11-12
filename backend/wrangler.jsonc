@@ -9,29 +9,29 @@
   "compatibility_date": "2026-11-10",
   "observability": { "enabled": true, "head_sampling_rate": 1 },
   "vars": {
-    "PAKT_FACTORY": "pakt.testnet",
+    "PAKT_FACTORY": "pakt.pakt-0mxhjh.testnet",
     "NEARDATA_URL": "https://testnet.neardata.xyz",
-    // keyless free rpc (neardata keyless throttles ~13 req burst); http://localhost:3030 for a sandbox; fallback near-testnet.drpc.org
-    "NEAR_RPC_URL": "https://rpc.testnet.fastnear.com",
+    // empty = neardata, one call per block (needs FASTNEAR_API_KEY: keyless 429s); an rpc url (sandbox :3030) polls per tx
+    "NEAR_RPC_URL": "",
     // first block when no cursor is stored; 0 = the final tip
     "START_HEIGHT": "0",
     // upstream requests per minute; free rpc took 60 rapid calls unthrottled
     "UPSTREAM_PER_MIN": "600",
-    "CORS_ORIGINS": "https://pakt.example.com",
-    // price relay, off while any is empty: {"<testnet token>": {"pyth": "<feed id hex>", "coingecko": "<coin id>"}}
-    "PRICE_MAP": "",
-    "PRICE_ORACLE": "",
+    "CORS_ORIGINS": "http://localhost:3000",
+    // price relay, off while any is empty: {"<testnet token>": {"pyth": "<feed id hex>", "coingecko": "<coin id>", "coinbase": "<PAIR-USD>"}}
+    "PRICE_MAP": "{\"tusdc.pakt-0mxhjh.testnet\":{\"pyth\":\"eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a\",\"coingecko\":\"usd-coin\",\"coinbase\":\"USDC-USD\"},\"tbtc.pakt-0mxhjh.testnet\":{\"pyth\":\"e62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43\",\"coingecko\":\"bitcoin\",\"coinbase\":\"BTC-USD\"},\"tnear.pakt-0mxhjh.testnet\":{\"pyth\":\"c415de8d2eba7db216527dff4b60e8f3a5311c740dadb233e13e12547e226750\",\"coingecko\":\"near\",\"coinbase\":\"NEAR-USD\"}}",
+    "PRICE_ORACLE": "oracle.pakt-0mxhjh.testnet",
     "HERMES_URL": "https://hermes.pyth.network",
     "COINGECKO_URL": "https://api.coingecko.com",
+    "COINBASE_URL": "https://api.coinbase.com",
     "TESTNET_RPC_URL": "https://rpc.testnet.fastnear.com"
   },
-  // FASTNEAR_API_KEY: optional, raises neardata/RPC limits. ADMIN_TOKEN guards POST /admin/start.
+  // FASTNEAR_API_KEY (optional secret): raises neardata/RPC limits. ADMIN_TOKEN guards POST /admin/start.
   // relay secrets (optional, `wrangler secret put`): ORACLE_REPORTER `account_id:ed25519:<secret>` signs
   // report_prices; HERMES_API_KEY (Pyth bearer key) switches the source from keyless CoinGecko to Hermes.
-  "secrets": { "required": ["FASTNEAR_API_KEY", "ADMIN_TOKEN"] },
+  "secrets": { "required": ["ADMIN_TOKEN"] },
   "d1_databases": [
-    // REPLACE database_id with the id printed by `wrangler d1 create pakt`
-    { "binding": "DB", "database_name": "pakt", "database_id": "00000000-0000-0000-0000-000000000000", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "pakt", "database_id": "4d91ebfe-e7bb-4379-b398-787a24e81b14", "migrations_dir": "migrations" }
   ],
   "durable_objects": { "bindings": [{ "name": "INDEXER", "class_name": "Indexer" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Indexer"] }],

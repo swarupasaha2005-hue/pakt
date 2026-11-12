@@ -84,7 +84,7 @@ describe("relay", () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  async function run(feeds: Feed[], hermesKey = "hk") {
+  async function run(feeds: Feed[], hermesKey = "hk", map: object = MAP, cgStatus = 200) {
     const kp = (await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"])) as CryptoKeyPair;
     const jwk = (await crypto.subtle.exportKey("jwk", kp.privateKey)) as JsonWebKey;
     const secret = b58encode(Uint8Array.from([...fromUrl(jwk.d!), ...fromUrl(jwk.x!)]));
@@ -97,8 +97,14 @@ describe("relay", () => {
         return Response.json({ binary: { encoding: "hex", data: [] }, parsed: feeds });
       }
       if (String(url).startsWith(env.COINGECKO_URL)) {
+        expect(new Headers(init?.headers).get("user-agent")).toBe("pakt-relay/1.0");
         calls.push({ url: String(url), method: "coingecko", params: {} });
+        if (cgStatus !== 200) return new Response("Throttled", { status: cgStatus });
         return Response.json({ "usd-coin": { usd: 0.9994733566637608, last_updated_at: now() }, near: { usd: 3.377458169138707, last_updated_at: now() } });
+      }
+      if (String(url).startsWith(env.COINBASE_URL)) {
+        calls.push({ url: String(url), method: "coinbase", params: {} });
+        return Response.json({ data: { amount: String(url).includes("NEAR") ? "3.39275" : "1", currency: "USD" } });
       }
       expect(String(init?.body)).not.toContain(secret);
       const { method, params } = JSON.parse(String(init?.body));
@@ -109,7 +115,7 @@ describe("relay", () => {
         : { status: { SuccessValue: "" } };
       return Response.json({ jsonrpc: "2.0", id: "pakt", result });
     });
-    const e = { ...env, PRICE_MAP: JSON.stringify(MAP), PRICE_ORACLE: "oracle.owner.testnet", ORACLE_REPORTER: `rep.testnet:ed25519:${secret}`, HERMES_API_KEY: hermesKey };
+    const e = { ...env, PRICE_MAP: JSON.stringify(map), PRICE_ORACLE: "oracle.owner.testnet", ORACLE_REPORTER: `rep.testnet:ed25519:${secret}`, HERMES_API_KEY: hermesKey };
     return { result: await relay(e), calls, pub: kp.publicKey, hash };
   }
 
@@ -143,6 +149,14 @@ describe("relay", () => {
     const { result, calls } = await run([feed(USDC, "99994982"), feed(NEAR, "188428353", "1000", 120)]);
     expect(result).toBe("reported 2");
     expect(calls.map((c) => c.method)).toEqual(["hermes", "coingecko", "query", "send_tx"]); // decimals cached from the last round
+  });
+
+  it("throttled coingecko falls back to coinbase", async () => {
+    const cb = { "tusdc.owner.testnet": { ...MAP["tusdc.owner.testnet"], coinbase: "USDC-USD" }, "tnear.owner.testnet": { ...MAP["tnear.owner.testnet"], coinbase: "NEAR-USD" } };
+    const { result, calls } = await run([], "", cb, 429);
+    expect(result).toBe("reported 2");
+    expect(calls.filter((c) => c.method === "coinbase").map((c) => c.url)).toEqual([`${env.COINBASE_URL}/v2/prices/USDC-USD/spot`, `${env.COINBASE_URL}/v2/prices/NEAR-USD/spot`]);
+    expect(calls.at(-1)!.method).toBe("send_tx");
   });
 
   it("holds a >20% jump until it repeats 3 rounds", () => {

@@ -1,10 +1,11 @@
-// Price relay: Pyth Hermes (when HERMES_API_KEY is set) or keyless CoinGecko -> report_prices on our testnet oracle, once a minute.
+// Price relay: Pyth Hermes (when HERMES_API_KEY is set), else keyless CoinGecko, else keyless Coinbase -> report_prices on our testnet oracle, once a minute.
 // No-op unless PRICE_MAP, PRICE_ORACLE and the ORACLE_REPORTER secret are all set.
 import { Rpc, Upstream } from "./chain";
 
 declare global {
   interface Env {
     // optional secrets, so not in wrangler secrets.required
+    FASTNEAR_API_KEY?: string;
     ORACLE_REPORTER?: string;
     HERMES_API_KEY?: string;
   }
@@ -12,7 +13,7 @@ declare global {
 
 type Price = { multiplier: string; decimals: number };
 export type Feed = { id: string; price: { price: string; conf: string; expo: number; publish_time: number } };
-export type Ids = { pyth: string; coingecko: string };
+export type Ids = { pyth: string; coingecko: string; coinbase?: string }; // coinbase: pair, e.g. NEAR-USD
 export type Quote = { price: bigint; expo: number }; // usd per whole token = price * 10^expo
 
 const GAS = 30_000_000_000_000n;
@@ -20,6 +21,7 @@ const PYTH_MAX_AGE_S = 60;
 const CG_MAX_AGE_S = 300; // coingecko refreshes every 1-5 min and has no confidence band
 const MAX_CONF_BPS = 200n;
 const enc = new TextEncoder();
+const UA = { "user-agent": "pakt-relay/1.0" }; // coingecko 403s requests without one
 const feedId = (id: string) => id.replace(/^0x/, "").toLowerCase();
 
 // toOracle: usd per whole token = price * 10^expo -> oracle usd = raw * multiplier / 10^decimals, as vault usd_e6.
@@ -61,7 +63,7 @@ export function fromCoingecko(body: Record<string, { usd?: unknown; last_updated
 export function mapPrices(map: Record<string, Ids>, src: keyof Ids, quotes: Map<string, Quote>, decimals: Record<string, number>): { asset_id: string; price: Price }[] | null {
   const out = [];
   for (const [asset_id, ids] of Object.entries(map)) {
-    const q = quotes.get(src === "pyth" ? feedId(String(ids?.pyth)) : String(ids?.coingecko));
+    const q = quotes.get(src === "pyth" ? feedId(String(ids?.pyth)) : String(ids?.[src]));
     if (!q || q.price <= 0n || Math.abs(q.expo) > 30) return null;
     out.push({ asset_id, price: toOracle(q.price, q.expo, decimals[asset_id]) });
   }
@@ -181,7 +183,7 @@ export async function relay(env: Env): Promise<string> {
   try {
     const map = JSON.parse(env.PRICE_MAP) as Record<string, Ids>;
     const key = await parseKey(env.ORACLE_REPORTER);
-    const up = new Upstream(5 + Object.keys(map).length);
+    const up = new Upstream(5 + 2 * Object.keys(map).length);
     const testnet = new Rpc(env.TESTNET_RPC_URL, env.FASTNEAR_API_KEY);
     for (const t of Object.keys(map)) {
       if (decimalsOf.has(t)) continue;
@@ -196,20 +198,25 @@ export async function relay(env: Env): Promise<string> {
     const now = Date.now() / 1000;
     const read = async (src: keyof Ids) => {
       const ids = [...new Set(Object.values(map).map((i) => encodeURIComponent(String(i?.[src]))))];
-      const quotes = src === "pyth"
+      // coinbase: live spot, no timestamp or band; one call per pair
+      const quotes = src === "coinbase"
+        ? new Map(await Promise.all(ids.map(async (i) => [decodeURIComponent(i), decimal(String(((await up.json(`${env.COINBASE_URL}/v2/prices/${i}/spot`, { headers: UA })) as { data?: { amount?: unknown } }).data?.amount))] as const)).then((e) => e.filter((x): x is [string, Quote] => !!x[1])))
+        : src === "pyth"
         ? fromPyth(((await up.json(`${env.HERMES_URL}/v2/updates/price/latest?${ids.map((i) => `ids%5B%5D=${i}`).join("&")}&parsed=true`, {
-          headers: { authorization: `Bearer ${env.HERMES_API_KEY}` },
+          headers: { ...UA, authorization: `Bearer ${env.HERMES_API_KEY}` },
         })) as { parsed?: Feed[] }).parsed ?? [], now)
-        : fromCoingecko((await up.json(`${env.COINGECKO_URL}/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd&include_last_updated_at=true&precision=full`)) as Parameters<typeof fromCoingecko>[0], now);
+        : fromCoingecko((await up.json(`${env.COINGECKO_URL}/api/v3/simple/price?ids=${ids.join(",")}&vs_currencies=usd&include_last_updated_at=true&precision=full`, { headers: UA })) as Parameters<typeof fromCoingecko>[0], now);
       return mapPrices(map, src, quotes, Object.fromEntries(decimalsOf));
     };
-    let prices = env.HERMES_API_KEY ? await read("pyth").catch(() => null) : null;
-    prices ??= await read("coingecko");
+    let prices = env.HERMES_API_KEY ? await read("pyth").catch((e) => (console.warn(JSON.stringify({ msg: "pyth failed", err: String(e) })), null)) : null;
+    prices ??= await read("coingecko").catch((e) => (console.warn(JSON.stringify({ msg: "coingecko failed", err: String(e) })), null));
+    if (!prices && Object.values(map).every((i) => i?.coinbase)) prices = await read("coinbase");
     if (!prices) return "stale";
     if (!steady(prices)) return "jump held";
     const ak = await testnet.call<{ nonce: number; block_hash: string }>(up, "query", {
       request_type: "view_access_key", finality: "final", account_id: key.account, public_key: `ed25519:${b58encode(key.pub)}`,
     });
+    if (!Number.isInteger(ak?.nonce)) throw new Error(`no access key ${b58encode(key.pub).slice(0, 8)}… on ${key.account}`); // wrong ORACLE_REPORTER
     const tx = await signedTx(key, BigInt(ak!.nonce) + 1n, env.PRICE_ORACLE, b58decode(ak!.block_hash), "report_prices", { prices });
     const out = await testnet.call<{ status: Record<string, unknown> }>(up, "send_tx", { signed_tx_base64: b64(tx), wait_until: "EXECUTED_OPTIMISTIC" });
     if (!out || "Failure" in out.status) throw new Error(`report_prices failed: ${JSON.stringify(out?.status).slice(0, 300)}`);
