@@ -139,16 +139,28 @@ export function useStarred() {
 }
 
 /** wallet tUSDC cash, all wallet tokens in usd, and Σ pakt holdings; undefined while loading or logged out */
+let balTick = 0;
+const balSubs = new Set<() => void>();
+const bump = () => ((balTick += 1), balSubs.forEach((f) => f()));
+/** call after anything moves the user's tokens: every useTotal reloads now and once more when the chain view catches up */
+export function refreshBalances() {
+  bump();
+  // views read final blocks, a couple of seconds behind
+  for (const ms of [2_000, 5_000]) setTimeout(bump, ms);
+}
+const subBal = (cb: () => void) => (balSubs.add(cb), () => void balSubs.delete(cb));
+
 export function useTotal(account: string | null) {
-  const cash = useLoad(account ? () => ftBalanceOf(BASE_TOKEN.id, account).then((r) => Number(r) / 10 ** BASE_TOKEN.decimals) : null, [account]);
-  const held = useLoad(account ? () => loadHoldings(account) : null, [account]);
+  const tick = useSyncExternalStore(subBal, () => balTick, () => 0);
+  const cash = useLoad(account ? () => ftBalanceOf(BASE_TOKEN.id, account).then((r) => Number(r) / 10 ** BASE_TOKEN.decimals) : null, [account, tick]);
+  const held = useLoad(account ? () => loadHoldings(account) : null, [account, tick]);
   // every wallet token at oracle prices (unpriced = $0), same as the profile's Total cash
   const wallet = useLoad(
     account
       ? () => Promise.all([prices(), ...TOKENS.map((t) => ftBalanceOf(t.id, account))]).then(([pd, ...bals]) =>
           TOKENS.reduce((a, t, i) => a + usdNum(usdE6(pd as PriceData, t.id, bals[i] as string) ?? "0"), 0))
       : null,
-    [account],
+    [account, tick],
   );
   return {
     cash: cash.data,

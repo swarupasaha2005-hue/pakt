@@ -7,7 +7,7 @@ import { HoverCard } from "@/components/ui/HoverCard";
 import { heldIn } from "@/components/home/TokensTable";
 import { TokenHoverCard } from "@/components/home/TokenHoverCard";
 import { CheckIcon } from "@/components/ui/icons";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { RowsSkeleton } from "@/components/ui/Skeleton";
 import { usd } from "@/lib/format";
 import { loadPakts, loadTokens, useLoad } from "@/lib/home/data";
 import { Row } from "./Row";
@@ -21,7 +21,7 @@ export function TokensTab() {
   return (
     <ul className="flex-1 space-y-1 overflow-y-auto px-2 pt-1.5">
       {error && <li className="py-10 text-center text-sm text-text-2">Prices unavailable</li>}
-      {!data && !error && [0, 1, 2].map((i) => <li key={i}><Skeleton className="h-[53px] rounded-lg" /></li>)}
+      {!data && !error && <li><RowsSkeleton n={5} className="px-0 py-0" /></li>}
       {data?.map((t) => (
         <li key={t.id}>
           <HoverCard className="w-full *:flex-1" card={<TokenHoverCard token={t} held={pakts.data && heldIn(t.id, pakts.data)} />}>

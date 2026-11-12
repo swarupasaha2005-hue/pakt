@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { Positions } from "@/components/home/Positions";
 import { ChevronsLeftIcon } from "@/components/ui/icons";
+import { RowsSkeleton } from "@/components/ui/Skeleton";
 import { Tabs } from "@/components/ui/Tabs";
 import { usePersisted } from "@/lib/home/data";
 import { FeedTab } from "./FeedTab";
@@ -49,7 +50,7 @@ export function LeftPanel() {
         </div>
         {/* why: usePathname in tabs suspends on unprerendered dynamic routes */}
         <div key={tab} className="flex min-h-0 flex-1 animate-slide-in-left flex-col">
-          <Suspense>{TABS.find((t) => t.id === tab)?.body}</Suspense>
+          <Suspense fallback={<RowsSkeleton n={6} />}>{TABS.find((t) => t.id === tab)?.body}</Suspense>
         </div>
       </div>
       {collapsed && (

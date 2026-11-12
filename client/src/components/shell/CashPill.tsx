@@ -7,7 +7,7 @@ import { Dropdown, menuItem } from "@/components/ui/Dropdown";
 import { DollarIcon, PlusCircleIcon, SwapIcon } from "@/components/ui/icons";
 import { requestTokens } from "@/lib/api";
 import { usd } from "@/lib/format";
-import { loadPakts, useLoad, useTotal } from "@/lib/home/data";
+import { loadPakts, refreshBalances, useLoad, useTotal } from "@/lib/home/data";
 import { useWallet } from "@/lib/near/wallet";
 import { FAUCET } from "./Ticker";
 
@@ -27,6 +27,7 @@ export function CashPill() {
     setDrip("Sending test tokens…");
     try {
       await requestTokens(accountId);
+      refreshBalances();
       setDrip("Sent 1,000 tUSDC, 0.01 tBTC, 50 tNEAR");
     } catch (e) {
       setDrip((e as Error).message);

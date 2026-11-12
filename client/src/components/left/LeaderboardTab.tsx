@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { InfoIcon } from "@/components/ui/icons";
 import { Segmented } from "@/components/ui/Segmented";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { RowsSkeleton } from "@/components/ui/Skeleton";
 import { leaderboard, type Range } from "@/lib/api";
 import { loadPakts, paktName, useLoad, usdNum } from "@/lib/home/data";
 import { HireModal } from "@/components/modals/HireModal";
@@ -55,9 +55,7 @@ export function LeaderboardTab() {
       </div>
       {accountId && <YourRank account={accountId} rank={mine < 0 ? undefined : mine + 1} pnl={mine < 0 ? undefined : usdNum(board[mine].pnl)} />}
       {!data && !error && (
-        <div className="space-y-2 px-3 py-2">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}
-        </div>
+        <RowsSkeleton n={6} />
       )}
       {error && <p className="py-10 text-center text-sm text-text-2">Could not load the leaderboard</p>}
       {data && !board.length && <p className="py-10 text-center text-sm text-text-2">No pakters yet</p>}
