@@ -12,9 +12,30 @@ type Props = {
   onSignIn: () => void;
   onLeave: () => void;
   onDeposit: () => void;
+  /** phone bottom bar: one row, no border */
+  bar?: boolean;
 };
 
-export function ShareCard({ share, value, joinBlocked, signedIn, onSignIn, onLeave, onDeposit }: Props) {
+export function ShareCard({ share, value, joinBlocked, signedIn, onSignIn, onLeave, onDeposit, bar }: Props) {
+  if (bar) {
+    if (!signedIn) return <Button variant="primary" size="lg" className="w-full" onClick={onSignIn}>Connect wallet to join</Button>;
+    if (share === null)
+      return joinBlocked ? (
+        <p className="py-2 text-center text-xs text-text-2">{joinBlocked}</p>
+      ) : (
+        <Button variant="primary" size="lg" className="w-full" onClick={onDeposit}>Join pakt</Button>
+      );
+    return (
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 leading-tight">
+          <span className="block text-xs text-text-2">Your share · {(share * 100).toFixed(1)}%</span>
+          <span className="text-lg">{value === null ? "—" : usd(value)}</span>
+        </p>
+        <Button onClick={onLeave}>Leave</Button>
+        <Button variant="primary" disabled={!!joinBlocked} onClick={onDeposit}>Deposit</Button>
+      </div>
+    );
+  }
   if (!signedIn) {
     return (
       <section className="border-b p-4">

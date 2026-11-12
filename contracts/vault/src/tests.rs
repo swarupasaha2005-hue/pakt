@@ -870,3 +870,44 @@ fn storage_gates_joining_pays_syncs_and_refunds() {
     assert!(v.storage_unregister(None));
     assert!(sent(&acc("aa"), NearToken::from_yoctonear(left)) && v.storage_balance_of(acc("aa")).is_none());
 }
+
+/// (kind, pnl, fee, deposit) of record_trader calls made in the current context
+fn records() -> Vec<(String, i128, u128, NearToken)> {
+    near_sdk::test_utils::get_created_receipts()
+        .iter()
+        .filter(|r| r.receiver_id == acc("factory"))
+        .flat_map(|r| r.actions.clone())
+        .filter_map(|a| match a {
+            near_sdk::mock::MockAction::FunctionCallWeight { method_name, args, attached_deposit, .. } if method_name == b"record_trader" => {
+                let j: near_sdk::serde_json::Value = near_sdk::serde_json::from_slice(&args).unwrap();
+                assert_eq!(j["trader"], "tt");
+                let n = |k: &str| j[k].as_str().unwrap().to_string();
+                Some((j["kind"].as_str().unwrap().to_string(), n("pnl_usd_e6").parse().unwrap(), n("fee_usd_e6").parse().unwrap(), attached_deposit))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn reputation_records_hire_marks_and_fire() {
+    let mut v = vault();
+    deposit(&mut v, "aa", 100, 1.0);
+    hire(&mut v, 2_000, 1.0);
+    let r = records();
+    assert!(r.len() == 1 && r[0].0 == "Hire" && !r[0].3.is_zero(), "{r:?}");
+    settle_at(&mut v, 1.1);
+    assert_eq!(records(), vec![("Mark".to_string(), 10 * USD as i128, 2 * USD, NearToken::from_yoctonear(0))]);
+    // back to $1: gross P/L returns to ~0, no fee
+    v.last_settle_ms = 0;
+    settle_at(&mut v, 1.0);
+    let r = records();
+    assert!(r.len() == 1 && r[0].0 == "Mark" && (r[0].1 + 10 * USD as i128).abs() < 10 && r[0].2 == 0, "{r:?}");
+    // flat since the last mark: fire records only the fire
+    ctx("dao");
+    v.fire();
+    ctx_at("vault", 1_000, vec![prices(1.0)]);
+    v.on_fire(v.op_id);
+    let r = records();
+    assert!(r.len() == 1 && r[0].0 == "Fire" && r[0].3.is_zero(), "{r:?}");
+}

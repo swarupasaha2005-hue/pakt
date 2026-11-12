@@ -1,5 +1,5 @@
 //! pakt factory: creates the `<name>.<factory>` vault + `<name>.<sputnik>` dao, keeps the registry.
-use near_sdk::json_types::{Base64VecU8, U128};
+use near_sdk::json_types::{Base64VecU8, I128, U128};
 use near_sdk::serde_json::{self, json, Value};
 use near_sdk::store::IterableMap;
 use near_sdk::{
@@ -78,9 +78,39 @@ pub struct Pakt {
     pub stop_loss_bps: u16,
 }
 
+/// Pakter reputation across every pakt; only registered vaults write it.
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Default)]
+pub struct TraderRecord {
+    pub hires: u32,
+    pub fires: u32,
+    /// fee marks that moved P/L while hired
+    pub settlements: u32,
+    /// gross usd e6 P/L of the pakts while hired, before fees
+    pub profit_usd_e6: I128,
+    pub fees_earned_usd_e6: U128,
+    pub last_ms: u64,
+}
+
+#[near(serializers = [json])]
+#[derive(Clone, Copy, PartialEq)]
+pub enum RecordKind {
+    Hire,
+    Fire,
+    Mark,
+}
+
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
 pub struct Factory {
+    owner: AccountId,
+    config: Config,
+    pakts: IterableMap<String, Pakt>,
+    traders: IterableMap<AccountId, TraderRecord>,
+}
+
+#[near(serializers = [borsh])]
+struct FactoryV1 {
     owner: AccountId,
     config: Config,
     pakts: IterableMap<String, Pakt>,
@@ -95,7 +125,16 @@ impl Factory {
             owner,
             config,
             pakts: IterableMap::new(b"p"),
+            traders: IterableMap::new(b"r"),
         }
+    }
+
+    /// Redeploy over the pre-reputation factory state.
+    #[private]
+    #[init(ignore_state)]
+    pub fn migrate() -> Self {
+        let old: FactoryV1 = env::state_read().expect("no state");
+        Self { owner: old.owner, config: old.config, pakts: old.pakts, traders: IterableMap::new(b"r") }
     }
 
     pub fn set_config(&mut self, config: Config) {
@@ -268,6 +307,38 @@ impl Factory {
 
     pub fn get_pakt(&self, name: String) -> Option<&Pakt> {
         self.pakts.get(&name)
+    }
+
+    /// Vault-only. A new record must be paid by the attached deposit; the excess goes back.
+    #[payable]
+    pub fn record_trader(&mut self, trader: AccountId, kind: RecordKind, pnl_usd_e6: I128, fee_usd_e6: U128) {
+        let vault = env::predecessor_account_id();
+        let name = vault.as_str().strip_suffix(&format!(".{}", env::current_account_id()));
+        require!(name.and_then(|n| self.pakts.get(n)).is_some_and(|p| p.vault == vault), "only pakt vaults");
+        let before = env::storage_usage();
+        let r = self.traders.entry(trader).or_default();
+        match kind {
+            RecordKind::Hire => r.hires += 1,
+            RecordKind::Fire => r.fires += 1,
+            RecordKind::Mark => r.settlements += 1,
+        }
+        r.profit_usd_e6.0 += pnl_usd_e6.0;
+        r.fees_earned_usd_e6.0 += fee_usd_e6.0;
+        r.last_ms = env::block_timestamp_ms();
+        self.traders.flush();
+        let cost = env::storage_byte_cost().saturating_mul(env::storage_usage().saturating_sub(before) as u128);
+        let refund = env::attached_deposit().checked_sub(cost).unwrap_or_else(|| env::panic_str("attach storage for a new record"));
+        if !refund.is_zero() {
+            Promise::new(vault).transfer(refund).detach();
+        }
+    }
+
+    pub fn get_trader_record(&self, account: AccountId) -> Option<&TraderRecord> {
+        self.traders.get(&account)
+    }
+
+    pub fn list_trader_records(&self, from: Option<u32>, limit: Option<u32>) -> Vec<(&AccountId, &TraderRecord)> {
+        self.traders.iter().skip(from.unwrap_or(0) as usize).take(limit.unwrap_or(50) as usize).collect()
     }
 }
 

@@ -10,6 +10,7 @@ import { useTx } from "@/lib/pakt/tx";
 import { amount, e6, toRaw } from "@/lib/pakt/units";
 import { minOut, poolFor, rawFor, tradeError } from "@/lib/trade";
 import { TxStatus } from "./TxStatus";
+import { WithdrawProof } from "./WithdrawProof";
 
 const SLIPPAGES = [50, 100, 200];
 const CHIPS = [5, 10, 25];
@@ -152,6 +153,7 @@ export function TradePanel({ vault, state, prices, account, now, onDone }: Props
         {error ?? (tx.pending ? "Confirming…" : amountIn ? `${verb} ${sym}` : "Enter amount")}
       </Button>
       <TxStatus {...tx} done="Trade sent" />
+      <WithdrawProof vault={vault} />
     </section>
   );
 }

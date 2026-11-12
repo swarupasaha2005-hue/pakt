@@ -10,7 +10,7 @@ import { LeaderboardTab } from "./LeaderboardTab";
 import { PaktsTab } from "./PaktsTab";
 import { TokensTab } from "./TokensTab";
 
-const TABS = [
+export const TABS = [
   { id: "leaderboard", label: "Pakters", body: <LeaderboardTab /> },
   { id: "feed", label: "Feed", body: <FeedTab /> },
   { id: "pakts", label: "Pakts", body: <PaktsTab /> },
@@ -38,7 +38,7 @@ export function LeftPanel() {
   return (
     <aside
       data-tour="left"
-      className={`relative flex shrink-0 flex-col overflow-hidden transition-[width,border-radius] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${collapsed ? "h-9 w-[33px] self-start rounded-lg hover:bg-panel-2" : "w-[366px] rounded-xl border bg-panel"}`}
+      className={`relative hidden shrink-0 flex-col overflow-hidden md:flex transition-[width,border-radius] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${collapsed ? "h-9 w-[33px] self-start rounded-lg hover:bg-panel-2" : "w-[366px] rounded-xl border bg-panel"}`}
     >
       <div inert={collapsed} className={`flex min-h-0 w-[364px] flex-1 flex-col transition-opacity duration-200 ${collapsed ? "opacity-0" : "opacity-100 delay-100"}`}>
         <div className="flex h-9 shrink-0 items-center justify-between bg-panel-2 pr-2 pl-1.5 text-sm">

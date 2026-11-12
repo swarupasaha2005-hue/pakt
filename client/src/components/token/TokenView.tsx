@@ -49,7 +49,7 @@ export function TokenView({ symbol }: { symbol: string }) {
 
   return (
     <>
-      <main className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto">
+      <main className="flex min-w-0 flex-1 flex-col gap-3 md:overflow-y-auto">
         <TokenHeader token={info} logo={t?.logo} price={price} stats={market.data} />
         <ChartPanel token={info} />
         <HoldersTable token={info} held={held} trades={trades} now={now} />

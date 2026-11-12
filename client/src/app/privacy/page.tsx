@@ -12,7 +12,7 @@ export default function Privacy() {
       <h2>Your browser</h2>
       <p>The site keeps a few settings in your browser&apos;s local storage: starred pakts and tokens, whether you finished the site tour, and your wallet connection. They never leave your device. Clear your site data to remove them.</p>
       <h2>Our servers</h2>
-      <p>Our backend sees your IP address on each request and uses it to rate-limit abuse. When you request test tokens, we store your account id and IP address with the time of the claim, to enforce the daily faucet limit. We never sell either.</p>
+      <p>Our backend sees your IP address on each request and uses it to rate-limit abuse. When you request test tokens, we store your account id and IP address with the time of the claim, to enforce the daily faucet limit. When we pay gas for your first transactions, we store your account id with a count of them. We never sell either.</p>
       <h2>Third parties</h2>
       <ul>
         <li>Your wallet (for example MyNearWallet, Meteor, HERE or HOT) handles signing under its own privacy policy.</li>

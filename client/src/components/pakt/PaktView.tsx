@@ -134,7 +134,7 @@ export function PaktView({ name }: { name: string }) {
 
   return (
     <>
-      <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
+      <main className="flex min-w-0 flex-1 flex-col gap-4 md:overflow-y-auto">
         <PaktHeader info={info} state={state} value={value} trades={trades.length} />
         {offerForMe && <OfferCard offer={offerForMe} name={info.name} vault={info.vault} members={state.members} value={value} now={now} onDone={refresh} />}
         {state.trader?.paused && (
@@ -170,6 +170,7 @@ export function PaktView({ name }: { name: string }) {
       </main>
       <RightPanel>
         {isTrader && accountId && <TradePanel vault={info.vault} state={state} prices={prices} account={accountId} now={now} onDone={refresh} />}
+        <div className="hidden md:block">
         <ShareCard
           share={share}
           value={myValue}
@@ -179,12 +180,27 @@ export function PaktView({ name }: { name: string }) {
           onLeave={() => setModal("leave")}
           onDeposit={() => setModal("deposit")}
         />
+        </div>
         {fixes.length > 0 && <RecoveryCard fixes={fixes} onDone={refresh} />}
         {accountId && owed.length > 0 && <OwedCard vault={info.vault} account={accountId} owed={owed} onDone={refresh} />}
         <TraderCard state={state} member={daoMember} onPropose={() => setModal("propose")} onRaise={() => setModal("raise")} onFire={() => setModal("fire")} />
         <SettlementCard vault={info.vault} profit={profit} fee={(state.trader?.fee_bps ?? 0) / 100} dueMs={dueMs} now={now} blocked={settleBlocked} onDone={refresh} />
         <OpenVotesCard dao={info.dao} votes={open} members={members} needed={needed(policy, members)} blocked={voteBlocked} now={now} onDone={refresh} />
       </RightPanel>
+      {/* phone: your share + deposit stay pinned above the bottom nav */}
+      <div className="h-14 shrink-0 md:hidden" />
+      <div className="fixed inset-x-0 bottom-16 z-20 border-t bg-panel px-3 py-2 md:hidden">
+        <ShareCard
+          bar
+          share={share}
+          value={myValue}
+          joinBlocked={joinBlocked}
+          signedIn={!!accountId}
+          onSignIn={signIn}
+          onLeave={() => setModal("leave")}
+          onDeposit={() => setModal("deposit")}
+        />
+      </div>
       {modal === "deposit" && <DepositModal to={info.name} onClose={() => setModal(null)} onDone={refresh} />}
       {modal === "propose" && (
         <ProposeTraderModal {...props} members={holders.filter(([, h]) => h.member).map(([a]) => a)} stopLossBps={info.stop_loss_bps} />

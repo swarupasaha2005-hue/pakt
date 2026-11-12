@@ -3,9 +3,10 @@
 // The first request arms the indexer alarm: `curl localhost:8787/healthz`. /__scheduled exists in dev only.
 // Deploy: `wrangler d1 create pakt`, paste the id into wrangler.jsonc, `wrangler d1 migrations apply pakt --remote`,
 // `wrangler secret put ADMIN_TOKEN` (and FASTNEAR_API_KEY), then `wrangler deploy`.
-import { BadInput, cacheKey, clientKey, route } from "./api";
+import { BadInput, account, cacheKey, clientKey, route } from "./api";
 import { faucet } from "./faucet";
 import { relay } from "./relay";
+import { left, sponsor, topup } from "./sponsor";
 
 export { Indexer } from "./indexer";
 
@@ -70,8 +71,33 @@ async function handle(req: Request, env: Env, ctx: ExecutionContext): Promise<Re
     const d = await faucet(env, url.searchParams.get("account"), clientKey(req)).catch((e) => (console.error(JSON.stringify({ msg: "faucet failed", err: String(e) })), { status: 502, body: { error: "mint failed, try again" } }));
     return json(d.body, d.status);
   }
+  if (url.pathname === "/relay" && req.method === "POST") {
+    if (!(await env.RELAY_LIMIT.limit({ key: clientKey(req) })).success) return json({ error: "rate limited" }, 429, { "retry-after": "60" });
+    const d = await sponsor(env, await req.text()).catch((e) => (console.error(JSON.stringify({ msg: "sponsor failed", err: String(e) })), { status: 502, body: { error: "relay failed, send it with gas instead" } }));
+    return json(d.body, d.status);
+  }
+  if (url.pathname === "/relay/topup" && req.method === "POST") {
+    if (!(await env.RELAY_LIMIT.limit({ key: clientKey(req) })).success) return json({ error: "rate limited" }, 429, { "retry-after": "60" });
+    let who: string;
+    try {
+      who = account(url.searchParams.get("account") ?? "");
+    } catch {
+      return json({ error: "bad account" }, 400);
+    }
+    const d = await topup(env, who, clientKey(req)).catch((e) => (console.error(JSON.stringify({ msg: "topup failed", err: String(e) })), { status: 502, body: { error: "top-up failed" } }));
+    return json(d.body, d.status);
+  }
   if (req.method !== "GET") return json({ error: "method not allowed" }, 405, { allow: "GET, OPTIONS" });
   if (stream) return env.INDEXER.getByName("main").fetch(req);
+  if (url.pathname === "/relay/left") {
+    const who = url.searchParams.get("account") ?? "";
+    try {
+      return json({ left: await left(env, account(who)) });
+    } catch (e) {
+      if (e instanceof BadInput) return json({ error: e.message }, 400);
+      throw e;
+    }
+  }
   if (url.pathname === "/healthz") {
     await env.DB.prepare("select 1").first();
     return json({ status: "ok" });

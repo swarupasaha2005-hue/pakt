@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { FeeSplitInfo } from "@/components/pakt/FeeSplitInfo";
+import { InviteByName } from "@/components/pakt/InviteByName";
 import { TxStatus } from "@/components/pakt/TxStatus";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +77,10 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
         >
           Share on X
         </a>
+        <div className="mt-4 border-t pt-4">
+          <p className="mb-2 text-sm font-medium">Invite by NEAR account</p>
+          <InviteByName pakt={name} />
+        </div>
         <Link href={`/pakt/${name}`} onClick={onClose} className="mt-2 flex h-10 items-center justify-center rounded-xl bg-accent text-xs font-bold text-white hover:brightness-110">
           Open pakt and deposit
         </Link>
@@ -93,7 +99,12 @@ export function CreatePaktModal({ onClose }: { onClose: () => void }) {
         }}
         className="flex flex-col gap-3"
       >
-        <h2 className="text-xl font-bold">Create pakt</h2>
+        <h2 className="flex items-center gap-1.5 text-xl font-bold">
+          Create pakt
+          <span className="text-base font-normal">
+            <FeeSplitInfo />
+          </span>
+        </h2>
         <Avatar name={name || "pakt"} size={80} />
         <Input
           required

@@ -1,6 +1,8 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { LeftPanel } from "@/components/left/LeftPanel";
+import { MobileNav } from "@/components/shell/MobileNav";
 import { Ticker } from "@/components/shell/Ticker";
 import { TopBar } from "@/components/shell/TopBar";
 import { Tour } from "@/components/tour/Tour";
@@ -48,12 +50,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <WalletProvider>
           <TopBar />
           <Tour />
-          <div className="flex min-h-0 flex-1 gap-3 px-4 pt-1 pb-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 pt-1 pb-20 md:flex-row md:overflow-hidden md:px-4 md:pb-2">
             <LeftPanel />
             {/* center + right slots: each page renders <main> and optional <RightPanel> */}
             {children}
           </div>
           <Ticker />
+          {/* why: usePathname suspends on unprerendered dynamic routes */}
+          <Suspense>
+            <MobileNav />
+          </Suspense>
         </WalletProvider>
         <Analytics />
       </body>

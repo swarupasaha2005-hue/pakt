@@ -35,17 +35,17 @@ export function ProfileView({ account }: { account: string }) {
     );
 
   return (
-    <main className="flex min-w-0 flex-1 flex-col overflow-y-auto pb-4">
+    <main className="flex min-w-0 flex-1 flex-col pb-4 md:overflow-y-auto">
       <ProfileHeader account={account} data={data} />
       {error ? (
         <p className="py-6 text-center text-sm text-down">Could not load profile: {error}</p>
       ) : !data ? (
-        <div className="mt-4 grid grid-cols-2 items-start gap-3">
+        <div className="mt-4 grid grid-cols-1 items-start gap-3 md:grid-cols-2">
           <Skeleton className="h-[200px]" />
           <Skeleton className="h-[200px]" />
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 items-start gap-3">
+        <div className="mt-4 grid grid-cols-1 items-start gap-3 md:grid-cols-2">
           <div className="flex flex-col gap-3">
             <CashCard cash={data.cash} />
             <PositionsCard positions={data.positions} title={isMe ? "Your holdings" : "Positions"} />

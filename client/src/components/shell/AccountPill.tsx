@@ -14,7 +14,7 @@ const row = `${menuItem} h-9`;
 const icon = "size-4 shrink-0";
 
 export function AccountPill() {
-  const { accountId, ready, signIn, signOut } = useWallet();
+  const { accountId, ready, signIn, signOut, freeTxs } = useWallet();
   const { wallet, inPakts } = useTotal(accountId);
   const [open, setOpen] = useState(false);
   const [blur, setBlur] = useState(false);
@@ -31,7 +31,7 @@ export function AccountPill() {
         type="button"
         disabled={!ready}
         onClick={signIn}
-        className="flex h-12 w-[124px] items-center justify-center rounded-xl bg-accent text-base font-medium whitespace-nowrap text-white transition hover:brightness-110 active:scale-[0.97] disabled:opacity-60 motion-reduce:active:scale-100"
+        className="flex h-10 w-[96px] items-center justify-center rounded-xl bg-accent text-sm font-medium md:h-12 md:w-[124px] md:text-base whitespace-nowrap text-white transition hover:brightness-110 active:scale-[0.97] disabled:opacity-60 motion-reduce:active:scale-100"
       >
         {ready ? "Connect" : "Loading…"}
       </button>
@@ -50,9 +50,9 @@ export function AccountPill() {
           aria-expanded={open}
           aria-label="Account menu"
           onClick={() => setOpen(!open)}
-          className="flex h-12 items-center gap-3 rounded-xl border px-2 py-1 text-left"
+          className="flex h-10 items-center gap-3 rounded-xl border px-1.5 py-1 text-left md:h-12 md:px-2"
         >
-          <span className="flex flex-col">
+          <span className="hidden flex-col md:flex">
             <span data-balance className="text-base leading-6 font-medium">{total === undefined ? "…" : usd(total)}</span>
             <span className="max-w-[140px] truncate text-xs leading-4 text-text-2">{accountId}</span>
           </span>
@@ -71,6 +71,7 @@ export function AccountPill() {
         <span className="flex-1">Blur balances</span>
         <Toggle label="Blur balances" checked={blur} onChange={toggleBlur} />
       </div>
+      {freeTxs > 0 && <p className="px-2 py-1.5 text-xs text-text-2">{freeTxs} free transaction{freeTxs === 1 ? "" : "s"} left, gas on us</p>}
       <button type="button" onClick={() => { close(); signOut().catch(() => {}); }} className={`${row} text-down`}>
         <LogOutIcon className={icon} /> Log out
       </button>

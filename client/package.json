@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@near-js/crypto": "2.5.1",
     "@near-js/transactions": "2.5.1",
     "@near-wallet-selector/core": "10.1.4",
     "@near-wallet-selector/here-wallet": "10.1.4",

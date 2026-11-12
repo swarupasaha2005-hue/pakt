@@ -127,7 +127,7 @@ export async function parseKey(s: string): Promise<Key> {
 }
 
 // signedTx is borsh SignedTransaction (Transaction v0) with one FunctionCall; signature is over sha256(tx).
-export type Call = { method: string; args: object; deposit?: bigint }; // deposit in yocto
+export type Call = { method: string; args: object; deposit?: bigint } | { delegate: Uint8Array } | { transfer: bigint }; // yocto; delegate: borsh SignedDelegate
 
 export async function signedTx(key: Key, nonce: bigint, receiver: string, blockHash: Uint8Array, calls: Call[]): Promise<Uint8Array> {
   const w = new W();
@@ -139,6 +139,16 @@ export async function signedTx(key: Key, nonce: bigint, receiver: string, blockH
   w.raw(blockHash);
   w.uint(BigInt(calls.length), 4);
   for (const c of calls) {
+    if ("delegate" in c) {
+      w.uint(8n, 1); // Delegate (NEP-366)
+      w.raw(c.delegate);
+      continue;
+    }
+    if ("transfer" in c) {
+      w.uint(3n, 1); // Transfer
+      w.uint(c.transfer, 16);
+      continue;
+    }
     w.uint(2n, 1); // FunctionCall
     w.str(c.method);
     w.bytes(enc.encode(JSON.stringify(c.args)));
