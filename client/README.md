@@ -1,6 +1,6 @@
 # Pakt client
 
-Next.js 16 (App Router), React 19, Tailwind CSS 4, bun. Talks to NEAR testnet through wallet-selector (Meteor, MyNearWallet, HERE, HOT) and to the Pakt backend for the feed, leaderboard and faucet.
+Next.js 16 (App Router), React 19, Tailwind CSS 4, bun. Talks to NEAR testnet through wallet-selector (Meteor, MyNearWallet, HERE, HOT) and to the Pakt backend for the feed, leaderboard, faucet and gas relayer.
 
 ## Run
 

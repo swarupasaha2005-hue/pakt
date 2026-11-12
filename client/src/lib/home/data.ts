@@ -167,11 +167,12 @@ export function tokenAmount(id: string, raw: string) {
 }
 
 /** useState backed by localStorage; read after mount so server and first client render match */
-export function usePersisted<T extends string | boolean>(key: string, initial: T, ok: (v: unknown) => v is T) {
+/** session: survives reloads but a fresh visit starts from `initial` */
+export function usePersisted<T extends string | boolean>(key: string, initial: T, ok: (v: unknown) => v is T, session = false) {
   const [value, setValue] = useState<T>(initial);
   useEffect(() => {
     try {
-      const v = JSON.parse(localStorage.getItem(key) ?? "null");
+      const v = JSON.parse((session ? sessionStorage : localStorage).getItem(key) ?? "null");
       // eslint-disable-next-line react-hooks/set-state-in-effect -- storage only exists after mount
       if (ok(v)) setValue(v);
     } catch {
@@ -182,10 +183,10 @@ export function usePersisted<T extends string | boolean>(key: string, initial: T
   const set = useCallback((v: T) => {
     setValue(v);
     try {
-      localStorage.setItem(key, JSON.stringify(v));
+      (session ? sessionStorage : localStorage).setItem(key, JSON.stringify(v));
     } catch {
       // storage blocked: keep in memory only
     }
-  }, [key]);
+  }, [key, session]);
   return [value, set] as const;
 }

@@ -4,7 +4,7 @@ use near_sdk::serde_json::json;
 use near_sdk::{env, near, require, AccountId, Gas, GasWeight, NearToken, Promise};
 
 use crate::oracle;
-use crate::{Op, Vault, VaultExt, DAY_MS, GAS_OP, STORAGE_RESERVE};
+use crate::{Op, Vault, VaultExt, DAY_MS, FIRE_WAIT_MS, GAS_OP, STORAGE_RESERVE};
 
 pub const FEE_MIN_BPS: u16 = 1_000;
 pub const FEE_MAX_BPS: u16 = 3_000;
@@ -96,12 +96,15 @@ impl Vault {
         self.emit("declined", json!({"trader": me}));
     }
 
-    /// Pays the trader for profit so far, then removes them. Works even if the oracle is down.
+    /// Pays the trader for profit so far, then removes them. Oracle down: waits up to an hour for prices, then fires anyway.
     /// Always pauses first; busy lock or under GAS_OP prepaid: anyone runs `finish_fire`, so the dao proposal never fails.
     pub fn fire(&mut self) {
         self.only_dao();
         let t = self.trader.as_mut().unwrap_or_else(|| env::panic_str("no trader"));
         t.paused = true;
+        if !self.fire_pending {
+            self.fire_since_ms = env::block_timestamp_ms();
+        }
         self.fire_pending = true;
         let trader = t.account.clone();
         if self.op.is_some() || env::prepaid_gas() < GAS_OP || !self.lock(Op::Fire, GAS_OP) {
@@ -123,10 +126,16 @@ impl Vault {
             return;
         }
         self.op = None;
+        let value = oracle::read().and_then(|p| self.vault_value(&p));
+        // trader stays paused; anyone retries with finish_fire. After FIRE_WAIT_MS it fires anyway
+        if value.is_none() && env::block_timestamp_ms() < self.fire_since_ms + FIRE_WAIT_MS {
+            let trader = self.trader.as_ref().map(|t| t.account.clone());
+            return self.emit("fire_pending", json!({"trader": trader, "why": "no prices"}));
+        }
         self.fire_pending = false;
-        match oracle::read().and_then(|p| self.vault_value(&p)) {
+        match value {
             Some(value) => self.crystallize(value, true),
-            None => env::log_str("no prices: fired without fee"),
+            None => env::log_str("no prices: fired without fee or P/L"),
         }
         if let Some(t) = self.trader.take() {
             self.emit("fired", json!({"trader": t.account}));

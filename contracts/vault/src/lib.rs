@@ -35,6 +35,7 @@ pub const MIN_SETTLE_PERIOD_MS: u64 = 60_000;
 pub const MIN_TRADE_DELAY_MS: u64 = 60_000;
 /// a lock older than this is dead (its callback failed); anyone may `unlock`
 pub const LOCK_TTL_MS: u64 = 10 * 60_000;
+pub const FIRE_WAIT_MS: u64 = 60 * 60_000;
 /// after a drain hits 0 flows, new flows wait this long so the refused exclusive op can retry first
 pub const DRAIN_GRACE_MS: u64 = 60_000;
 /// free NEAR kept for leave + sync callbacks; deposits refuse below it
@@ -163,6 +164,8 @@ pub struct Vault {
     slip_since_ms: u64,
     /// fire hit a busy lock; trader paused until `finish_fire`
     fire_pending: bool,
+    /// when the pending fire started; it waits up to FIRE_WAIT_MS for prices so the record gets the P/L
+    fire_since_ms: u64,
     /// share price at the live trader's last reputation mark
     trader_mark: u128,
     owed: LookupMap<AccountId, Vec<(AccountId, U128)>>,
@@ -264,6 +267,7 @@ impl Vault {
             slip_used: 0,
             slip_since_ms: env::block_timestamp_ms(),
             fire_pending: false,
+            fire_since_ms: 0,
             trader_mark: 0,
             owed: LookupMap::new(b"o"),
             pending_sync: IterableSet::new(b"s"),
