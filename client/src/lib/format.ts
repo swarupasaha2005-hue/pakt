@@ -20,6 +20,9 @@ export function usd(n: number) {
 /** $12.4M */
 export const compact = (n: number) => compactUsd.format(n);
 
+/** +$1,240 / -$310; pass compact for +$1.24K */
+export const signed = (n: number, fmt = usd) => `${n < 0 ? "-" : "+"}${fmt(Math.abs(n))}`;
+
 const compactNum = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
 /** 8.4K */
