@@ -49,3 +49,8 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* account menu "Blur balances" sets data-blur on <html> */
+[data-blur] [data-balance] {
+  filter: blur(6px);
+}

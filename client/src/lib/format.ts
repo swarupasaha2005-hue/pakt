@@ -19,3 +19,6 @@ export function usd(n: number) {
 
 /** $12.4M */
 export const compact = (n: number) => compactUsd.format(n);
+
+/** +$1,240 / -$310 */
+export const signedUsd = (n: number) => `${n < 0 ? "-" : "+"}${usd(Math.abs(n))}`;
