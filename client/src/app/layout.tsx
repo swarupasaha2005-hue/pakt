@@ -4,15 +4,35 @@ import { LeftPanel } from "@/components/left/LeftPanel";
 import { Ticker } from "@/components/shell/Ticker";
 import { TopBar } from "@/components/shell/TopBar";
 import { Tour } from "@/components/tour/Tour";
+import { SITE } from "@/lib/config";
 import { WalletProvider } from "@/lib/near/wallet";
 import "./globals.css";
 
 
+const DESCRIPTION = "Pakt is a social group trading vault on NEAR. Pool funds with friends, vote in a pakter who trades the vault but can never withdraw it, and split the profit.";
+
 export const metadata: Metadata = {
   // absolute og:image urls for share cards
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://paktdotfam.vercel.app"),
-  title: "Pakt",
-  description: "Pool funds with friends, hire a pakter, split the profit.",
+  metadataBase: new URL(SITE),
+  title: { default: "Pakt · Trade with fam", template: "%s · Pakt" },
+  description: DESCRIPTION,
+  applicationName: "Pakt",
+  keywords: ["Pakt", "NEAR", "group trading", "social trading", "crypto vault", "DAO", "copy trading", "pool funds with friends", "on-chain vault", "NEAR Protocol"],
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: "Pakt", title: "Pakt · Trade with fam", description: DESCRIPTION, url: "/" },
+  twitter: { card: "summary_large_image", site: "@paktdotfam", title: "Pakt · Trade with fam", description: DESCRIPTION },
+  robots: { index: true, follow: true },
+};
+
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Pakt",
+  url: SITE,
+  description: DESCRIPTION,
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -22,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* General Sans (Fontshare, free license): closest free match to the Aeonik look */}
         <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="" />
         <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
       </head>
       <body className="flex h-dvh flex-col overflow-hidden font-sans tabular-nums">
         <WalletProvider>

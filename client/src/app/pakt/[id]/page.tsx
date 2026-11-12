@@ -12,7 +12,7 @@ async function Pakt({ params }: Pick<PageProps<"/pakt/[id]">, "params">) {
 export async function generateMetadata({ params }: PageProps<"/pakt/[id]">): Promise<Metadata> {
   const { id } = await params;
   const description = `Join ${id} on Pakt: pool tUSDC with friends, vote in a pakter who can trade but never withdraw.`;
-  return { title: `${id} · Pakt`, description, openGraph: { title: `Join ${id} on Pakt`, description }, twitter: { card: "summary_large_image", title: `Join ${id} on Pakt`, description } };
+  return { title: id, description, alternates: { canonical: `/pakt/${id}` }, openGraph: { title: `Join ${id} on Pakt`, description }, twitter: { card: "summary_large_image", title: `Join ${id} on Pakt`, description } };
 }
 
 export default function PaktPage({ params }: PageProps<"/pakt/[id]">) {
