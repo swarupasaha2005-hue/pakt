@@ -54,3 +54,13 @@
 [data-blur] [data-balance] {
   filter: blur(6px);
 }
+
+/* hide scrollbars app-wide; wheel/trackpad/keys still scroll */
+@layer base {
+  * {
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}

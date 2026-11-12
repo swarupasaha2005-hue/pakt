@@ -31,4 +31,14 @@ export const pakts: Pakt[] = [
     members: [{ account: "ivan.near", shares: 1_200 }, { account: "carol.near", shares: 1_050 }, { account: "frank.near", shares: 800 }],
     budget: 800, budgetUsed: 120, maxPerTrade: 100, fee: 15, stopLoss: 10, pnl7d: -45, pnl7dPct: -1.5, open: true,
   },
+  {
+    id: "nightshift", name: "nightshift", vaultValue: 4_800, trader: "nova.near",
+    members: [{ account: "ivan.near", shares: 2_000 }, { account: "carol.near", shares: 1_600 }, { account: "heidi.near", shares: 1_200 }],
+    budget: 1_000, budgetUsed: 340, maxPerTrade: 150, fee: 20, stopLoss: 25, pnl7d: 410, pnl7dPct: 9.3, open: true,
+  },
+  {
+    id: "lowtide", name: "lowtide", vaultValue: 1_900, trader: "nova.near",
+    members: [{ account: "frank.near", shares: 1_100 }, { account: "erin.near", shares: 800 }],
+    budget: 400, budgetUsed: 380, maxPerTrade: 60, fee: 15, stopLoss: 20, pnl7d: -480, pnl7dPct: -20.2, open: false, paused: true,
+  },
 ];

@@ -5,7 +5,7 @@ import { DepositModal, WALLET } from "@/components/modals/DepositModal";
 import { EditProfileModal } from "@/components/modals/EditProfileModal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { me } from "@/lib/mock/me";
-import type { Position } from "@/lib/mock/positions";
+import type { Holding } from "@/lib/mock/holdings";
 import type { Profile } from "@/lib/mock/profiles";
 import type { FeedEvent, Pakt } from "@/lib/mock/types";
 import { ActivityCard } from "./ActivityCard";
@@ -17,12 +17,12 @@ import { ValueChart } from "./ValueChart";
 
 type Props = {
   profile: Profile;
-  positions: Position[];
+  holdings: Holding[];
   pakts: Pakt[];
   events: FeedEvent[];
 };
 
-export function ProfileView({ profile: initial, positions, pakts, events }: Props) {
+export function ProfileView({ profile: initial, holdings, pakts, events }: Props) {
   const [profile, setProfile] = useState(initial);
   const [editing, setEditing] = useState(false);
   const [depositing, setDepositing] = useState(false);
@@ -35,7 +35,7 @@ export function ProfileView({ profile: initial, positions, pakts, events }: Prop
         <div className="flex flex-col gap-3">
           <ValueChart profile={profile} />
           {isMe && <CashCard cash={me.cash} onDeposit={() => setDepositing(true)} />}
-          <PositionsCard account={profile.account} positions={positions} title={isMe ? "Your positions" : "Positions"} />
+          <PositionsCard account={profile.account} holdings={holdings} title={isMe ? "Your holdings" : "Positions"} />
         </div>
         {/* why: useSearchParams suspends in prerendered routes */}
         <Suspense fallback={<Skeleton className="h-[101px]" />}>

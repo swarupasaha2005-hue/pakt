@@ -13,6 +13,8 @@ export type Token = {
   allowed: boolean;
   color: string;
   glyph: string;
+  /** /public path */
+  logo: string;
 };
 
 export type Trader = {
@@ -47,6 +49,8 @@ export type Pakt = {
   pnl7dPct: number;
   /** false = invite only */
   open: boolean;
+  /** stop-loss hit, trading waits for a vote */
+  paused?: boolean;
 };
 
 export type FeedKind =
@@ -57,7 +61,8 @@ export type FeedKind =
   | "fired"
   | "settled"
   | "joined"
-  | "left";
+  | "left"
+  | "stoploss";
 
 export type FeedEvent = {
   id: string;

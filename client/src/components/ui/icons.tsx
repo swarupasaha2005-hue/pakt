@@ -90,3 +90,33 @@ export const MailIcon = (p: SVGProps<SVGSVGElement>) => (
 export const LogOutIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></Icon>
 );
+export const ChevronDownIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="m6 9 6 6 6-6" /></Icon>
+);
+export const ChevronRightIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="m9 6 6 6-6 6" /></Icon>
+);
+export const FilterIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" /></Icon>
+);
+export const PinIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v8" /></Icon>
+);
+export const HeartIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M12 20s-8-4.6-8-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 8 2.8C20 15.4 12 20 12 20" /></Icon>
+);
+export const UsersIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.5a6.5 6.5 0 0 1 3.5 5.5" /></Icon>
+);
+export const VolumeIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4zM15.5 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /></Icon>
+);
+export const MuteIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6" /></Icon>
+);
+export const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></Icon>
+);
+export const ExternalIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></Icon>
+);

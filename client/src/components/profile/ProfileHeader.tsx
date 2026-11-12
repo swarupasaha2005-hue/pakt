@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/Badge";
 import { CalendarIcon, ClockIcon, PencilIcon, SendIcon, ShareIcon, SwapIcon } from "@/components/ui/icons";
-import { signedUsd } from "@/lib/format";
+import { signed } from "@/lib/format";
 import type { Profile } from "@/lib/mock/profiles";
 import { ProfileAvatar } from "./ProfileAvatar";
 
@@ -96,7 +96,7 @@ export function ProfileHeader({ profile: p, onEdit }: Props) {
       {p.record && (
         <section aria-label="Trader record" className="mt-4 grid max-w-[640px] grid-cols-4 rounded-xl border">
           {[
-            ["Pakt PnL", <span key="pnl" className={p.record.pnl < 0 ? "text-down" : "text-up"}>{signedUsd(p.record.pnl)}</span>],
+            ["Pakt PnL", <span key="pnl" className={p.record.pnl < 0 ? "text-down" : "text-up"}>{signed(p.record.pnl)}</span>],
             ["Win rate", `${p.record.winRate}%`],
             ["Pakts traded", p.record.pakts],
             ["Max drawdown", <span key="dd" className="text-down">-{p.record.maxDrawdown}%</span>],

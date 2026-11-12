@@ -6,8 +6,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { SortIcon } from "@/components/ui/icons";
 import { Pct } from "@/components/ui/Pct";
 import { Segmented } from "@/components/ui/Segmented";
-import { signedUsd } from "@/lib/format";
-import type { Position } from "@/lib/mock/positions";
+import { signed } from "@/lib/format";
+import type { Holding } from "@/lib/mock/holdings";
 import { tokens } from "@/lib/mock/tokens";
 import { ChipGroup } from "./ChipGroup";
 
@@ -16,17 +16,17 @@ const KINDS = ["All", "Solo", "Pakts"] as const;
 
 type Props = {
   account: string;
-  /** solo positions (owner = account) and positions of related pakts, newest first */
-  positions: Position[];
+  /** solo holdings (owner = account) and holdings of related pakts, newest first */
+  holdings: Holding[];
   title: string;
 };
 
-export function PositionsCard({ account, positions, title }: Props) {
+export function PositionsCard({ account, holdings, title }: Props) {
   const [status, setStatus] = useState<(typeof STATUS)[number]>("Open");
   const [kind, setKind] = useState<(typeof KINDS)[number]>("All");
   const [sort, setSort] = useState<"Recent" | "PnL">("Recent");
 
-  const rows = positions
+  const rows = holdings
     .filter((p) => p.open === (status === "Open"))
     .filter((p) => kind === "All" || (kind === "Solo") === (p.owner === account))
     .toSorted((a, b) => (sort === "PnL" ? b.pnl - a.pnl : 0));
@@ -52,7 +52,7 @@ export function PositionsCard({ account, positions, title }: Props) {
         <span>PnL</span>
       </div>
       {rows.length === 0 ? (
-        <p className="py-6 text-center text-[15px] text-text-2">No {status.toLowerCase()} positions</p>
+        <p className="py-6 text-center text-[15px] text-text-2">No {status.toLowerCase()} holdings</p>
       ) : (
         <ul className="p-1">
           {rows.map((p) => {
@@ -64,7 +64,7 @@ export function PositionsCard({ account, positions, title }: Props) {
                   avatar={<Avatar name={p.symbol} glyph={t?.glyph} color={t?.color} size={32} />}
                   title={p.symbol}
                   subtitle={`${p.amount.toLocaleString("en-US")} · ${p.owner === account ? "Solo" : p.owner}`}
-                  value={<span className={p.pnl < 0 ? "text-down" : "text-up"}>{signedUsd(p.pnl)}</span>}
+                  value={<span className={p.pnl < 0 ? "text-down" : "text-up"}>{signed(p.pnl)}</span>}
                   change={<Pct value={p.pnlPct} />}
                 />
               </li>

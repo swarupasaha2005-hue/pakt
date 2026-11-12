@@ -25,6 +25,7 @@ const VERB: Record<FeedKind, string> = {
   settled: "Settled",
   joined: "Joined",
   left: "Left",
+  stoploss: "Stop-loss",
 };
 
 const ago = (s: number) => (s < 60 ? `${s}s` : s < 3_600 ? `${Math.floor(s / 60)}m` : s < 86_400 ? `${Math.floor(s / 3_600)}h` : `${Math.floor(s / 86_400)}d`);

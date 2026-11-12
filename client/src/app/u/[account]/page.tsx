@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { feed } from "@/lib/mock/feed";
 import { pakts } from "@/lib/mock/pakts";
-import { positions } from "@/lib/mock/positions";
+import { holdings } from "@/lib/mock/holdings";
 import { profiles } from "@/lib/mock/profiles";
 
 export function generateStaticParams() {
@@ -20,7 +20,7 @@ export default async function ProfilePage({ params }: PageProps<"/u/[account]">)
   return (
     <ProfileView
       profile={profile}
-      positions={positions.filter((p) => owners.includes(p.owner))}
+      holdings={holdings.filter((p) => owners.includes(p.owner))}
       pakts={related}
       events={feed.filter((e) => e.actor === account)}
     />

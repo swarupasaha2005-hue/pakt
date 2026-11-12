@@ -9,6 +9,7 @@ export const feed: FeedEvent[] = [
   { id: "e6", kind: "buy", actor: "carol.near", paktId: "nightowls", detail: "1,500 AURORA at $0.0905", secondsAgo: 610 },
   { id: "e7", kind: "hired", actor: "grace.near", paktId: "slowcookers", detail: "budget $800 · max $100 per trade · 15%", secondsAgo: 1_800 },
   { id: "e8", kind: "fired", actor: "dave.near", paktId: "moonboys", detail: "fired after -22% this week", secondsAgo: 3_600 },
+  { id: "e16", kind: "stoploss", actor: "moonboys", paktId: "moonboys", detail: "down 30% · trading paused", secondsAgo: 4_200 },
   { id: "e9", kind: "buy", actor: "erin.near", paktId: "stackers", detail: "0.4 ETH at $2,041", secondsAgo: 5_400 },
   { id: "e10", kind: "left", actor: "heidi.near", paktId: "wagmi", detail: "left with $412", secondsAgo: 7_200 },
   { id: "e11", kind: "vote", actor: "dave.near", paktId: "nightowls", detail: "Raise budget to $2,500 · 2/4 yes", secondsAgo: 10_800 },
