@@ -165,23 +165,82 @@ Deployed accounts (testnet):
 
 ## Architecture
 
+GitHub renders these diagrams; the source is plain Mermaid.
+
+### System
+
+```mermaid
+flowchart LR
+  subgraph User["Browser"]
+    C["Client<br/>Next.js on Vercel"]
+    W["Wallet<br/>Meteor, MyNearWallet, HOT, HERE"]
+  end
+
+  subgraph Chain["NEAR"]
+    F["Factory<br/>registry + pakter records"]
+    V["Vault per pakt<br/>no access keys"]
+    D["Sputnik DAO per pakt"]
+    R["Ref Finance (Rhea)"]
+    O["Price oracle"]
+    S["NEAR Social"]
+  end
+
+  subgraph Backend["Cloudflare Worker"]
+    I["Indexer<br/>Durable Object"]
+    DB[("D1")]
+    API["HTTP API + WebSocket"]
+    RL["Gas relayer<br/>NEP-366 + top-up"]
+    PR["Price relay<br/>cron, 1 min"]
+  end
+
+  C -- "sign txs" --> W
+  W -- "create_pakt" --> F
+  W -- "deposit, leave, trade" --> V
+  W -- "propose, vote" --> D
+  W -- "invite by name" --> S
+  F -- "deploys" --> V
+  F -- "creates" --> D
+  D -- "offer_trader, set_cap, fire" --> V
+  V -- "swap" --> R
+  V -- "get_price_data" --> O
+  V -- "record_trader" --> F
+  V -. "NEP-297 events" .-> I
+  I --> DB --> API
+  API -- "feed, leaderboard, stream" --> C
+  C -- "first 2 txs" --> RL
+  RL -- "pays gas" --> V
+  PR -- "report_prices" --> O
 ```
-  client (Next.js)                                     backend (Cloudflare Worker)
-       |                                                +-------------------------------+
-       | sign txs                                       | Indexer Durable Object        |
-       v                                                |   polls neardata / RPC        |
-    wallet                                              |   keeps trusted pakt events   |
-       |                                                |   -> D1 (feed, pakts, stats)  |
-       +--> factory  create_pakt                        |   -> WebSocket /stream        |
-       +--> vault    deposit, trade, settle, leave ... -+-> NEP-297 EVENT_JSON logs ---->|
-       +--> Sputnik DAO  proposals + votes              | HTTP API: /feed /pakts        |
-                |                                       |   /leaderboard /alerts        |
-                +--> vault  offer_trader, fire ...      | cron (1 min): price relay     |
-       vault --> Ref (Rhea)  swap                       |   Pyth Hermes, CoinGecko      |
-       vault --> price oracle  get_price_data  <--------+   fallback -> report_prices   |
-                                                        | POST /faucet: test token drip |
-                                                        +---------------+---------------+
-  client <------------- HTTP + WebSocket ---------------------------------+
+
+### Lifecycle of a pakt
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor M as Member
+  actor P as Pakter
+  participant F as Factory
+  participant D as Sputnik DAO
+  participant V as Vault
+  participant R as Ref
+
+  M->>F: create_pakt (name, tokens, stop-loss)
+  F->>D: create DAO
+  F->>V: deploy vault, no access keys
+  M->>V: deposit stablecoins, get shares
+  V->>D: add member to the DAO
+  M->>D: propose pakter (budget, max per trade, fee)
+  M->>D: vote yes
+  D->>V: offer_trader
+  P->>V: accept_offer
+  V->>F: record hire
+  P->>V: trade
+  V->>R: swap, checked against caps, oracle floor, slippage budget
+  P--xV: withdraw (no such method, fails on chain)
+  M->>V: settle each period, fee only above the high-water mark
+  V->>F: record P/L and fee
+  M->>D: vote to fire, any time
+  M->>V: leave, paid out in kind
 ```
 
 ## Repo layout

@@ -17,6 +17,10 @@ bunx tsc --noEmit && bun run lint
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | deployed Worker | Backend base URL (HTTP + WebSocket `/stream`) |
 | `NEXT_PUBLIC_NETWORK` | `testnet` | NEAR network |
+| `NEXT_PUBLIC_RPC_URL` | `rpc.testnet.fastnear.com` | Main NEAR RPC for chain reads |
+| `NEXT_PUBLIC_RPC_BACKUP` | `near-testnet.drpc.org` | Used once when the main RPC errors or rate-limits |
+| `NEXT_PUBLIC_SOCIAL` | `v1.social08.testnet` | NEAR Social contract for invites by account name |
+| `NEXT_PUBLIC_SITE_URL` | `paktdotfam.vercel.app` | Absolute URLs for share cards, sitemap and canonical links |
 
 Contract ids (factory, tokens, oracle, Ref, Sputnik) live in `src/lib/config.ts`.
 
