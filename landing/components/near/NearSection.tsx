@@ -7,7 +7,7 @@ import { useNearTransition } from "./useNearTransition";
 import "./near-section.css";
 
 export function NearSection() {
-  const { section, overlay, rotor, scan, settled, label, headline, description } = useNearTransition();
+  const { section, overlay, rotor, upperRotor, scan, settled, label, headline, description } = useNearTransition();
 
   return (
     <section ref={section} className="near-section" aria-labelledby="near-title">
@@ -22,8 +22,10 @@ export function NearSection() {
       </div>
       <div ref={overlay} className="near-transition-logo" aria-hidden="true">
         <div className="near-transition-upper">
-          <BrandMark prominent decorative />
-          <div ref={scan} className="near-transition-scan"><div className="scan-window"><div className="scan-beam" /></div></div>
+          <div ref={upperRotor} className="near-transition-rotor">
+            <BrandMark prominent decorative />
+            <div ref={scan} className="near-transition-scan"><div className="scan-window"><div className="scan-beam" /></div></div>
+          </div>
         </div>
         <div className="near-transition-lower">
           <div ref={rotor} className="near-transition-rotor">

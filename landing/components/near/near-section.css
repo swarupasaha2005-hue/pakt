@@ -27,9 +27,9 @@
 .near-pixel-cluster i { display: block; width: 6px; height: 6px; background: var(--pixel-color); }
 .near-transition-logo { display: none; position: fixed; z-index: 5; top: 0; left: 0; visibility: hidden; pointer-events: none; perspective: 1100px; transform-origin: center; will-change: transform; }
 .near-transition-upper, .near-transition-lower { position: absolute; inset: 0; }
-.near-transition-upper { clip-path: inset(-20% -20% calc(100% - var(--near-boundary, 120%)) -20%); }
-.near-transition-lower { clip-path: inset(var(--near-boundary, 120%) -20% -20%); perspective: 1100px; }
-.near-transition-rotor { position: absolute; inset: 0; transform-style: preserve-3d; }
+.near-transition-upper { clip-path: inset(-50% -50% calc(100% - var(--near-boundary, 120%)) -50%); }
+.near-transition-lower { clip-path: inset(var(--near-boundary, 120%) -50% -50%); perspective: 1100px; }
+.near-transition-rotor { position: absolute; inset: 0; transform-origin: 50% 50%; transform-style: preserve-3d; }
 .near-transition-face { position: absolute; inset: 0; }
 .near-transition-face--pakt { clip-path: inset(0 0 calc(var(--near-morph, 0) * 100%) 0); filter: grayscale(1); opacity: var(--near-wash, 1); }
 .near-transition-face--near { clip-path: inset(calc((1 - var(--near-morph, 0)) * 100%) 0 0); }
