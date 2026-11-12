@@ -8,6 +8,16 @@ export class BadInput extends Error {}
 // NEAR account id rules: 2..64 chars, lowercase parts split by '.', '-' or '_' never leading, trailing or doubled.
 const ACCOUNT = /^(?=.{2,64}$)(?:[a-z\d]+[-_])*[a-z\d]+(?:\.(?:[a-z\d]+[-_])*[a-z\d]+)*$/;
 
+// clientKey is the rate-limit and socket-cap key. One IPv6 user owns a whole /64, so key on that, not the address.
+export function clientKey(req: Request): string {
+  const ip = req.headers.get("cf-connecting-ip") ?? "local";
+  if (!ip.includes(":") || ip.includes(".")) return ip;
+  const [head, tail] = ip.toLowerCase().split("::");
+  const h = head ? head.split(":") : [], t = tail ? tail.split(":") : [];
+  const full = tail === undefined ? h : [...h, ...Array(8 - h.length - t.length).fill("0"), ...t];
+  return full.slice(0, 4).map((x) => x.replace(/^0+(?=.)/, "")).join(":") + "::/64";
+}
+
 export function account(v: string): string {
   if (!ACCOUNT.test(v)) throw new BadInput("bad account id");
   return v;
@@ -110,7 +120,11 @@ export function route(url: URL): Route | null {
     const limit = int(sp, "limit", 50, 1, 200), before = int(sp, "before", 0, 0, 1e6);
     return {
       ttl: 30, params: { window: win, limit, before },
-      run: async (db) => slice(await memoized(`al:${win}`, async () => alerts(await since(db, ["trade"], Date.now() - win))), before, limit),
+      // every window filters one memoized 30d scan, so cycling window values cannot force a scan each
+      run: async (db) => {
+        const all = await memoized("al", () => since(db, ["trade"], Date.now() - 30 * UNIT.d));
+        return slice(alerts(all.filter((r) => r.ts_ms >= Date.now() - win)), before, limit);
+      },
     };
   }
   return null;
