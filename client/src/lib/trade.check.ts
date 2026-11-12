@@ -31,7 +31,7 @@ assert.equal(toRaw("0.0000001", 6), null);
 assert.equal(toRaw("abc", 6), null);
 
 assert.equal(tradeError(base), null);
-assert.equal(tradeError({ ...base, account: "x.testnet" }), "Only the hired trader");
+assert.equal(tradeError({ ...base, account: "x.testnet" }), "Only the hired pakter");
 assert.equal(tradeError({ ...base, state: { ...state, trader: { ...trader, paused: true } } }), "Trading paused");
 assert.equal(tradeError({ ...base, state: { ...state, trade_after_ms: 120_001 } }), "Trading opens in 2m");
 assert.equal(tradeError({ ...base, slippageBps: 300 }), "Slippage over 2%");

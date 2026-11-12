@@ -27,7 +27,7 @@ export function MembersTable({ holders, state, value }: Props) {
             <td className="flex items-center gap-2 py-2.5">
               <Avatar name={account} size={28} />
               {account}
-              {account === state.trader?.account && <Badge>trader</Badge>}
+              {account === state.trader?.account && <Badge>pakter</Badge>}
               {!h.member && account !== state.trader?.account && <Badge tone="neutral">fees</Badge>}
             </td>
             <td className="text-right">{((Number(h.shares) / total) * 100).toFixed(1)}%</td>

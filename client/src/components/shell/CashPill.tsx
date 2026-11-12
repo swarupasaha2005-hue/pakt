@@ -7,16 +7,19 @@ import { Dropdown, menuItem } from "@/components/ui/Dropdown";
 import { DollarIcon, PlusCircleIcon, SwapIcon } from "@/components/ui/icons";
 import { requestTokens } from "@/lib/api";
 import { usd } from "@/lib/format";
-import { useTotal } from "@/lib/home/data";
+import { loadPakts, useLoad, useTotal } from "@/lib/home/data";
 import { useWallet } from "@/lib/near/wallet";
 import { FAUCET } from "./Ticker";
 
 const money = (n: number | undefined) => (n === undefined ? "…" : usd(n));
 
-/** top-bar "Create pakt" pill; click opens the cash card with create + deposit */
+/** top-bar "Create pakt" / "Check pakts" pill; click opens the cash card with create + deposit */
 export function CashPill() {
   const { accountId, signIn } = useWallet();
   const { cash, inPakts, holdings } = useTotal(accountId);
+  const list = useLoad(loadPakts, []);
+  // already in the game (holds, created or trades a pakt): the pill reads as a way back to them
+  const involved = !!accountId && (!!holdings?.length || !!list.data?.some((p) => p.creator === accountId || p.trader?.account === accountId));
   const [open, setOpen] = useState(false);
   const [drip, setDrip] = useState<string | null>(null); // faucet status line
   const claim = async () => {
@@ -49,11 +52,11 @@ export function CashPill() {
             type="button"
             aria-expanded={open}
             data-tour="create"
-            aria-label="Cash and create pakt"
+            aria-label={involved ? "Cash and your pakts" : "Cash and create pakt"}
             onClick={() => setOpen(!open)}
             className="flex h-12 items-center rounded-xl border px-3 text-base font-medium whitespace-nowrap transition hover:bg-panel-2"
           >
-            Create pakt
+            {involved ? "Check pakts" : "Create pakt"}
           </button>
         }
       >

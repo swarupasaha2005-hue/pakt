@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pakt client
 
-## Getting Started
+Next.js 16 (App Router), React 19, Tailwind CSS 4, bun. Talks to NEAR testnet through wallet-selector (Meteor, MyNearWallet, HERE, HOT) and to the Pakt backend for the feed, leaderboard and faucet.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun install
+bun dev          # http://localhost:3000
+bun run build    # production build
+bunx tsc --noEmit && bun run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Config
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Env var | Default | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | deployed Worker | Backend base URL (HTTP + WebSocket `/stream`) |
+| `NEXT_PUBLIC_NETWORK` | `testnet` | NEAR network |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Contract ids (factory, tokens, oracle, Ref, Sputnik) live in `src/lib/config.ts`.
 
-## Learn More
+## Layout
 
-To learn more about Next.js, take a look at the following resources:
+| Path | Contents |
+|---|---|
+| `src/app/` | Routes: `/` explore, `/pakt/[id]`, `/u/[account]`, `/token/[symbol]`, `/privacy`, `/terms` |
+| `src/components/shell/` | Top bar, account menu, create/deposit pill with faucet, how-it-works diagram |
+| `src/components/left/` | Sidebar: feed, leaderboard, pakts, tokens, positions |
+| `src/components/home/` | Explore tables (pakts, positions, tokens) |
+| `src/components/pakt/` | Pakt page cards: trade panel, votes, settlement, recovery, offer |
+| `src/components/modals/` | Create, deposit, leave, vote, hire, propose trader |
+| `src/lib/near/` | Wallet provider, contract views and tx builders |
+| `src/lib/pakt/`, `src/lib/profile/` | Page loaders, recovery checks, cost basis (with `*.check.ts` self-tests) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Vercel, root directory `client`, bun. Vercel Analytics is on. Add the deployed origin to the backend `CORS_ORIGINS`.

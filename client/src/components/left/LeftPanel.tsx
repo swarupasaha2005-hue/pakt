@@ -11,10 +11,10 @@ import { PaktsTab } from "./PaktsTab";
 import { TokensTab } from "./TokensTab";
 
 const TABS = [
-  { id: "tokens", label: "Tokens", body: <TokensTab /> },
-  { id: "pakts", label: "Pakts", body: <PaktsTab /> },
-  { id: "leaderboard", label: "Leaderboard", body: <LeaderboardTab /> },
+  { id: "leaderboard", label: "Pakters", body: <LeaderboardTab /> },
   { id: "feed", label: "Feed", body: <FeedTab /> },
+  { id: "pakts", label: "Pakts", body: <PaktsTab /> },
+  { id: "tokens", label: "Tokens", body: <TokensTab /> },
   { id: "positions", label: "Positions", body: <Positions /> },
 ] as const;
 
@@ -22,7 +22,7 @@ type TabId = (typeof TABS)[number]["id"];
 
 
 export function LeftPanel() {
-  const [tab, setTab] = usePersisted<TabId>("pakt:left-tab", "feed", (v): v is TabId => TABS.some((t) => t.id === v));
+  const [tab, setTab] = usePersisted<TabId>("pakt:left-tab", "leaderboard", (v): v is TabId => TABS.some((t) => t.id === v));
   const [collapsed, setCollapsed] = usePersisted("pakt:left-collapsed", false, (v): v is boolean => typeof v === "boolean");
   useEffect(() => {
     // the site tour switches tabs to show each one
@@ -42,7 +42,7 @@ export function LeftPanel() {
     >
       <div inert={collapsed} className={`flex min-h-0 w-[364px] flex-1 flex-col transition-opacity duration-200 ${collapsed ? "opacity-0" : "opacity-100 delay-100"}`}>
         <div className="flex h-9 shrink-0 items-center justify-between bg-panel-2 pr-2 pl-1.5 text-sm">
-          <Tabs items={[...TABS]} value={tab} onChange={setTab} className="h-[18px]" />
+          <Tabs items={[...TABS]} value={tab} onChange={setTab} className="mr-2 h-[18px] flex-1 text-[15px] *:flex-1 *:justify-center" />
           <button type="button" aria-label="Collapse panel" onClick={() => setCollapsed(true)} className="text-text-2 hover:text-text">
             <ChevronsLeftIcon className="size-5" />
           </button>

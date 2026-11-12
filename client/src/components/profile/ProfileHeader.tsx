@@ -60,7 +60,7 @@ export function ProfileHeader({ account, data }: { account: string; data?: Profi
       </div>
 
       {t && (
-        <section aria-label="Trader record" className="mt-4 grid max-w-[640px] grid-cols-4 rounded-xl border">
+        <section aria-label="Pakter record" className="mt-4 grid max-w-[640px] grid-cols-4 rounded-xl border">
           {[
             ["Pakt PnL", <span key="pnl" className={pnl < 0 ? "text-down" : "text-up"}>{signed(pnl)}</span>],
             ["Volume", compact(e6(t.volume))],

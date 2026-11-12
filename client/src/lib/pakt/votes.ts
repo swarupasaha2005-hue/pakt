@@ -18,7 +18,7 @@ const STATUS: Record<ProposalStatus, VoteStatus> = {
 function title(method: string, a: Record<string, unknown>, description: string) {
   if (method === "offer_trader") return `Hire ${a.account} at ${Number(a.fee_bps) / 100}% · budget ${usd(e6(String(a.budget)))}`;
   if (method === "set_cap") return `Set budget ${usd(e6(String(a.budget)))} · max ${usd(e6(String(a.max_per_trade)))}/trade`;
-  if (method === "fire") return "Fire trader";
+  if (method === "fire") return "Fire pakter";
   if (method === "resume") return "Resume trading";
   return description || method;
 }

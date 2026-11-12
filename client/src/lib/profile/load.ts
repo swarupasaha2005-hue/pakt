@@ -36,7 +36,7 @@ async function allVaults() {
 }
 
 // shortcut: cost basis reads the newest 1000 events, enough for any testnet account; page further if accounts get busier
-async function accountHistory(account: string) {
+export async function accountHistory(account: string) {
   const out: PaktEvent[] = [];
   for (let before: number | undefined, i = 0; i < 10; i++) {
     const page = await accountFeed(account, { limit: 100, before });

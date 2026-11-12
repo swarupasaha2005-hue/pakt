@@ -29,9 +29,9 @@ export function VoteModal({ kind, trader, name, vault, dao, onClose, onDone }: P
   const b = toRaw(budget, 6);
   const m = toRaw(maxPerTrade, 6);
   const blocked = !trader
-    ? "No trader"
+    ? "No pakter"
     : kind === "resume" && !trader.paused
-      ? "Trader is not paused"
+      ? "Pakter is not paused"
       : kind === "raise" && (!b || !m)
         ? "Set budget and max per trade"
         : kind === "raise" && BigInt(m!) > BigInt(b!)
@@ -56,7 +56,7 @@ export function VoteModal({ kind, trader, name, vault, dao, onClose, onDone }: P
         <div>
           <h2 className={`text-xl font-bold ${kind === "fire" ? "text-down" : ""}`}>{title}</h2>
           <p className="text-xs text-text-2">
-            {trader?.account ?? "no trader"} · {name}
+            {trader?.account ?? "no pakter"} · {name}
           </p>
         </div>
         {kind === "raise" && trader && (

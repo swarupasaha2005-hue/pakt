@@ -3,7 +3,7 @@ import { usd } from "@/lib/format";
 import { e6, PRICE_SCALE, priceX } from "@/lib/pakt/units";
 
 type SettledEvent = Extract<PaktEvent, { kind: "settled" }>;
-const COLS = ["Date", "Profit", "Trader fee", "Platform fee", "Members", "Share price"];
+const COLS = ["Date", "Profit", "Pakter fee", "Platform fee", "Members", "Share price"];
 
 /** fee shares were minted at the new share price, so shares × price is their usd worth */
 export function SettlementsTable({ rows }: { rows: SettledEvent[] }) {

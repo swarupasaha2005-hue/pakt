@@ -61,7 +61,7 @@ export function Search() {
                 close();
               }
             }}
-            placeholder="Search for tokens, pakts or traders…"
+            placeholder="Search for tokens, pakts or pakters…"
             className="min-w-0 flex-1 bg-transparent text-sm leading-[14px] outline-none placeholder:font-normal placeholder:text-text/50"
           />
           {open ? (

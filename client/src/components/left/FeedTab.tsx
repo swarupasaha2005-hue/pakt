@@ -14,7 +14,7 @@ import { FeedRow, SHOWN } from "./feed/FeedRow";
 const SCOPES = ["All", "My pakts"] as const;
 const GROUPS: Record<string, EventKind[]> = {
   Trades: ["trade", "paused", "resumed"],
-  Trader: ["offer", "hired", "declined", "fired", "fire_pending", "cap_set"],
+  Pakter: ["offer", "hired", "declined", "fired", "fire_pending", "cap_set"],
   Members: ["pakt_created", "deposit", "leave", "settled", "claim"],
 };
 const FILTERS = ["Everything", ...Object.keys(GROUPS)];

@@ -79,7 +79,7 @@ export function HowItWorks() {
               ))}
             </svg>
             <Node x={X[0]} y={20} icon={logo(LOGOS.tNEAR, "NEAR")} title="Member" id="NEAR wallet · tUSDC" />
-            <Node x={X[0]} y={220} title="Trader" id="hired account" />
+            <Node x={X[0]} y={220} title="Pakter" id="hired account" />
             <Node x={X[1]} y={vault.y} h={vault.h} hl title="Vault" id={`<name>.${FACTORY}`}>
               <span className="flex flex-wrap justify-center gap-1 pt-1">
                 {["shares", "HWM", "caps", "stop-loss"].map((t) => (
@@ -100,8 +100,8 @@ export function HowItWorks() {
         <div className="px-2 pt-5">
           <h2 className="text-lg font-medium">How Pakt works</h2>
           <p className="mt-1 max-w-[640px] text-sm text-text-2">
-            Members pool tUSDC into a vault and get shares. Their DAO hires a trader, who can only swap on Ref within the caps the pakt set. A stop-loss
-            pauses trading, and the trader earns a fee only on profit above the high-water mark. Anyone can leave anytime with their share.
+            Members pool tUSDC into a vault and get shares. Their DAO hires a pakter (the pakt&apos;s trader), who can only swap on Ref within the caps the pakt set. A stop-loss
+            pauses trading, and the pakter earns a fee only on profit above the high-water mark. Anyone can leave anytime with their share.
           </p>
         </div>
         <div className="mt-5 flex justify-end gap-2 px-2">
