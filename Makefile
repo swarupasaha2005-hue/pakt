@@ -12,3 +12,9 @@ test: ## run contract tests
 
 client: ## run client
 	cd client && bun install && bun dev
+
+build-contracts: ## build vault, factory, mock ft wasm into contracts/res
+	./scripts/build-contracts.sh
+
+e2e: ## build wasm + run local sandbox e2e (real oracle + sputnik)
+	bash scripts/build-contracts.sh && cd contracts && cargo test -p pakt-e2e -- --nocapture

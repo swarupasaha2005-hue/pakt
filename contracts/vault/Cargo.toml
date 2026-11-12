@@ -8,6 +8,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk = { workspace = true }
+uint = { version = "0.10", default-features = false }
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
+ed25519-dalek = "2"
