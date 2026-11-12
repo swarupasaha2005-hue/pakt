@@ -13,6 +13,8 @@ export type Token = {
   allowed: boolean;
   color: string;
   glyph: string;
+  /** /public path */
+  logo: string;
 };
 
 export type Trader = {

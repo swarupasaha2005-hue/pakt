@@ -40,8 +40,7 @@ export function TokensTab() {
               avatar={
                 <Avatar
                   name={t.symbol}
-                  glyph={t.glyph}
-                  color={t.color}
+                  src={t.logo}
                   badge={t.allowed && <CheckIcon className="size-3.5 rounded-full bg-accent p-0.5 text-white" strokeWidth={3} />}
                 />
               }
