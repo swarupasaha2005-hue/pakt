@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { clamp, logoPosition, nearTimeline } from "./timeline";
+import { clamp, fitRotation, logoPosition, nearTimeline } from "./timeline";
 
 export function useNearTransition() {
   const section = useRef<HTMLElement>(null);
   const overlay = useRef<HTMLDivElement>(null);
   const rotor = useRef<HTMLDivElement>(null);
+  const upperRotor = useRef<HTMLDivElement>(null);
   const scan = useRef<HTMLDivElement>(null);
   const settled = useRef<HTMLDivElement>(null);
   const label = useRef<HTMLParagraphElement>(null);
@@ -16,6 +17,7 @@ export function useNearTransition() {
     const root = section.current;
     const floating = overlay.current;
     const rotation = rotor.current;
+    const upperRotation = upperRotor.current;
     const scanLayer = scan.current;
     const destination = settled.current;
     const eyebrow = label.current;
@@ -26,7 +28,7 @@ export function useNearTransition() {
     const mark = hero?.querySelector<HTMLElement>(".brand-mark--hero");
     const original = hero?.querySelector<HTMLElement>(".logo-frame__mark");
     const frame = hero?.querySelector<HTMLElement>(".logo-frame");
-    if (!root || !floating || !rotation || !scanLayer || !destination || !eyebrow || !title || !detail || !hero || !header || !mark || !original || !frame) return;
+    if (!root || !floating || !rotation || !upperRotation || !scanLayer || !destination || !eyebrow || !title || !detail || !hero || !header || !mark || !original || !frame) return;
 
     const savedHeader = { position: header.style.position, top: header.style.top, left: header.style.left, right: header.style.right };
     const savedPadding = hero.style.paddingTop;
@@ -92,7 +94,11 @@ export function useNearTransition() {
       floating!.style.transform = `translate3d(${centerX - initialSize / 2}px, ${position.center - initialSize / 2}px, 0) scale(${position.size / initialSize})`;
       floating!.style.setProperty("--near-boundary", `${Math.max(-.2, Math.min(1.2, position.cut)) * 100}%`);
       floating!.style.setProperty("--near-crossing", String(position.crossing));
-      rotation!.style.transform = `rotateY(${state.yaw}deg) rotateZ(${state.tilt}deg) scale(${state.depth})`;
+      const clearance = Math.min(centerX, window.innerWidth - centerX, position.center - headerHeight - 24, window.innerHeight - position.center);
+      const scale = fitRotation(state.rotation, position.size, clearance, state.depth);
+      const turn = `rotateZ(${state.rotation}deg) scale(${scale})`;
+      rotation!.style.transform = turn;
+      upperRotation!.style.transform = turn;
       rotation!.style.setProperty("--near-morph", String(state.morph));
       rotation!.style.setProperty("--near-wash", String(state.wash));
       scanLayer!.style.opacity = String(state.scan);
@@ -155,6 +161,6 @@ export function useNearTransition() {
       original.style.visibility = savedVisibility;
       delete root.dataset.enhanced;
     };
-  }, [section, overlay, rotor, scan, settled, label, headline, description]);
-  return { section, overlay, rotor, scan, settled, label, headline, description };
+  }, [section, overlay, rotor, upperRotor, scan, settled, label, headline, description]);
+  return { section, overlay, rotor, upperRotor, scan, settled, label, headline, description };
 }

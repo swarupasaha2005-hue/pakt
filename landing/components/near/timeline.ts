@@ -5,6 +5,12 @@ export function smoothRange(start: number, end: number, value: number) {
   return progress * progress * (3 - 2 * progress);
 }
 
+export function fitRotation(angle: number, size: number, clearance: number, depth: number) {
+  const radians = angle * Math.PI / 180;
+  const radius = size * (Math.abs(Math.cos(radians)) + Math.abs(Math.sin(radians))) / 2;
+  return Math.min(depth, Math.max(0, clearance) / radius);
+}
+
 export type LogoTrack = {
   start: number;
   boundary: number;
@@ -28,14 +34,12 @@ export function logoPosition(scroll: number, track: LogoTrack) {
 }
 
 export function nearTimeline(progress: number, crossing: number) {
-  const turn = smoothRange(.32, .94, crossing);
-  const rotation = Math.sin(Math.PI * turn);
+  const turn = smoothRange(.02, .98, crossing);
   return {
     morph: smoothRange(.24, .84, crossing),
     wash: 1 - .78 * smoothRange(0, .45, crossing),
-    yaw: -65 * rotation,
-    tilt: -28 * rotation,
-    depth: 1 - .06 * rotation,
+    rotation: 360 * turn,
+    depth: 1 - .06 * Math.sin(Math.PI * turn),
     scan: 1 - smoothRange(.16, .38, progress),
     label: smoothRange(.78, .88, progress),
     headline: smoothRange(.86, .98, progress),
