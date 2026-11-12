@@ -1,0 +1,19 @@
+{
+  "name": "pakt-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --test-scheduled",
+    "test": "vitest run",
+    "check": "tsc --noEmit",
+    "types": "wrangler types --strict-vars=false",
+    "migrate": "wrangler d1 migrations apply pakt --local",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "1.8.0",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0",
+    "wrangler": "4.161.0"
+  }
+}
