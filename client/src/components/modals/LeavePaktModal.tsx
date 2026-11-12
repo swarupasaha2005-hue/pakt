@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { usd } from "@/lib/format";
-import { tokens } from "@/lib/mock/tokens";
+import type { Holding } from "@/lib/mock/holdings";
 
 type Props = {
   name: string;
@@ -12,20 +12,22 @@ type Props = {
   value: number;
   /** your slice of trader + platform fees, 0 below the high-water mark */
   fees: number;
+  holdings: Holding[];
   onClose: () => void;
   onLeave: () => void;
 };
 
-const near = tokens.find((t) => t.symbol === "NEAR")!.price;
-
-export function LeavePaktModal({ name, share, value, fees, onClose, onLeave }: Props) {
-  const out = value - fees;
+export function LeavePaktModal({ name, share, value, fees, holdings, onClose, onLeave }: Props) {
+  const netValue = Math.max(0, value - fees);
+  const feeRetention = value > 0 ? netValue / value : 0;
+  const payouts = holdings.map((holding) => ({
+    symbol: holding.symbol,
+    amount: holding.amount * share * feeRetention,
+  }));
   const rows = [
     ["Your share", `${(share * 100).toFixed(1)}%`],
     ["Value", usd(value)],
-    ...(fees > 0 ? [["Fees settled first", `-${usd(fees)}`]] : []),
-    // shortcut: assumes a 50/50 NEAR/USDC vault, read real holdings once the vault is wired
-    ["You receive", `≈ ${Math.floor(out / 2 / near)} NEAR + ${Math.floor(out / 2)} USDC`],
+    ["Fees settled first", fees > 0 ? `-${usd(fees)}` : "No fee"],
   ];
 
   return (
@@ -39,6 +41,22 @@ export function LeavePaktModal({ name, share, value, fees, onClose, onLeave }: P
           </div>
         ))}
       </dl>
+      <section className="mb-4 rounded-xl bg-panel-2 p-3">
+        <h3 className="text-xs font-bold text-text-2">You receive in kind</h3>
+        {payouts.length ? (
+          <ul className="mt-2 space-y-1.5 text-xs">
+            {payouts.map(({ symbol, amount }) => (
+              <li key={symbol} className="flex justify-between">
+                <span>{symbol}</span>
+                <span>{amount.toLocaleString("en-US", { maximumSignificantDigits: 6 })}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-xs text-text-2">No open token positions.</p>
+        )}
+        <p className="mt-2 border-t border-border pt-2 text-xs text-text-2">≈ {usd(netValue)} total</p>
+      </section>
       <Button variant="down-outline" size="lg" className="w-full" onClick={onLeave}>
         Leave pakt
       </Button>

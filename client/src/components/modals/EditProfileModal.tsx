@@ -4,7 +4,6 @@ import { useState, type ChangeEvent } from "react";
 import { ProfileAvatar } from "@/components/profile/ProfileAvatar";
 import { Button } from "@/components/ui/Button";
 import { LockIcon, PencilIcon, SendIcon } from "@/components/ui/icons";
-import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Toggle } from "@/components/ui/Toggle";
 import type { Profile } from "@/lib/mock/profiles";
@@ -16,6 +15,7 @@ type Props = {
   firstLogin?: boolean;
   onSave: (profile: Profile) => void;
   onClose?: () => void;
+  onSkip?: () => void;
 };
 
 const field = "flex flex-col justify-center rounded-xl bg-panel-2 px-3 focus-within:ring-1 focus-within:ring-accent";
@@ -30,7 +30,7 @@ const fileUrl = (e: ChangeEvent<HTMLInputElement>) => {
 };
 
 // shortcut: saves to parent state only, NEAR Social write lands with wiring
-export function EditProfileModal({ profile, firstLogin = false, onSave, onClose }: Props) {
+export function EditProfileModal({ profile, firstLogin = false, onSave, onClose, onSkip }: Props) {
   const [f, setF] = useState({
     name: profile.name,
     bio: profile.bio,
@@ -134,27 +134,37 @@ export function EditProfileModal({ profile, firstLogin = false, onSave, onClose 
             <Toggle label="Open to hire" checked={f.openToHire} onChange={(openToHire) => set({ openToHire })} />
           </div>
           {f.openToHire && (
-            <label className="mt-2 flex items-center gap-2 text-xs text-text-2">
-              Asking fee
-              <Input
-                type="number"
+            <label className="mt-3 flex flex-col gap-1.5 text-xs text-text-2">
+              <span className="flex items-center justify-between">
+                Asking fee
+                <strong className="text-sm text-text">{f.fee}%</strong>
+              </span>
+              <input
+                type="range"
                 min={FEE_MIN}
                 max={FEE_MAX}
                 step={1}
                 value={f.fee}
                 onChange={(e) => set({ fee: e.target.value })}
+                aria-label="Asking fee"
                 aria-invalid={!!errors.fee}
-                className="h-8! w-16! bg-panel! text-center"
+                className="h-2 w-full cursor-pointer accent-accent"
               />
-              %
-              <span className={`ml-auto text-xs ${errors.fee ? "text-down" : "text-text-3"}`}>{errors.fee ?? `${FEE_MIN}–${FEE_MAX}% of profit`}</span>
+              <span className={errors.fee ? "text-down" : "text-text-3"}>{errors.fee ?? `${FEE_MIN}–${FEE_MAX}% of profit`}</span>
             </label>
           )}
         </div>
       </div>
-      <Button variant="primary" disabled={Object.keys(errors).length > 0} onClick={save} className="mt-4 h-11! w-full text-base!">
-        Save
-      </Button>
+      <div className="mt-4 flex gap-2">
+        {firstLogin && onSkip && (
+          <Button onClick={onSkip} className="h-11! flex-1 text-base!">
+            Skip
+          </Button>
+        )}
+        <Button variant="primary" disabled={Object.keys(errors).length > 0} onClick={save} className="h-11! flex-1 text-base!">
+          Save
+        </Button>
+      </div>
     </Modal>
   );
 }

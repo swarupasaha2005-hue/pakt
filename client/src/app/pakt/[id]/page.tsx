@@ -1,14 +1,14 @@
-import { notFound } from "next/navigation";
-import { PaktView } from "@/components/pakt/PaktView";
+import { PaktRoute } from "@/components/pakt/PaktRoute";
 import { pakts } from "@/lib/mock/pakts";
 
 export function generateStaticParams() {
   return pakts.map((p) => ({ id: p.id }));
 }
 
-export default async function PaktPage({ params }: PageProps<"/pakt/[id]">) {
+export default async function PaktPage({ params, searchParams }: PageProps<"/pakt/[id]">) {
   const { id } = await params;
+  const query = await searchParams;
   const pakt = pakts.find((p) => p.id === id);
-  if (!pakt) notFound();
-  return <PaktView key={pakt.id} initial={pakt} />;
+  const invite = Array.isArray(query.invite) ? query.invite[0] : query.invite;
+  return <PaktRoute id={id} initial={pakt ?? null} inviteToken={invite} />;
 }

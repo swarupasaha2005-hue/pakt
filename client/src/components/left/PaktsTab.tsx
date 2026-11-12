@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CreatePaktModal } from "@/components/modals/CreatePaktModal";
+import { useMockSession } from "@/components/session/MockSessionProvider";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Pct } from "@/components/ui/Pct";
@@ -11,6 +12,8 @@ import { Segmented } from "@/components/ui/Segmented";
 import { compact, signed } from "@/lib/format";
 import { me } from "@/lib/mock/me";
 import { pakts } from "@/lib/mock/pakts";
+import { getCreatedPakts, saveCreatedPakt, subscribeCreatedPakts } from "@/lib/mock/runtimePakts";
+import type { Pakt } from "@/lib/mock/types";
 
 const CHIPS = ["All", "Open to join", "Mine", "Hiring"] as const;
 type Chip = (typeof CHIPS)[number];
@@ -21,11 +24,39 @@ const VIEW: Record<Chip, (p: (typeof pakts)[number]) => boolean> = {
   Mine: (p) => me.paktIds.includes(p.id),
   Hiring: (p) => !p.trader,
 };
+const NO_CREATED_PAKTS: Pakt[] = [];
 
 export function PaktsTab() {
   const [chip, setChip] = useState<Chip>("All");
   const [creating, setCreating] = useState(false);
+  const createdPakts = useSyncExternalStore(subscribeCreatedPakts, getCreatedPakts, () => NO_CREATED_PAKTS);
   const pathname = usePathname();
+  const { connected, requestConnect } = useMockSession();
+  const visiblePakts = [...createdPakts, ...pakts].filter(VIEW[chip]);
+
+  function createPakt({ name, open, firstDeposit, stopLoss }: { name: string; open: boolean; firstDeposit: number; stopLoss: number }) {
+    if ([...createdPakts, ...pakts].some((item) => item.id === name)) return false;
+    const pakt: Pakt = {
+      id: name,
+      name,
+      members: [{ account: me.account, shares: firstDeposit }],
+      vaultValue: firstDeposit,
+      trader: null,
+      budget: 0,
+      budgetUsed: 0,
+      maxPerTrade: 0,
+      fee: 0,
+      stopLoss,
+      pnl7d: 0,
+      pnl7dPct: 0,
+      open,
+    };
+    const inviteToken = crypto.randomUUID();
+    if (!saveCreatedPakt(pakt, inviteToken)) return;
+    me.cash = Math.max(0, me.cash - firstDeposit);
+    me.paktIds = [...new Set([...me.paktIds, name])];
+    return inviteToken;
+  }
 
   return (
     <>
@@ -34,14 +65,14 @@ export function PaktsTab() {
         <li>
           <button
             type="button"
-            onClick={() => setCreating(true)}
+            onClick={() => connected ? setCreating(true) : requestConnect()}
             className="mb-1 flex h-11 w-full items-center gap-2 rounded-xl bg-pink/10 px-3 text-sm font-bold text-pink hover:bg-pink/15"
           >
-            <span className="text-lg leading-none">+</span> Create your pakt
+            <span className="text-lg leading-none">+</span> {connected ? "Create your pakt" : "Connect to create a pakt"}
             <span className="ml-auto text-lg leading-none">›</span>
           </button>
         </li>
-        {pakts.filter(VIEW[chip]).map((p) => (
+        {visiblePakts.map((p) => (
           <li key={p.id}>
             <Link
               href={`/pakt/${p.id}`}
@@ -66,8 +97,25 @@ export function PaktsTab() {
             </Link>
           </li>
         ))}
+        {visiblePakts.length === 0 && (
+          <li className="space-y-2 rounded-xl border border-dashed p-3">
+            <p className="px-1 text-xs text-text-2">No pakts here yet. Pick a first move.</p>
+            <Link href="/token/NEAR" className="block rounded-lg bg-panel-2 p-3 text-sm hover:bg-border">
+              <span className="block font-bold">Trade solo</span>
+              <span className="text-xs text-text-2">Start with your own vault.</span>
+            </Link>
+            <button type="button" onClick={() => connected ? setCreating(true) : requestConnect()} className="block w-full rounded-lg bg-panel-2 p-3 text-left text-sm hover:bg-border">
+              <span className="block font-bold">{connected ? "Create a pakt" : "Connect to create a pakt"}</span>
+              <span className="text-xs text-text-2">Set the rules with friends.</span>
+            </button>
+            <Link href={`/pakt/${pakts.find((p) => p.open)?.id ?? "degens"}`} className="block rounded-lg bg-panel-2 p-3 text-sm hover:bg-border">
+              <span className="block font-bold">Join a pakt</span>
+              <span className="text-xs text-text-2">Browse open groups.</span>
+            </Link>
+          </li>
+        )}
       </ul>
-      {creating && <CreatePaktModal onClose={() => setCreating(false)} />}
+      {creating && <CreatePaktModal onClose={() => setCreating(false)} onCreate={createPakt} />}
     </>
   );
 }

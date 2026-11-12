@@ -13,19 +13,25 @@ import type { NewVote } from "@/lib/mock/votes";
 
 type Props = { pakt: Pakt; onClose: () => void; onSubmit: (vote: NewVote) => void };
 
-const DEFAULT_FEE = 20;
 const field = "grid grid-cols-[1fr_10rem] items-center gap-3 text-xs text-text-2";
 
 function candidates(pakt: Pakt) {
-  const members = pakt.members.map((m) => ({
-    account: m.account,
-    note: "member",
-    fee: traders.find((t) => t.account === m.account)?.askingFee ?? DEFAULT_FEE,
-  }));
-  const outsiders = traders
-    .filter((t) => t.openToHire && !pakt.members.some((m) => m.account === t.account))
-    .map((t) => ({ account: t.account, note: `${t.pnl["7D"] < 0 ? "-" : "+"}${compact(Math.abs(t.pnl["7D"]))} 7D`, fee: t.askingFee }));
-  return [...members, ...outsiders];
+  const members = pakt.members.map((member) => member.account);
+  const accounts = [...new Set([...members, ...traders.map((trader) => trader.account)])];
+
+  return accounts.map((account) => {
+    const trader = traders.find((item) => item.account === account);
+    const isMember = members.includes(account);
+    const canPropose = Boolean(trader?.openToHire && trader.askingFee);
+
+    return {
+      account,
+      note: isMember ? "member" : trader ? `${trader.pnl["7D"] < 0 ? "-" : "+"}${compact(Math.abs(trader.pnl["7D"]))} 7D` : "member",
+      fee: trader?.askingFee ?? null,
+      canPropose,
+      unavailableReason: !trader?.askingFee ? "No asking fee" : !trader.openToHire ? "Not taking pakts" : null,
+    };
+  });
 }
 
 export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
@@ -36,12 +42,24 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
   const list = candidates(pakt);
   const chosen = list.find((c) => c.account === pick);
 
+  if (pakt.vaultValue <= 0) {
+    return (
+      <Modal open onClose={onClose} label={`Propose trader for ${pakt.name}`}>
+        <div className="flex flex-col gap-3">
+          <h2 className="text-xl font-bold">Deposit first</h2>
+          <p className="text-xs text-text-2">Add funds to {pakt.name} before proposing a trader.</p>
+          <Button onClick={onClose} size="lg">Close</Button>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal open onClose={onClose} label={`Propose trader for ${pakt.name}`}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!chosen) return;
+          if (!chosen || !chosen.canPropose || chosen.fee === null) return;
           onSubmit({
             kind: "hire",
             title: `Hire ${chosen.account} at ${chosen.fee}%`,
@@ -55,15 +73,16 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
         <Input placeholder="Search members or traders" aria-label="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
         <div role="radiogroup" className="max-h-56 overflow-y-auto">
           {list
-            .filter((c) => c.account.includes(query.toLowerCase()))
+            .filter((c) => c.account.toLowerCase().includes(query.toLowerCase()))
             .map((c) => (
-              <label key={c.account} className="flex h-14 cursor-pointer items-center gap-3 rounded-xl px-2 hover:bg-panel-2">
+              <label key={c.account} className={`flex h-14 items-center gap-3 rounded-xl px-2 ${c.canPropose ? "cursor-pointer hover:bg-panel-2" : "cursor-not-allowed opacity-60"}`}>
                 <Avatar name={c.account} />
                 <span className="flex-1 text-xs">
                   {c.account} <span className="text-text-2">· {c.note}</span>
+                  {!c.canPropose && <span className="block text-text-3">{c.unavailableReason}</span>}
                 </span>
-                <Badge>{c.fee}%</Badge>
-                <input type="radio" name="trader" checked={pick === c.account} onChange={() => setPick(c.account)} className="accent-accent" />
+                <Badge tone={c.canPropose ? "accent" : "neutral"}>{c.fee === null ? "No fee" : `${c.fee}%`}</Badge>
+                <input type="radio" name="trader" checked={pick === c.account} disabled={!c.canPropose} onChange={() => setPick(c.account)} className="accent-accent" />
               </label>
             ))}
         </div>
@@ -77,9 +96,9 @@ export function ProposeTraderModal({ pakt, onClose, onSubmit }: Props) {
         </label>
         <p className={field}>
           Fee
-          <span className="text-right">{chosen ? `${chosen.fee}%` : "—"} (asking fee) 🔒</span>
+          <span className="text-right">{chosen?.canPropose ? `${chosen.fee}% (asking fee) 🔒` : "—"}</span>
         </p>
-        <Button type="submit" variant="primary" size="lg" disabled={!chosen}>
+        <Button type="submit" variant="primary" size="lg" disabled={!chosen?.canPropose}>
           Start vote
         </Button>
       </form>

@@ -58,7 +58,20 @@ export function CashPill() {
           </button>
         </div>
       </Dropdown>
-      {depositTo && <DepositModal to={depositTo} onClose={() => setDepositTo(null)} />}
+      {depositTo && (
+        <DepositModal
+          to={depositTo}
+          onClose={() => setDepositTo(null)}
+          onDeposit={(amount, destination) => {
+            if (destination === WALLET) {
+              me.cash += amount;
+              me.total += amount;
+            } else {
+              me.cash = Math.max(0, me.cash - amount);
+            }
+          }}
+        />
+      )}
     </>
   );
 }
