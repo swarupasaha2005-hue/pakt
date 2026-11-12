@@ -1,24 +1,25 @@
-import { Avatar } from "@/components/ui/Avatar";
-import { Pct } from "@/components/ui/Pct";
-import { usd } from "@/lib/format";
-import { tokens } from "@/lib/mock/tokens";
+"use client";
 
-const TICKER = ["NEAR", "wBTC", "ETH", "USDC"];
+import { Avatar } from "@/components/ui/Avatar";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { usd } from "@/lib/format";
+import { loadTokens, useLoad } from "@/lib/home/data";
+
 const LINKS = ["Privacy", "Terms", "Help", "𝕏"];
 
 export function Ticker() {
+  const { data } = useLoad(loadTokens, []);
   return (
     <footer className="flex h-7 shrink-0 items-center justify-between px-3.5 text-xs">
       <ul className="flex items-center gap-4">
-        {tokens
-          .filter((t) => TICKER.includes(t.symbol))
-          .map((t) => (
-            <li key={t.symbol} className="flex items-center gap-1.5">
-              <Avatar name={t.symbol} src={t.logo} size={14} />
-              {usd(t.price)}
-              <Pct value={t.change24h} />
-            </li>
-          ))}
+        {data
+          ? data.map((t) => (
+              <li key={t.id} className="flex items-center gap-1.5">
+                <Avatar name={t.symbol} src={t.logo} size={14} />
+                {t.symbol} {t.price === null ? "—" : usd(t.price)}
+              </li>
+            ))
+          : <li><Skeleton className="h-3.5 w-48" /></li>}
       </ul>
       <nav className="flex items-center">
         <span className="flex items-center gap-1.5 pr-3 font-bold text-up">

@@ -1,28 +1,9 @@
 import { notFound } from "next/navigation";
 import { ProfileView } from "@/components/profile/ProfileView";
-import { feed } from "@/lib/mock/feed";
-import { pakts } from "@/lib/mock/pakts";
-import { holdings } from "@/lib/mock/holdings";
-import { profiles } from "@/lib/mock/profiles";
-
-export function generateStaticParams() {
-  return profiles.map((p) => ({ account: p.account }));
-}
+import { isAccountId } from "@/lib/profile/format";
 
 export default async function ProfilePage({ params }: PageProps<"/u/[account]">) {
   const { account } = await params;
-  const profile = profiles.find((p) => p.account === account);
-  if (!profile) notFound();
-
-  const related = pakts.filter((p) => p.trader === account || p.members.some((m) => m.account === account));
-  const owners = [account, ...related.map((p) => p.id)];
-
-  return (
-    <ProfileView
-      profile={profile}
-      holdings={holdings.filter((p) => owners.includes(p.owner))}
-      pakts={related}
-      events={feed.filter((e) => e.actor === account)}
-    />
-  );
+  if (!isAccountId(account)) notFound();
+  return <ProfileView key={account} account={account} />;
 }

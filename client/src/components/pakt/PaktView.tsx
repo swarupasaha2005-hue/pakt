@@ -1,122 +1,136 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { DepositModal } from "@/components/modals/DepositModal";
 import { LeavePaktModal } from "@/components/modals/LeavePaktModal";
 import { ProposeTraderModal } from "@/components/modals/ProposeTraderModal";
 import { VoteModal, type VoteModalKind } from "@/components/modals/VoteModal";
 import { RightPanel } from "@/components/shell/RightPanel";
 import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Tabs } from "@/components/ui/Tabs";
-import { feeSplit } from "@/lib/fees";
-import { feed } from "@/lib/mock/feed";
-import { me } from "@/lib/mock/me";
-import { offers } from "@/lib/mock/offers";
-import { settlements } from "@/lib/mock/settlements";
-import type { Pakt } from "@/lib/mock/types";
-import { votes as allVotes, type NewVote, type Vote } from "@/lib/mock/votes";
+import type { PaktEvent } from "@/lib/api";
+import { daoMembers, getOwed, sharesValue } from "@/lib/near/contracts";
+import { useWallet } from "@/lib/near/wallet";
+import { usePakt, useNow } from "@/lib/pakt/load";
+import { e6, PRICE_SCALE, sharePrice } from "@/lib/pakt/units";
+import { needed, voteRows } from "@/lib/pakt/votes";
 import { MembersTable } from "./MembersTable";
 import { OfferCard } from "./OfferCard";
 import { OpenVotesCard } from "./OpenVotesCard";
+import { OwedCard } from "./OwedCard";
 import { PaktHeader } from "./PaktHeader";
 import { SettlementCard } from "./SettlementCard";
 import { SettlementsTable } from "./SettlementsTable";
 import { ShareCard } from "./ShareCard";
+import { TradePanel } from "./TradePanel";
 import { TraderCard } from "./TraderCard";
 import { TradesList } from "./TradesList";
-import { ValueChart } from "./ValueChart";
+import { ValueChart, type PricePoint } from "./ValueChart";
 import { VotesList } from "./VotesList";
 
 type Tab = "members" | "trades" | "votes" | "settlements";
-type ModalKind = VoteModalKind | "propose" | "leave";
+type ModalKind = VoteModalKind | "propose" | "leave" | "deposit";
+type Of<K extends PaktEvent["kind"]> = Extract<PaktEvent, { kind: K }>;
 
-// shortcut: Join/Deposit add a flat $100 in local state, swap for the §17 deposit modal
-const DEPOSIT = 100;
+/** share price after each deposit (value·1e12/shares) and settlement, oldest first */
+function pricePoints(events: PaktEvent[]): PricePoint[] {
+  return events.toReversed().flatMap((e): PricePoint[] => {
+    if (e.kind === "settled") return [[e.ts_ms, BigInt(e.data.share_price)]];
+    if (e.kind === "deposit" && e.data.shares !== "0") return [[e.ts_ms, (BigInt(e.data.value) * PRICE_SCALE) / BigInt(e.data.shares)]];
+    return [];
+  });
+}
 
-/** pakt page center + right; all actions mutate local mock state */
-export function PaktView({ initial }: { initial: Pakt }) {
-  const [pakt, setPakt] = useState(initial);
-  const [rows, setRows] = useState(() => settlements.filter((s) => s.paktId === initial.id));
-  const [hwm, setHwm] = useState(() => rows.at(-1)?.hwm ?? initial.vaultValue);
-  const [votes, setVotes] = useState(() => allVotes.filter((v) => v.paktId === initial.id));
-  const [offer, setOffer] = useState(() => offers.find((o) => o.paktId === initial.id && o.to === me.account) ?? null);
-  const [paused, setPaused] = useState(!!initial.trader && 1 - initial.vaultValue / hwm >= initial.stopLoss / 100);
+/** pakt page center + right: chain views + indexed feed, every action a real tx */
+export function PaktView({ name }: { name: string }) {
+  const { data, error, refresh } = usePakt(name);
+  const { accountId, signIn } = useWallet();
+  const now = useNow();
   const [tab, setTab] = useState<Tab>("members");
   const [modal, setModal] = useState<ModalKind | null>(null);
+  const [owed, setOwed] = useState<[string, string][]>([]);
+  const vault = data?.info.vault;
 
-  const trades = feed.filter((e) => e.paktId === pakt.id && (e.kind === "buy" || e.kind === "sell"));
-  const total = pakt.members.reduce((s, m) => s + m.shares, 0);
-  const mine = pakt.members.find((m) => m.account === me.account);
-  const share = mine ? mine.shares / total : null;
-  const myValue = (share ?? 0) * pakt.vaultValue;
-  const profit = Math.max(0, pakt.vaultValue - hwm);
-  const split = feeSplit(profit, pakt.fee);
-  const myFees = (share ?? 0) * (split.trader + split.platform);
+  useEffect(() => {
+    if (!vault || !accountId) return;
+    getOwed(vault, accountId).then(setOwed).catch(() => setOwed([]));
+  }, [vault, accountId, data]);
+
+  if (data === undefined) {
+    return (
+      <main className="flex min-w-0 flex-1 flex-col gap-4">
+        {error ? (
+          <div role="alert" className="rounded-xl bg-warn-bg px-4 py-3 text-xs text-down">
+            Could not load {name}: {error}. It may still be setting up; this page retries on new events.
+          </div>
+        ) : (
+          <>
+            <Skeleton className="h-[100px] rounded-2xl" />
+            <Skeleton className="h-[240px] rounded-2xl" />
+          </>
+        )}
+      </main>
+    );
+  }
+  if (data === null) {
+    return (
+      <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-3 text-center">
+        <h1 className="text-xl font-bold">No pakt named “{name}”</h1>
+        <p className="text-xs text-text-2">Check the link, or create it yourself.</p>
+        <Link href="/" className="text-xs font-bold text-accent hover:underline">
+          Back to Discover
+        </Link>
+      </main>
+    );
+  }
+
+  const { info, state, holders, prices, value, proposals, policy, events } = data;
+  const holder = holders.find(([a]) => a === accountId)?.[1] ?? null;
+  const daoMember = !!accountId && daoMembers(policy).includes(accountId);
+  const share = holder && state.total_shares !== "0" ? Number(holder.shares) / Number(state.total_shares) : null;
+  const myValue = holder && value !== null ? e6(sharesValue(holder.shares, state, value)) : null;
+  const price = value === null ? null : sharePrice(value, state.total_shares);
+  const hwm = BigInt(state.hwm);
+  const profit = price !== null && price > hwm ? e6(((price - hwm) * BigInt(state.total_shares)) / PRICE_SCALE) : 0;
+  const trades = events.filter((e): e is Of<"trade"> => e.kind === "trade");
+  const settled = events.filter((e): e is Of<"settled"> => e.kind === "settled");
+  const votes = voteRows(proposals, policy, accountId, now);
   const open = votes.filter((v) => v.status === "Open");
-
-  function settle() {
-    setRows((r) => [...r, { paktId: pakt.id, date: "Today", profit: pakt.vaultValue - hwm, fee: pakt.fee, hwm: Math.max(hwm, pakt.vaultValue) }]);
-    setHwm((h) => Math.max(h, pakt.vaultValue));
-  }
-
-  // deposits move the mark too, so they never count as profit
-  function deposit() {
-    setPakt((p) => ({
-      ...p,
-      vaultValue: p.vaultValue + DEPOSIT,
-      members: mine
-        ? p.members.map((m) => (m === mine ? { ...m, shares: m.shares + DEPOSIT } : m))
-        : [...p.members, { account: me.account, shares: DEPOSIT }],
-    }));
-    setHwm((h) => h + DEPOSIT);
-  }
-
-  function leave() {
-    const out = myValue - myFees;
-    settle();
-    setPakt((p) => ({ ...p, vaultValue: p.vaultValue - out, members: p.members.filter((m) => m !== mine) }));
-    setHwm((h) => h - out);
-    setModal(null);
-  }
-
-  function cast(id: string, yes: boolean) {
-    const n = pakt.members.length;
-    const v = votes.find((x) => x.id === id)!;
-    const next: Vote = { ...v, voted: true, yes: v.yes + +yes, no: v.no + +!yes };
-    if (next.yes > n / 2) {
-      next.status = "Passed";
-      setPakt((p) => ({ ...p, ...v.change }));
-      if (v.kind !== "raise") setPaused(false);
-    } else if (next.no >= n / 2) next.status = "Rejected";
-    setVotes((list) => list.map((x) => (x.id === id ? next : x)));
-  }
-
-  const propose = (v: NewVote) =>
-    setVotes((list) => [{ ...v, id: `new-${list.length}`, paktId: pakt.id, yes: 0, no: 0, endsIn: "3d left", status: "Open" }, ...list]);
-
-  function accept() {
-    if (!offer) return;
-    setPakt((p) => ({ ...p, trader: me.account, budget: offer.budget, budgetUsed: 0, maxPerTrade: offer.maxPerTrade, stopLoss: offer.stopLoss, fee: offer.fee }));
-    setOffer(null);
-  }
+  const members = daoMembers(policy).length;
+  const isTrader = !!accountId && state.trader?.account === accountId;
+  const offerForMe = state.offer && state.offer.terms.account === accountId ? state.offer : null;
+  const dueMs = state.last_settle_ms + state.settle_period_ms;
+  const busy = state.op || state.draining ? "Vault busy, retry in a minute" : null;
+  const joinBlocked =
+    busy ?? (holder?.member ? null : state.join_mode === "Invite" ? "Invite only. Ask a member for the link." : state.members >= 100 ? "Pakt full" : null);
+  const settleBlocked = !accountId
+    ? "Connect wallet to settle"
+    : state.total_shares === "0"
+      ? "Empty vault"
+      : now < dueMs
+        ? "Settles after the period"
+        : busy;
+  const voteBlocked = !accountId ? "Connect wallet to vote" : daoMember ? null : "Only members vote";
+  const props = { name: info.name, vault: info.vault, dao: info.dao, onClose: () => setModal(null), onDone: refresh };
 
   const body = {
-    members: <MembersTable pakt={pakt} />,
-    trades: <TradesList trades={trades} />,
-    votes: <VotesList votes={votes} />,
-    settlements: <SettlementsTable rows={rows} />,
+    members: <MembersTable holders={holders} state={state} value={value} />,
+    trades: <TradesList trades={trades} now={now} />,
+    votes: <VotesList votes={votes} now={now} />,
+    settlements: <SettlementsTable rows={settled} />,
   }[tab];
 
   return (
     <>
       <main className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto">
-        <PaktHeader pakt={pakt} trades={trades.length} />
-        {offer && <OfferCard offer={offer} pakt={pakt} onAccept={accept} onDecline={() => setOffer(null)} />}
-        {paused && pakt.trader && (
+        <PaktHeader info={info} state={state} value={value} trades={trades.length} />
+        {offerForMe && <OfferCard offer={offerForMe} name={info.name} vault={info.vault} members={state.members} value={value} now={now} onDone={refresh} />}
+        {state.trader?.paused && (
           <div role="alert" className="flex items-center gap-3 rounded-xl bg-warn-bg px-4 py-3 text-xs text-down">
-            <span className="flex-1">
-              Trading paused: vault down {pakt.stopLoss}%. Vote to resume or fire.
-            </span>
-            {mine && (
+            <span className="flex-1">Trading paused: vault hit the {state.trader.stop_loss_bps / 100}% stop-loss. Vote to resume or fire.</span>
+            {daoMember && !state.fire_pending && (
               <>
                 <Button size="sm" onClick={() => setModal("resume")}>
                   Resume
@@ -128,11 +142,11 @@ export function PaktView({ initial }: { initial: Pakt }) {
             )}
           </div>
         )}
-        <ValueChart value={pakt.vaultValue} pnl7d={pakt.pnl7d} hwm={hwm} />
+        <ValueChart value={value} points={[...pricePoints(events), ...(price !== null ? [[now, price] as PricePoint] : [])]} hwm={hwm} />
         <section>
           <Tabs
             items={[
-              { id: "members", label: `Members (${pakt.members.length})` },
+              { id: "members", label: `Members (${state.members})` },
               { id: "trades", label: "Trades" },
               { id: "votes", label: "Votes" },
               { id: "settlements", label: "Settlements" },
@@ -145,18 +159,27 @@ export function PaktView({ initial }: { initial: Pakt }) {
         </section>
       </main>
       <RightPanel>
-        <ShareCard share={share} value={myValue} pnl7d={(share ?? 0) * pakt.pnl7d} open={pakt.open} onLeave={() => setModal("leave")} onDeposit={deposit} />
-        <TraderCard pakt={pakt} member={!!mine} onPropose={() => setModal("propose")} onRaise={() => setModal("raise")} onFire={() => setModal("fire")} />
-        <SettlementCard profit={profit} fee={pakt.fee} onSettle={settle} />
-        <OpenVotesCard votes={open} members={pakt.members.length} canVote={!!mine} onVote={cast} />
+        {isTrader && accountId && <TradePanel vault={info.vault} state={state} prices={prices} account={accountId} now={now} onDone={refresh} />}
+        <ShareCard
+          share={share}
+          value={myValue}
+          joinBlocked={joinBlocked}
+          signedIn={!!accountId}
+          onSignIn={signIn}
+          onLeave={() => setModal("leave")}
+          onDeposit={() => setModal("deposit")}
+        />
+        {accountId && owed.length > 0 && <OwedCard vault={info.vault} account={accountId} owed={owed} onDone={refresh} />}
+        <TraderCard state={state} member={daoMember} onPropose={() => setModal("propose")} onRaise={() => setModal("raise")} onFire={() => setModal("fire")} />
+        <SettlementCard vault={info.vault} profit={profit} fee={(state.trader?.fee_bps ?? 0) / 100} dueMs={dueMs} now={now} blocked={settleBlocked} onDone={refresh} />
+        <OpenVotesCard dao={info.dao} votes={open} members={members} needed={needed(policy, members)} blocked={voteBlocked} now={now} onDone={refresh} />
       </RightPanel>
-      {modal === "propose" && <ProposeTraderModal pakt={pakt} onClose={() => setModal(null)} onSubmit={propose} />}
-      {modal === "leave" && share !== null && (
-        <LeavePaktModal name={pakt.name} share={share} value={myValue} fees={myFees} onClose={() => setModal(null)} onLeave={leave} />
+      {modal === "deposit" && <DepositModal to={info.name} onClose={() => setModal(null)} onDone={refresh} />}
+      {modal === "propose" && (
+        <ProposeTraderModal {...props} members={holders.filter(([, h]) => h.member).map(([a]) => a)} stopLossBps={info.stop_loss_bps} />
       )}
-      {(modal === "raise" || modal === "fire" || modal === "resume") && (
-        <VoteModal pakt={pakt} kind={modal} onClose={() => setModal(null)} onSubmit={propose} />
-      )}
+      {modal === "leave" && holder && <LeavePaktModal {...props} state={state} shares={holder.shares} value={value} />}
+      {(modal === "raise" || modal === "fire" || modal === "resume") && <VoteModal {...props} kind={modal} trader={state.trader} />}
     </>
   );
 }

@@ -1,10 +1,12 @@
-import { feeSplit } from "@/lib/fees";
-import { signed, usd } from "@/lib/format";
-import type { Settlement } from "@/lib/mock/settlements";
+import type { PaktEvent } from "@/lib/api";
+import { usd } from "@/lib/format";
+import { e6, PRICE_SCALE, priceX } from "@/lib/pakt/units";
 
-const COLS = ["Date", "Profit", "Trader fee", "Platform fee", "Members", "High-water mark"];
+type SettledEvent = Extract<PaktEvent, { kind: "settled" }>;
+const COLS = ["Date", "Profit", "Trader fee", "Platform fee", "Members", "Share price"];
 
-export function SettlementsTable({ rows }: { rows: Settlement[] }) {
+/** fee shares were minted at the new share price, so shares × price is their usd worth */
+export function SettlementsTable({ rows }: { rows: SettledEvent[] }) {
   if (!rows.length) return <p className="py-8 text-center text-sm text-text-2">No settlements yet</p>;
   return (
     <table className="w-full text-xs">
@@ -18,16 +20,19 @@ export function SettlementsTable({ rows }: { rows: Settlement[] }) {
         </tr>
       </thead>
       <tbody>
-        {rows.toReversed().map((r, i) => {
-          const fees = feeSplit(r.profit, r.fee);
+        {rows.map((r) => {
+          const fee = (s: string) => (BigInt(s) * BigInt(r.data.share_price)) / PRICE_SCALE;
+          const trader = fee(r.data.trader_fee_shares);
+          const platform = fee(r.data.platform_fee_shares);
+          const profit = BigInt(r.data.profit);
           return (
-            <tr key={rows.length - i} className="border-t text-right">
-              <td className="py-2.5 text-left">{r.date}</td>
-              <td className={r.profit < 0 ? "text-down" : "text-up"}>{signed(r.profit)}</td>
-              <td>{usd(fees.trader)}</td>
-              <td>{usd(fees.platform)}</td>
-              <td>{signed(r.profit - fees.trader - fees.platform)}</td>
-              <td>{usd(r.hwm)}</td>
+            <tr key={r.id} className="border-t text-right">
+              <td className="py-2.5 text-left">{new Date(r.ts_ms).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
+              <td className="text-up">+{usd(e6(profit))}</td>
+              <td>{usd(e6(trader))}</td>
+              <td>{usd(e6(platform))}</td>
+              <td>+{usd(e6(profit - trader - platform))}</td>
+              <td>{priceX(r.data.share_price).toFixed(4)}×</td>
             </tr>
           );
         })}
