@@ -27,3 +27,5 @@ export const token = (id: string) => TOKENS.find((t) => t.id === id);
 /** vault and dao ids for a pakt name, as the factory derives them */
 export const vaultId = (name: string) => `${name}.${FACTORY}`;
 export const daoId = (name: string) => `${name}.${SPUTNIK}`;
+
+export const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://paktdotfam.vercel.app";

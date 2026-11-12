@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal/LegalPage";
 
-export const metadata: Metadata = { title: "Terms · Pakt" };
+export const metadata: Metadata = { title: "Terms" };
 
 export default function Terms() {
   return (
