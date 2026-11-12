@@ -11,12 +11,12 @@
   "vars": {
     "PAKT_FACTORY": "pakt.testnet",
     "NEARDATA_URL": "https://testnet.neardata.xyz",
-    // set to poll a node instead of neardata, e.g. http://localhost:3030 for a sandbox
-    "NEAR_RPC_URL": "",
+    // keyless free rpc (neardata keyless throttles ~13 req burst); http://localhost:3030 for a sandbox; fallback near-testnet.drpc.org
+    "NEAR_RPC_URL": "https://rpc.testnet.fastnear.com",
     // first block when no cursor is stored; 0 = the final tip
     "START_HEIGHT": "0",
-    // upstream requests per minute: neardata free tier is 30, raise it with FASTNEAR_API_KEY
-    "UPSTREAM_PER_MIN": "30",
+    // upstream requests per minute; free rpc took 60 rapid calls unthrottled
+    "UPSTREAM_PER_MIN": "600",
     "CORS_ORIGINS": "https://pakt.example.com",
     // price relay, off while any is empty: {"<testnet token>": {"pyth": "<feed id hex>", "coingecko": "<coin id>"}}
     "PRICE_MAP": "",

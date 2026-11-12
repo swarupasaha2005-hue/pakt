@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alerts, leaderboard } from "../src/stats";
+import { alerts, cloneConfig, leaderboard, traderRecord } from "../src/stats";
 import type { Row } from "../src/store";
 
 let id = 0;
@@ -52,5 +52,37 @@ describe("leaderboard", () => {
       { vault: "v1", from_share_price: "1100000000000", to_share_price: "1210000000000", change: 0.1 },
       { vault: "v2", from_share_price: "2000000000000", to_share_price: "1900000000000", change: -0.05 },
     ]);
+  });
+});
+
+describe("copy pakt", () => {
+  const offer = (vault: string, trader: string, ts: number, fee_bps: number) =>
+    ev("offer", vault, ts, { trader, budget: "500", max_per_trade: "50", fee_bps, stop_loss_bps: 2500 });
+  const rows = [
+    ev("pakt_created", "v1", 1, { name: "moon", vault: "v1", dao: "moon.dao", creator: "al", join_mode: "Open" }),
+    offer("v1", "bob", 2, 2000), ev("hired", "v1", 3, { trader: "bob" }),
+    ev("trade", "v1", 4, { trader: "bob", value: "40" }),
+    ev("settled", "v1", 5, { profit: "120" }),
+    ev("cap_set", "v1", 6, { budget: "900", max_per_trade: "90" }),
+    ev("settled", "v2", 6, { profit: "999" }), // bob not live on v2
+    ev("fired", "v1", 7, { trader: "bob" }),
+    ev("settled", "v1", 8, { profit: "50" }), // after fire: not bob's
+    offer("v2", "bob", 9, 1500), ev("hired", "v2", 10, { trader: "bob" }),
+    ev("settled", "v2", 11, { profit: "30" }),
+  ];
+
+  it("records each tenure with its terms and profit while live", () => {
+    const r = traderRecord(rows, "bob");
+    expect(r).toMatchObject({ trader: "bob", pnl: "150", volume: "40", trades: 1, live: 1 });
+    expect(r.pakts).toEqual([
+      { vault: "v2", hired_at: 10, fired_at: null, terms: { budget: "500", max_per_trade: "50", fee_bps: 1500, stop_loss_bps: 2500 }, pnl: "30", volume: "0", trades: 0 },
+      { vault: "v1", hired_at: 3, fired_at: 7, terms: { budget: "900", max_per_trade: "90", fee_bps: 2000, stop_loss_bps: 2500 }, pnl: "120", volume: "40", trades: 1 },
+    ]);
+    expect(traderRecord(rows, "nobody")).toMatchObject({ pnl: "0", trades: 0, live: 0, pakts: [] });
+  });
+
+  it("clones a pakt's setup and current trader terms", () => {
+    expect(cloneConfig(rows, "v1")).toEqual({ vault: "v1", name: "moon", dao: "moon.dao", creator: "al", join_mode: "Open", trader: null, terms: { budget: "900", max_per_trade: "90", fee_bps: 2000, stop_loss_bps: 2500 } });
+    expect(cloneConfig(rows, "v2")).toBeNull(); // no pakt_created seen
   });
 });

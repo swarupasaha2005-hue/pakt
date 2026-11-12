@@ -42,6 +42,14 @@ describe("routes on local D1", () => {
     expect(body.next).toBeTypeOf("number");
   });
 
+  it("serves copy-pakt config and trader records", async () => {
+    const cfg = await (await get("/pakts/alpha.pakt.testnet/config")).json<{ name: string; trader: null }>();
+    expect(cfg).toMatchObject({ vault: "alpha.pakt.testnet", name: "alpha", dao: "alpha.sputnik-dao.testnet", trader: null });
+    expect((await get("/pakts/nope.pakt.testnet/config")).status).toBe(404);
+    expect(await (await get("/traders/bob.testnet")).json()).toMatchObject({ trader: "bob.testnet", pnl: "0", pakts: [] });
+    expect((await get("/traders/BAD")).status).toBe(400);
+  });
+
   it("lists pakts and 404s unknown ones", async () => {
     const one = await (await get("/pakts/alpha.pakt.testnet")).json<{ vault: string; info: { name: string } }>();
     expect(one).toMatchObject({ vault: "alpha.pakt.testnet", info: { name: "alpha" } });

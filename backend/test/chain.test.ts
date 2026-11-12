@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BadBlock, Budget, events, Neardata, parseLog, Rpc, trusted, Upstream, type Block } from "../src/chain";
+import { BadBlock, Budget, events, Neardata, parseLog, resetKey, Rpc, trusted, Upstream, type Block } from "../src/chain";
 import block from "./fixtures/neardata-block.json";
 import rpc from "./fixtures/rpc.json";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => (vi.restoreAllMocks(), resetKey()));
 
 describe("parseLog", () => {
   it.each([
@@ -86,5 +86,31 @@ describe("upstream", () => {
     await expect(new Upstream(5).json("https://x.test/v0/block/1?apiKey=secret")).rejects.toBeInstanceOf(BadBlock);
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(new Response("slow down", { status: 429 }));
     await expect(new Upstream(5).json("https://x.test/v0/block/1?apiKey=secret")).rejects.toThrow(/^\/v0\/block\/1: 429 slow down$/);
+  });
+});
+
+describe("rejected api key", () => {
+  it("falls back keyless on 403, then skips the key", async () => {
+    const seen: (string | null)[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_u, init) => {
+      const auth = new Headers(init?.headers).get("authorization");
+      seen.push(auth);
+      if (auth) return new Response("Invalid API key", { status: 403 });
+      return Response.json({ jsonrpc: "2.0", id: "pakt", result: { header: { height: 9 }, chunks: [] } });
+    });
+    const src = new Rpc("https://rpc.test", "bad");
+    expect(await src.final(new Upstream(5))).toBe(9);
+    expect(await src.final(new Upstream(5))).toBe(9);
+    expect(seen).toEqual(["Bearer bad", null, null]);
+  });
+
+  it("neardata drops a rejected apiKey query", async () => {
+    const urls: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (u) => {
+      urls.push(String(u));
+      return String(u).includes("apiKey") ? new Response("no", { status: 403 }) : Response.json(null);
+    });
+    expect(await new Neardata("https://nd.test", "bad").block(new Upstream(5), 7)).toBeNull();
+    expect(urls).toEqual(["https://nd.test/v0/block/7?apiKey=bad", "https://nd.test/v0/block/7"]);
   });
 });

@@ -87,3 +87,51 @@ export function leaderboard(rows: Row[], since: number): { traders: TraderRow[];
     .sort((a, b) => b.change - a.change || a.vault.localeCompare(b.vault));
   return { traders: tr, pakts: pr };
 }
+
+// Copy pakt: a trader's record per pakt, and the terms a new pakt needs to clone one.
+export const COPY_KINDS = ["pakt_created", "offer", "hired", "fired", "cap_set", "trade", "settled"];
+const TERMS = ["budget", "max_per_trade", "fee_bps", "stop_loss_bps"] as const;
+type Terms = Partial<Record<(typeof TERMS)[number], unknown>>;
+const terms = (f: Record<string, unknown>): Terms => Object.fromEntries(TERMS.map((k) => [k, f[k]]));
+
+export type Tenure = { vault: string; hired_at: number; fired_at: number | null; terms: Terms; pnl: string; volume: string; trades: number };
+
+// traderRecord takes COPY_KINDS rows oldest first. pnl = settled.profit while live, as the leaderboard counts it.
+export function traderRecord(rows: Row[], trader: string) {
+  const offers = new Map<string, Terms>(); // vault -> last offer to this trader
+  const live = new Map<string, Tenure & { p: bigint; v: bigint }>();
+  const done: Tenure[] = [];
+  const close = ({ p, v, ...t }: Tenure & { p: bigint; v: bigint }): Tenure => ({ ...t, pnl: p.toString(), volume: v.toString() });
+  for (const r of rows) {
+    const f = fields(r), t = live.get(r.vault);
+    if (r.kind === "offer" && str(f.trader) === trader) offers.set(r.vault, terms(f));
+    else if (r.kind === "hired" && str(f.trader) === trader)
+      live.set(r.vault, { vault: r.vault, hired_at: r.ts_ms, fired_at: null, terms: { ...offers.get(r.vault) }, pnl: "0", volume: "0", trades: 0, p: 0n, v: 0n });
+    else if (!t) continue;
+    else if (r.kind === "settled") t.p += num(f.profit);
+    else if (r.kind === "trade") (t.v += num(f.value)), t.trades++;
+    else if (r.kind === "cap_set") Object.assign(t.terms, { budget: f.budget, max_per_trade: f.max_per_trade });
+    else if (r.kind === "fired") done.push(close({ ...t, fired_at: r.ts_ms })), live.delete(r.vault);
+  }
+  const pakts = [...done, ...[...live.values()].map(close)].sort((a, b) => b.hired_at - a.hired_at);
+  const total = pakts.reduce((a, t) => ({ pnl: a.pnl + num(t.pnl), volume: a.volume + num(t.volume), trades: a.trades + t.trades }), { pnl: 0n, volume: 0n, trades: 0 });
+  return { trader, pnl: total.pnl.toString(), volume: total.volume.toString(), trades: total.trades, live: live.size, pakts };
+}
+
+// cloneConfig: what a "copy this pakt" form pre-fills. Whitelist and min deposit live on chain: read vault get_state.
+export function cloneConfig(rows: Row[], vault: string) {
+  let info: Record<string, unknown> | null = null, trader: string | null = null, t: Terms = {};
+  const offers = new Map<string, Terms>();
+  for (const r of rows) {
+    if (r.vault !== vault) continue;
+    const f = fields(r);
+    if (r.kind === "pakt_created") info = f;
+    else if (r.kind === "offer") offers.set(str(f.trader), terms(f));
+    else if (r.kind === "hired") (trader = str(f.trader)), (t = { ...(offers.get(trader) ?? {}) });
+    else if (r.kind === "cap_set") Object.assign(t, { budget: f.budget, max_per_trade: f.max_per_trade });
+    else if (r.kind === "fired") trader = null;
+  }
+  if (!info) return null;
+  const { name, dao, creator, join_mode } = info;
+  return { vault, name, dao, creator, join_mode, trader, terms: t };
+}
