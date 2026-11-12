@@ -242,10 +242,9 @@ async fn fire_pays_profit_only_and_survives_dead_oracle() -> anyhow::Result<()> 
     assert!(s["trader"].is_null() && s["op"].is_null(), "{s}");
     assert!(near(e.worth(&p.vault, t.id(), 11_000).await?, 12 * D));
 
-    // second trader, then the oracle dies: fire still goes through, no fee, lock clear
+    // second trader, then the oracle dies: fire pauses and waits for prices, lock clear
     let t2 = e.user("t2", 0).await?;
     hire(&e, &p, &[&a, &b], &t2, 2000).await?;
-    e.prices(13_000).await?;
     e.stale_prices().await?;
     let px = e.view(e.oracle.id(), "get_price_data", json!({"asset_ids": [e.usdc.id()]})).await?;
     assert!(px["prices"][0]["price"].is_null(), "{px}");
@@ -253,7 +252,12 @@ async fn fire_pays_profit_only_and_survives_dead_oracle() -> anyhow::Result<()> 
     assert!(logs(&r).contains("refund: no prices"), "{r:?}");
     assert_eq!(e.dao_call(&p.dao, &[&a, &b], &p.vault, "fire", json!({})).await?, "Approved");
     let s = e.state(&p.vault).await?;
-    assert!(s["trader"].is_null() && s["op"].is_null(), "{s}");
+    assert!(s["fire_pending"] == true && s["trader"]["paused"] == true && s["op"].is_null(), "{s}");
+    // prices back: anyone finishes the fire, flat since hire so no fee
+    e.prices(11_000).await?;
+    ok(a.call(&p.vault, "finish_fire").args_json(json!({})).gas(TGAS300).transact().await?)?;
+    let s = e.state(&p.vault).await?;
+    assert!(s["trader"].is_null() && s["op"].is_null() && s["fire_pending"] == false, "{s}");
     assert_eq!(e.shares(&p.vault, t2.id()).await?, 0);
     Ok(())
 }

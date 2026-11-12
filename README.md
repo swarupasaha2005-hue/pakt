@@ -131,7 +131,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 - access control: only the DAO, the offered trader, or the trader can call their methods;
 - factory rejects tokens outside its allowlist; invite-only needs a valid invite signature;
 - deposits and leaves overlap without blocking each other; a failed payout is owed, then claimed;
-- `fire` pays profit-only fees and still works with the oracle down;
+- `fire` pays profit-only fees and waits for prices with the oracle down (trader paused), then fires anyway after an hour;
 - trades: happy path, refused below the oracle floor, per-trade and budget caps, stop-loss pause then DAO `resume`;
 - a failed Ref withdraw parks funds, then `dex_recover` brings them home;
 - a failed member sync is retried with `sync_member`;

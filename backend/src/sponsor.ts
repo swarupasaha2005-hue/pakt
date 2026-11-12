@@ -171,15 +171,19 @@ export async function topup(env: Env, who: string, ip: string): Promise<Sponsore
   if (!acc?.amount) return { status: 400, body: { error: "account not found" } };
   // funded accounts pay their own gas; the top-up is only for accounts that couldn't send a tx at all
   if (BigInt(acc.amount) >= TOPUP) return { status: 200, body: { left: await left(env, who), error: "has gas" } };
-  const since = Date.now() - 86_400_000;
-  const byIp = await env.DB.prepare("select count(*) n from gas_topups where ip = ? and at > ?").bind(ip, since).first<number>("n");
-  if ((byIp ?? 0) >= TOPUP_PER_IP_DAY) return { status: 429, body: { error: "daily limit reached on this network" } };
   if (signer.busy) return { status: 429, body: { error: "busy, retry in a few seconds" } };
   signer.busy = true;
   try {
     // claim first: the primary key makes a second top-up for the same account fail here, before any NEAR moves
-    const ok = await env.DB.prepare("insert into gas_topups (account, ip, at) values (?, ?, ?) on conflict do nothing returning account").bind(who, ip, Date.now()).first<string>("account");
-    if (!ok) return { status: 429, body: { error: "already topped up" } };
+    // one statement, so parallel requests from one IP can't all pass the daily count
+    const now = Date.now();
+    const ok = await env.DB.prepare(
+      "insert into gas_topups (account, ip, at) select ?1, ?2, ?3 where (select count(*) from gas_topups where ip = ?2 and at > ?4) < ?5 on conflict do nothing returning account",
+    ).bind(who, ip, now, now - 86_400_000, TOPUP_PER_IP_DAY).first<string>("account");
+    if (!ok) {
+      const mine = await env.DB.prepare("select 1 n from gas_topups where account = ?").bind(who).first("n");
+      return { status: 429, body: { error: mine ? "already topped up" : "daily limit reached on this network" } };
+    }
     let landed = false;
     try {
       const key = await parseKey(env.FAUCET_SIGNER);

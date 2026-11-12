@@ -395,9 +395,17 @@ fn fire_works_without_prices() {
     hire(&mut v, 2_000, 1.0);
     ctx("dao");
     v.fire();
+    // waits for prices so the P/L reaches the record, trader paused meanwhile
     ctx_at("vault", 1_000, vec![no_prices()]);
     v.on_fire(v.op_id);
-    assert!(v.trader.is_none());
+    assert!(v.fire_pending && v.trader.as_ref().unwrap().paused);
+    assert_eq!(v.op, None);
+    // an hour on, it fires anyway
+    ctx_at("anyone", FIRE_WAIT_MS + 1_000, vec![]);
+    v.finish_fire();
+    ctx_at("vault", FIRE_WAIT_MS + 2_000, vec![no_prices()]);
+    v.on_fire(v.op_id);
+    assert!(v.trader.is_none() && !v.fire_pending);
     assert_eq!(v.op, None);
 }
 
