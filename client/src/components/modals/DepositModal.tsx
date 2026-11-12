@@ -142,7 +142,7 @@ export function DepositModal({ to: initialTo, onClose, onDone }: Props) {
           onClick={() => vault && raw && tx.run(deposit(vault, raw))}
           className="mt-4 h-11! w-full text-sm! font-medium!"
         >
-          {tx.pending ? "Confirm in wallet…" : (blocked ?? "Deposit")}
+          {tx.pending ? "Confirming…" : (blocked ?? "Deposit")}
         </Button>
       )}
       <TxStatus {...tx} done="Deposited" />

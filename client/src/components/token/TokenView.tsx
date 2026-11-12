@@ -36,7 +36,7 @@ export function TokenView({ symbol }: { symbol: string }) {
         <h1 className="text-xl font-bold">No token “{symbol}”</h1>
         <p className="text-xs text-text-2">Pakts trade only the whitelisted tokens.</p>
         <Link href="/" className="text-xs font-bold text-accent hover:underline">
-          Back to Discover
+          Back to Explore
         </Link>
       </main>
     );

@@ -9,9 +9,6 @@ function Icon({ children, ...props }: SVGProps<SVGSVGElement>) {
   );
 }
 
-export const BellIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></Icon>
-);
 export const StarIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" /></Icon>
 );
@@ -89,12 +86,6 @@ export const HeartIcon = (p: SVGProps<SVGSVGElement>) => (
 );
 export const UsersIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.5a6.5 6.5 0 0 1 3.5 5.5" /></Icon>
-);
-export const VolumeIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4zM15.5 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /></Icon>
-);
-export const MuteIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Icon {...p}><path d="M11 5 6 9H3v6h3l5 4zM16 9l5 6M21 9l-5 6" /></Icon>
 );
 export const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" /></Icon>

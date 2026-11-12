@@ -149,7 +149,7 @@ export function TradePanel({ vault, state, prices, account, now, onDone }: Props
         onClick={submit}
         className={`w-full ${error ? "disabled:text-down!" : ""}`}
       >
-        {error ?? (tx.pending ? "Confirm in wallet…" : amountIn ? `${verb} ${sym}` : "Enter amount")}
+        {error ?? (tx.pending ? "Confirming…" : amountIn ? `${verb} ${sym}` : "Enter amount")}
       </Button>
       <TxStatus {...tx} done="Trade sent" />
     </section>

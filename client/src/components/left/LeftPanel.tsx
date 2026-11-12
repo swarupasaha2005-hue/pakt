@@ -1,30 +1,29 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { BellIcon, ChevronsLeftIcon, StarIcon } from "@/components/ui/icons";
+import { Suspense, useEffect } from "react";
+import { Positions } from "@/components/home/Positions";
+import { ChevronsLeftIcon } from "@/components/ui/icons";
 import { Tabs } from "@/components/ui/Tabs";
-import { AlertsTab } from "./AlertsTab";
+import { usePersisted } from "@/lib/home/data";
 import { FeedTab } from "./FeedTab";
 import { LeaderboardTab } from "./LeaderboardTab";
 import { PaktsTab } from "./PaktsTab";
-import { StarredTab } from "./StarredTab";
 import { TokensTab } from "./TokensTab";
 
 const TABS = [
-  { id: "alerts", label: <><BellIcon className="size-[18px]" /><span className="sr-only">Alerts</span></>, body: <AlertsTab /> },
-  { id: "starred", label: <><StarIcon className="size-[18px]" /><span className="sr-only">Starred</span></>, body: <StarredTab /> },
   { id: "tokens", label: "Tokens", body: <TokensTab /> },
   { id: "pakts", label: "Pakts", body: <PaktsTab /> },
   { id: "leaderboard", label: "Leaderboard", body: <LeaderboardTab /> },
   { id: "feed", label: "Feed", body: <FeedTab /> },
+  { id: "positions", label: "Positions", body: <Positions /> },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
 
 export function LeftPanel() {
-  const [tab, setTab] = useState<TabId>("feed");
-  const [collapsed, setCollapsed] = useState(false);
+  const [tab, setTab] = usePersisted<TabId>("pakt:left-tab", "feed", (v): v is TabId => TABS.some((t) => t.id === v));
+  const [collapsed, setCollapsed] = usePersisted("pakt:left-collapsed", false, (v): v is boolean => typeof v === "boolean");
   useEffect(() => {
     // the site tour switches tabs to show each one
     const show = (e: Event) => {
@@ -33,7 +32,7 @@ export function LeftPanel() {
     };
     window.addEventListener("pakt:tab", show);
     return () => window.removeEventListener("pakt:tab", show);
-  }, []);
+  }, [setTab, setCollapsed]);
 
   // stays mounted so width can animate; collapsed = 33px rail with the expand button
   return (

@@ -119,7 +119,7 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
           </Button>
         ) : (
           <Button type="submit" variant="primary" size="lg" disabled={!!blocked || tx.pending}>
-            {tx.pending ? "Confirm in wallet…" : (blocked ?? "Start vote")}
+            {tx.pending ? "Confirming…" : (blocked ?? "Start vote")}
           </Button>
         )}
         <TxStatus {...tx} done="Vote started" />

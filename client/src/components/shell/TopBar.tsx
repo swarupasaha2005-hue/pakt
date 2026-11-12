@@ -12,7 +12,7 @@ export function TopBar() {
       <div className="flex items-center gap-6">
         <Logo />
         {/* why: usePathname suspends on unprerendered dynamic routes */}
-        <Suspense fallback={<span className="text-base font-medium text-text-2">Discover</span>}>
+        <Suspense fallback={<span className="text-base font-medium text-text-2">Explore</span>}>
           <DiscoverLink />
         </Suspense>
       </div>

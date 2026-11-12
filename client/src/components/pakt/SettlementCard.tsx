@@ -33,7 +33,7 @@ export function SettlementCard({ vault, profit, fee, dueMs, now, blocked, onDone
   return (
     <section className="border-b p-4">
       <h2 className="flex justify-between text-xs font-bold tracking-wide text-text-2 uppercase">
-        Next settlement <span className="text-text">{now >= dueMs ? "due now" : left(dueMs - now)}</span>
+        Next settlement <span className="text-text normal-case">{now >= dueMs ? "Due now" : left(dueMs - now)}</span>
       </h2>
       <dl className="mt-3 space-y-2 text-xs">
         <div className="flex justify-between">
