@@ -33,16 +33,4 @@ export function logoPosition(scroll: number, track: LogoTrack) {
   return { center, size, cut, crossing: clamp(1 - cut), settle };
 }
 
-export function nearTimeline(progress: number, crossing: number) {
-  const turn = smoothRange(.02, .98, crossing);
-  return {
-    morph: smoothRange(.24, .84, crossing),
-    wash: 1 - .78 * smoothRange(0, .45, crossing),
-    rotation: 360 * turn,
-    depth: 1 - .06 * Math.sin(Math.PI * turn),
-    scan: 1 - smoothRange(.16, .38, progress),
-    label: smoothRange(.78, .88, progress),
-    headline: smoothRange(.86, .98, progress),
-    description: smoothRange(.9, 1, progress),
-  };
-}
+export const NEAR_TIMELINE_DURATION = 1.04;

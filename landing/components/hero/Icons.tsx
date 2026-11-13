@@ -21,3 +21,7 @@ export function XIcon(props: Props) {
 export function DiscordIcon(props: Props) {
   return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}><path d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52l-.6 1.23a18.28 18.28 0 0 0-5.66 0l-.6-1.23a19.8 19.8 0 0 0-4.89 1.52C.59 8.94-.25 13.4.17 17.8a19.9 19.9 0 0 0 6 3.05l1.23-2a12.7 12.7 0 0 1-1.94-.93l.48-.38c3.76 1.72 8.36 1.72 12.12 0l.48.38c-.62.36-1.27.67-1.94.93l1.23 2a19.9 19.9 0 0 0 6-3.05c.5-5.1-.86-9.53-3.51-13.43ZM8.02 15.16c-1.13 0-2.06-1.03-2.06-2.3 0-1.27.91-2.3 2.06-2.3 1.15 0 2.08 1.04 2.06 2.3 0 1.27-.91 2.3-2.06 2.3Zm7.96 0c-1.13 0-2.06-1.03-2.06-2.3 0-1.27.91-2.3 2.06-2.3 1.15 0 2.08 1.04 2.06 2.3 0 1.27-.91 2.3-2.06 2.3Z" /></svg>;
 }
+
+export function ArrowUpRight(props: Props) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d="M7 17 17 7M8 7h9v9" /></svg>;
+}

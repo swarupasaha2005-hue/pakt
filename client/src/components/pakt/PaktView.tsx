@@ -32,7 +32,7 @@ import { TradesList } from "./TradesList";
 import { ValueChart } from "./ValueChart";
 import { VotesList } from "./VotesList";
 
-type Tab = "members" | "trades" | "votes" | "settlements";
+export type PaktTab = "members" | "trades" | "votes" | "settlements";
 type ModalKind = VoteModalKind | "propose" | "leave";
 
 function initialAssets(pakt: Pakt): Holding[] {
@@ -42,7 +42,7 @@ function initialAssets(pakt: Pakt): Holding[] {
 }
 
 /** pakt page center + right; all actions mutate local mock state */
-export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInvite?: boolean }) {
+export function PaktView({ initial, hasInvite = false, initialTab = "members" }: { initial: Pakt; hasInvite?: boolean; initialTab?: PaktTab }) {
   const { connected, requestConnect } = useMockSession();
   const [savedSession] = useState(() => loadPaktSession(initial.id));
   const pakt = useSyncExternalStore(subscribeCreatedPakts, () => getCreatedPakt(initial.id) ?? initial, () => initial);
@@ -55,7 +55,7 @@ export function PaktView({ initial, hasInvite = false }: { initial: Pakt; hasInv
   const [assets, setAssets] = useState(() => savedSession?.assets ?? initialAssets(initial));
   const [offer, setOffer] = useState(() => initial.pendingOffer === null ? null : initial.pendingOffer ? { ...initial.pendingOffer, paktId: initial.id } : offers.find((o) => o.paktId === initial.id) ?? null);
   const [paused, setPaused] = useState(!!initial.paused || (!!initial.trader && 1 - initial.vaultValue / hwm >= initial.stopLoss / 100));
-  const [tab, setTab] = useState<Tab>("members");
+  const [tab, setTab] = useState<PaktTab>(initialTab);
   const [modal, setModal] = useState<ModalKind | null>(null);
   const [depositing, setDepositing] = useState(false);
 
