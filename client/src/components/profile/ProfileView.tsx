@@ -6,6 +6,7 @@ import { useWallet } from "@/lib/near/wallet";
 import { loadProfile, type ProfileData } from "@/lib/profile/load";
 import { ActivityCard } from "./ActivityCard";
 import { CashCard } from "./CashCard";
+import { OffersCard } from "./OffersCard";
 import { PositionsCard } from "./PositionsCard";
 import { ProfileHeader } from "./ProfileHeader";
 
@@ -47,6 +48,7 @@ export function ProfileView({ account }: { account: string }) {
       ) : (
         <div className="mt-4 grid grid-cols-1 items-start gap-3 md:grid-cols-2">
           <div className="flex flex-col gap-3">
+            <OffersCard account={account} isMe={isMe} />
             <CashCard cash={data.cash} />
             <PositionsCard positions={data.positions} title={isMe ? "Your holdings" : "Positions"} />
           </div>
