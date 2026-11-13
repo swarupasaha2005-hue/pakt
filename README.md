@@ -258,7 +258,6 @@ sequenceDiagram
 | `contracts/deployments/` | Contract ids per network |
 | `backend/` | Cloudflare Worker: indexer, read API, WebSocket stream, price relay, faucet, gas relayer, D1 migrations, vitest tests, `scripts/stack-e2e.ts` |
 | `client/` | Next.js app (see `client/README.md`) |
-| `landing/` | Landing page |
 | `scripts/` | `build-contracts.sh`, `deploy-testnet.sh` |
 | `Makefile` | All targets above |
 
