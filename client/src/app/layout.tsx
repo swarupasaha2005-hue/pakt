@@ -11,6 +11,7 @@ import { WalletProvider } from "@/lib/near/wallet";
 import "./globals.css";
 
 
+const OG_IMAGE = { url: "/paktdotfam.vercel.app.jpg", width: 1920, height: 1080, alt: "pakt · paktdotfam.vercel.app" };
 const DESCRIPTION = "Pakt is a social group trading vault on NEAR. Pool funds with friends, vote in a pakter who trades the vault but can never withdraw it, and split the profit.";
 
 export const metadata: Metadata = {
@@ -21,8 +22,8 @@ export const metadata: Metadata = {
   applicationName: "Pakt",
   keywords: ["Pakt", "NEAR", "group trading", "social trading", "crypto vault", "DAO", "copy trading", "pool funds with friends", "on-chain vault", "NEAR Protocol"],
   alternates: { canonical: "/" },
-  openGraph: { type: "website", siteName: "Pakt", title: "Pakt · Trade with fam", description: DESCRIPTION, url: "/" },
-  twitter: { card: "summary_large_image", site: "@paktdotfam", title: "Pakt · Trade with fam", description: DESCRIPTION },
+  openGraph: { type: "website", siteName: "Pakt", title: "Pakt · Trade with fam", description: DESCRIPTION, url: "/", images: [OG_IMAGE] },
+  twitter: { card: "summary_large_image", site: "@paktdotfam", title: "Pakt · Trade with fam", description: DESCRIPTION, images: [OG_IMAGE] },
   robots: { index: true, follow: true },
 };
 

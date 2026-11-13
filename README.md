@@ -8,6 +8,8 @@ A group trading vault on NEAR: friends pool tokens in a vault, vote one person i
 
 **Live app (NEAR testnet):** https://paktdotfam.vercel.app
 
+**Demo video:** https://x.com/paktdotfam/status/2121330739992260679
+
 **Built on the NEAR ecosystem**
 - **Sputnik DAO**: every pakt gets its own DAO. Members vote the pakter in, change caps, and fire them.
 - **Ref Finance (Rhea)**: every trade is a real Ref swap with an oracle price floor.
