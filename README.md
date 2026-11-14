@@ -14,6 +14,8 @@ A **pakter** is the trader a pakt votes in: they can trade the pool, never withd
 
 **Demo video:** https://x.com/paktdotfam/status/2121330739992260679
 
+**Tested on testnet with 15 accounts:** 5 pakts, 15 deposits, 31 Ref trades, 13 hires and 9 fires by DAO vote, 4 leaves and 2 settlements. Every step (create, deposit, hire, trade, fire, leave, settle) has run on chain. See the [factory on nearblocks](https://testnet.nearblocks.io/address/pakt.pakt-0mxhjh.testnet).
+
 **Built at NEAR HACKATHON** (Nov 1–14, 2026). Every commit in this repo is from the hackathon window; the first is from 2026-11-12.
 
 **Built on the NEAR ecosystem**
