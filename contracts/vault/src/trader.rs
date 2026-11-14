@@ -1,10 +1,10 @@
-//! Trader lifecycle. Dao proposals offer / cap / fire / resume; the offered account must sign accept.
-use near_sdk::json_types::U128;
+//! Trader lifecycle. Dao proposals offer / cap / fire / resume; a member can fast-hire a proven pakter; the offered account must sign accept.
+use near_sdk::json_types::{I128, U128};
 use near_sdk::serde_json::json;
 use near_sdk::{env, near, require, AccountId, Gas, GasWeight, NearToken, Promise};
 
 use crate::oracle;
-use crate::{Op, Vault, VaultExt, DAY_MS, FIRE_WAIT_MS, GAS_OP, STORAGE_RESERVE};
+use crate::{Op, Vault, VaultExt, BPS, DAY_MS, FIRE_WAIT_MS, GAS_OP, STORAGE_RESERVE};
 
 pub const FEE_MIN_BPS: u16 = 1_000;
 pub const FEE_MAX_BPS: u16 = 3_000;
@@ -12,6 +12,17 @@ const OFFER_TTL_MS: u64 = 3 * DAY_MS;
 const GAS_CB: Gas = Gas::from_tgas(30);
 /// factory reputation row for a first-time trader (~300 bytes); excess refunded
 const RECORD_DEPOSIT: NearToken = NearToken::from_millinear(10);
+/// fast hire: a record this strong skips the vote, for a budget up to this share of the vault
+pub const QUICK_MIN_HIRES: u32 = 3;
+pub const QUICK_BUDGET_BPS: u128 = 2_500;
+const GAS_RECORD: Gas = Gas::from_tgas(10);
+
+/// the fields of the factory's TraderRecord that fast hire reads
+#[near(serializers = [json])]
+pub struct RecordView {
+    pub hires: u32,
+    pub profit_usd_e6: I128,
+}
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
@@ -38,18 +49,47 @@ impl Vault {
     /// Replaces any pending offer. Fire the live trader first.
     pub fn offer_trader(&mut self, account: AccountId, budget: U128, max_per_trade: U128, fee_bps: u16, stop_loss_bps: u16) {
         self.only_dao();
-        require!(self.trader.is_none(), "fire current trader first");
-        require!((FEE_MIN_BPS..=FEE_MAX_BPS).contains(&fee_bps), "fee must be 10-30%");
-        require!((100..=9_000).contains(&stop_loss_bps), "stop-loss must be 1-90%");
-        require!(max_per_trade.0 > 0 && max_per_trade.0 <= budget.0, "bad caps");
-        let expires_ms = env::block_timestamp_ms() + OFFER_TTL_MS;
-        let terms = Trader { account, fee_bps, budget, max_per_trade, budget_used: U128(0), stop_loss_bps, paused: false };
-        self.emit(
-            "offer",
-            json!({"trader": terms.account, "budget": budget, "max_per_trade": max_per_trade, "fee_bps": fee_bps,
-                   "stop_loss_bps": stop_loss_bps, "expires_at_ms": expires_ms.to_string()}),
+        let terms = self.terms(account, budget, max_per_trade, fee_bps, stop_loss_bps);
+        self.put_offer(terms, None);
+    }
+
+    /// Fast hire, no vote: any member offers a pakter whose factory record has QUICK_MIN_HIRES hires and P/L >= 0,
+    /// budget at most QUICK_BUDGET_BPS of the vault. Never replaces an open offer; the dao can still replace it or fire.
+    pub fn quick_offer(&mut self, account: AccountId, budget: U128, max_per_trade: U128, fee_bps: u16, stop_loss_bps: u16) -> Promise {
+        let by = env::predecessor_account_id();
+        require!(self.wants_member(&by), "members only");
+        require!(!self.offer_open(), "an offer is already open");
+        let terms = self.terms(account, budget, max_per_trade, fee_bps, stop_loss_bps);
+        let record = Promise::new(self.factory.clone()).function_call(
+            "get_trader_record".to_string(),
+            json!({"account": terms.account}).to_string().into_bytes(),
+            NearToken::from_yoctonear(0),
+            GAS_RECORD,
         );
-        self.offer = Some(Offer { terms, expires_ms });
+        // promise 0 = prices, 1 = record
+        oracle::fetch(&self.oracle, self.whitelist.clone())
+            .and(record)
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_CB).on_quick_offer(by, terms))
+    }
+
+    /// fast hire rules; vaults from before fast hire lack this view
+    pub fn get_fast_hire(&self) -> near_sdk::serde_json::Value {
+        json!({"min_hires": QUICK_MIN_HIRES, "budget_bps": QUICK_BUDGET_BPS as u64})
+    }
+
+    #[private]
+    pub fn on_quick_offer(&mut self, by: AccountId, terms: Trader) {
+        require!(self.trader.is_none(), "fire current trader first");
+        require!(!self.offer_open(), "an offer is already open");
+        let value = oracle::read().and_then(|p| self.vault_value(&p)).unwrap_or_else(|| env::panic_str("no prices, retry"));
+        let record: Option<RecordView> =
+            env::promise_result_checked(1, 1_024).ok().and_then(|b| near_sdk::serde_json::from_slice(&b).ok()).flatten();
+        require!(
+            record.is_some_and(|r| r.hires >= QUICK_MIN_HIRES && r.profit_usd_e6.0 >= 0),
+            "fast hire needs 3+ hires and no net loss on record"
+        );
+        require!(terms.budget.0 <= value * QUICK_BUDGET_BPS / BPS, "fast hire budget is capped at 25% of the vault");
+        self.put_offer(terms, Some(by));
     }
 
     /// Marks gains first without fee, so the trader is only paid on profit after hire.
@@ -168,6 +208,29 @@ impl Vault {
 }
 
 impl Vault {
+    fn terms(&self, account: AccountId, budget: U128, max_per_trade: U128, fee_bps: u16, stop_loss_bps: u16) -> Trader {
+        require!(self.trader.is_none(), "fire current trader first");
+        require!((FEE_MIN_BPS..=FEE_MAX_BPS).contains(&fee_bps), "fee must be 10-30%");
+        require!((100..=9_000).contains(&stop_loss_bps), "stop-loss must be 1-90%");
+        require!(max_per_trade.0 > 0 && max_per_trade.0 <= budget.0, "bad caps");
+        Trader { account, fee_bps, budget, max_per_trade, budget_used: U128(0), stop_loss_bps, paused: false }
+    }
+
+    fn offer_open(&self) -> bool {
+        self.offer.as_ref().is_some_and(|o| env::block_timestamp_ms() < o.expires_ms)
+    }
+
+    /// `by` is the member behind a fast hire; None for a dao vote
+    fn put_offer(&mut self, terms: Trader, by: Option<AccountId>) {
+        let expires_ms = env::block_timestamp_ms() + OFFER_TTL_MS;
+        self.emit(
+            "offer",
+            json!({"trader": terms.account, "budget": terms.budget, "max_per_trade": terms.max_per_trade, "fee_bps": terms.fee_bps,
+                   "stop_loss_bps": terms.stop_loss_bps, "expires_at_ms": expires_ms.to_string(), "quick_by": by}),
+        );
+        self.offer = Some(Offer { terms, expires_ms });
+    }
+
     /// Factory reputation, fire and forget: static gas 0 + weight takes only leftover gas, so it never stalls the op.
     pub(crate) fn record(&self, trader: &AccountId, kind: &str, pnl: i128, fee: u128) {
         // only a hire may create the row; never dip into the reserve leaves and syncs need

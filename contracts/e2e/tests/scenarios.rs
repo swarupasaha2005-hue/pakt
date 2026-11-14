@@ -442,3 +442,35 @@ async fn failed_member_sync_retried_with_bond() -> anyhow::Result<()> {
     assert_eq!(e.view(&p.vault, "get_pending_sync", json!({})).await?, json!([]));
     Ok(())
 }
+
+#[tokio::test]
+async fn proven_pakter_fast_hired_without_vote() -> anyhow::Result<()> {
+    let (e, p, [a, b, c]) = funded().await?;
+    let t = e.user("t", 0).await?;
+    // build a 3-hire record, flat P/L
+    for _ in 0..3 {
+        hire(&e, &p, &[&a, &b], &t, 2000).await?;
+        assert_eq!(e.dao_call(&p.dao, &[&a, &b], &p.vault, "fire", json!({})).await?, "Approved");
+    }
+    let quick = |who: &Account, trader: &Account, budget_usd: u128| {
+        let args = json!({"account": trader.id(), "budget": (budget_usd * D).to_string(), "max_per_trade": (10 * D).to_string(),
+                          "fee_bps": 1500, "stop_loss_bps": 2000});
+        who.call(&p.vault, "quick_offer").args_json(args).gas(TGAS300).transact()
+    };
+    // fresh pakter: no record, refused
+    let u = e.user("u", 0).await?;
+    let x = quick(&c, &u, 50).await?;
+    assert!(x.is_failure() && format!("{x:?}").contains("fast hire needs 3+ hires"), "{x:?}");
+    // over 25% of the $600 vault, refused
+    let x = quick(&c, &t, 151).await?;
+    assert!(x.is_failure() && format!("{x:?}").contains("capped at 25%"), "{x:?}");
+    // non-member, refused
+    let x = quick(&u, &t, 50).await?;
+    assert!(x.is_failure() && format!("{x:?}").contains("members only"), "{x:?}");
+    // one member, no vote: offer opens and the pakter accepts
+    ok(quick(&c, &t, 150).await?)?;
+    assert_eq!(e.state(&p.vault).await?["offer"]["terms"]["account"], json!(t.id()));
+    ok(t.call(&p.vault, "accept_offer").gas(TGAS300).transact().await?)?;
+    assert_eq!(e.state(&p.vault).await?["trader"]["budget"], json!((150 * D).to_string()));
+    Ok(())
+}

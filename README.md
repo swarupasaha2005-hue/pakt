@@ -10,12 +10,14 @@ A group trading vault on NEAR: friends pool tokens in a vault, vote one person i
 
 **Demo video:** https://x.com/paktdotfam/status/2121330739992260679
 
+**Built at NEAR HACKATHON** (Nov 1–14, 2026). Every commit in this repo is from the hackathon window; the first is from 2026-11-12.
+
 **Built on the NEAR ecosystem**
 - **Sputnik DAO**: every pakt gets its own DAO. Members vote the pakter in, change caps, and fire them.
 - **Ref Finance (Rhea)**: every trade is a real Ref swap with an oracle price floor.
 - **NearDeFi price oracle**: values the vault for shares, fees, caps and the swap floor.
 - **Gasless first 2 transactions**: a NEP-366 meta-transaction relayer pays the gas when the wallet can sign delegate actions. Wallets that can't yet get a one-time 0.05 NEAR gas top-up instead, so it works in every wallet today.
-- **On-chain pakter reputation**: the factory keeps every pakter's hires, fires, P/L and fees across all pakts, so a bad pakter can't start fresh in a new pakt.
+- **On-chain pakter reputation**: the factory keeps every pakter's hires, fires, P/L and fees across all pakts, so a bad pakter can't start fresh in a new pakt. A proven record unlocks **fast hire**: one member can offer the job without a vote, for a capped budget.
 - **NEAR Social**: invite friends by account name (`alice.near`); they get a NEAR Social notification with the pakt link.
 - **Named accounts and Wallet Selector**: each pakt is `<name>.<factory>`; sign in with Meteor, MyNearWallet, HOT or HERE.
 
@@ -23,10 +25,10 @@ A group trading vault on NEAR: friends pool tokens in a vault, vote one person i
 
 1. Install the [Meteor wallet](https://wallet.meteorwallet.app) extension and create a **testnet** account. Get a little testnet NEAR from the [NEAR faucet](https://near-faucet.io/) for gas.
 2. Open the app and click **Connect**.
-3. Click **Create pakt → Request test tokens**. The Pakt faucet sends 1,000 tUSDC, 0.01 tBTC and 50 tNEAR (once a day per account).
+3. Click your **balance** (top right) **→ Request test tokens**. The Pakt faucet sends 1,000 tUSDC, 0.01 tBTC and 50 tNEAR (once a day per account).
 4. **Join a pakt:** pick one under Explore → Pakts, click **Deposit**, send $5 or more of tUSDC. You get shares and a seat in its DAO.
-5. **Vote:** on the pakt page, start a vote (hire a trader, set budget, fire) and vote yes/no under Open votes.
-6. **Hire someone:** on the Leaderboard, click **Hire** next to a trader. This starts the hire vote in a pakt you belong to.
+5. **Vote:** on the pakt page, start a vote (hire a trader, set budget, fire) and vote yes/no under Open votes. On pakts created with the current factory, if the pakter you pick has 3+ hires and no net loss on record, the form offers **Fast hire, no vote** instead (budget up to 25% of the vault). `make e2e` runs this path end to end (`proven_pakter_fast_hired_without_vote`).
+6. **Hire someone:** in the sidebar's **Pakters** tab, click **Hire** next to a trader. This starts the hire vote in a pakt you belong to.
 7. **Trade:** when a pakt offers you the trader job, an offer card shows on its page. Accept it, wait out the trade delay, then buy and sell inside the caps.
 8. **Settle and leave:** anyone can settle when the period ends. **Leave** pays out your share of every token the pakt holds.
 
@@ -48,6 +50,7 @@ The **(i)** button in the top bar explains the contracts behind a pakt, and **Si
 2. **Register.** Before the first deposit, each member calls `storage_deposit` on the vault (0.01 NEAR, refunded by `storage_unregister` after leaving). It pays for their own storage and DAO sync, so churn can't drain the vault. They also register on the pakt's tokens so payouts arrive (else parked for `claim`).
 3. **Deposit.** A member calls `ft_transfer_call` on the base token (e.g. USDC) with the vault as receiver. The vault's `ft_on_transfer` prices the vault through the oracle, mints shares at the current share price, and adds the depositor to the DAO `members` role. Invite-only pakts need an ed25519 invite signature in `msg`.
 4. **Vote a trader.** Members put a Sputnik function-call proposal to the vault's `offer_trader` (account, budget, max per trade, fee 10-30%, stop-loss). A majority vote passes it.
+   **Or fast-hire a proven one.** Any member calls `quick_offer` with the same terms. The vault reads the pakter's record from the factory (`get_trader_record`) and the vault value from the oracle in one joined call, and opens the offer only if the pakter has 3+ hires, P/L at or above zero, and the budget is at most 25% of the vault. It never replaces an open offer; the DAO can still replace it with `offer_trader` or `fire` the pakter.
 5. **Accept.** The chosen account calls `accept_offer` (or `decline_offer`) within 3 days. Trading opens after the trade delay.
 6. **Trade.** The trader calls `trade` (pool id, token in, token out, amount, min out). The vault swaps on Ref (Rhea): deposit to Ref, `swap`, withdraw back, checking caps, the oracle floor and the slippage budget.
 7. **Settle.** Anyone calls `settle` once per settle period. Profit above the high-water mark pays the trader fee and the 1% platform fee as newly minted shares.
@@ -64,7 +67,7 @@ The **(i)** button in the top bar explains the contracts behind a pakt, and **Si
 | Ref (Rhea) exchange | All trades are Ref `swap` actions (`ref-finance-101.testnet`, `v2.ref-finance.near`). See `contracts/vault/src/trade.rs`. |
 | Price oracle | NearDeFi price-oracle `get_price_data` values the vault for shares, fees, caps and the swap floor. See `contracts/vault/src/oracle.rs`. |
 | Meta transactions (NEP-366) | A new account's first 2 transactions are sponsored. If the wallet signs a delegate action, the backend relayer (`POST /relay`) checks the signature, wraps it and sends it from the faucet account. Only Pakt contracts and methods are allowed, max 2 per account, counted atomically in D1. Any attached deposit still comes from the user. Meteor, MyNearWallet, HOT and HERE don't sign delegate actions yet (wallet-selector 10.1.4), so for them the backend sends a one-time 0.05 NEAR top-up to accounts holding less than that (`POST /relay/topup`, one per account, 3 per IP per day). See `backend/src/sponsor.ts`. |
-| Factory as reputation registry | Vaults report hire, fire and every fee mark to the factory (`record_trader`, callable only by vaults in the factory's own registry). `get_trader_record(account)` returns hires, fires, P/L and fees across all pakts; the pakt page shows it next to the pakter and on offers. The vault pays the record's storage. |
+| Factory as reputation registry | Vaults report hire, fire and every fee mark to the factory (`record_trader`, callable only by vaults in the factory's own registry). `get_trader_record(account)` returns hires, fires, P/L and fees across all pakts; the pakt page shows it next to the pakter and on offers. The vault pays the record's storage. Vaults also read it on chain to gate fast hire (`quick_offer`, `contracts/vault/src/trader.rs`). |
 | NEAR Social | "Invite" on a pakt posts a `social.near` (`v1.social08.testnet`) post that @mentions each invitee, so it shows in their notifications with the pakt link. See `client/src/lib/social.ts`. |
 | Wallet Selector | Meteor, MyNearWallet, HOT and HERE through `@near-wallet-selector`. |
 | NEP-297 events | Factory and vault log `EVENT_JSON` (`standard: "pakt"`). The backend indexes them for the feed and leaderboard. |
@@ -80,6 +83,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | **Oracle push: fake a price to drain on deposit, leave or fee** | Price reporter | Not fully stopped: whoever reports prices is trusted, since a pushed price moves the swap floor, deposits and fees. On testnet that's one relay key, a known limit. Mainnet needs a public oracle with no team key. |
 | **Vote takeover: flood the DAO with fake members** | Outsider | $5 minimum deposit at oracle price plus a per-pakt minimum. Votes need a majority of members, and a new pakter waits out a trade delay, so members can leave first. |
 | **Griefing: lock the vault so nobody can leave** | Anyone | Deposits and leaves run as counted flows, not behind the trade lock. Any lock older than 10 min can be cleared by anyone with `unlock`. Fire always pauses first and can be finished by anyone. |
+| **Farmed record: build fake hires, then fast-hire into a real pakt** | Pakter | Fast hire still needs a real member to send the offer and the pakter to accept. The budget is capped at 25% of the vault, the trade delay lets members leave first, the oracle floor, slippage budget and stop-loss still apply, and the DAO can fire at any time. Farming hires costs a new pakt (12.5 NEAR) per fake hire. |
 | **Bad pakter, mid-trade** | Pakter | A fire vote pauses the pakter immediately, even with a trade in flight. The rest of the fire (fee to date, removal) is finished by anyone once the trade lock clears. |
 
 ## Security guarantees
@@ -92,6 +96,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | 3% slippage budget per 24h | Each swap books its worst case (the full 2% oracle floor) in `slip_used`, a leaky bucket that holds half of `MAX_PERIOD_SLIP_BPS = 300` of vault value and refills that half per day (`slip_since_ms`), so no 24h span can lose more than 3%. Independent of the settle period. |
 | Trade delay after hire or cap raise | `trade_after_ms` is set on `accept_offer` and pushed forward by a `set_cap` that adds spend room, so members can leave first (minimum 60 s, `trade_delay_ms`). |
 | Per-trade cap and total budget | `within_caps` checks `max_per_trade` and `budget` in USD. |
+| Fast hire only for a proven record, with a smaller budget | `on_quick_offer` requires a factory record with `QUICK_MIN_HIRES = 3` hires and P/L >= 0, a budget at most `QUICK_BUDGET_BPS = 2500` (25%) of vault value at oracle price, a caller who is a member, and no open offer. Same fee, cap and stop-loss checks as a voted offer. |
 | Stop-loss pause | `check_stop_loss` pauses the trader when share price drops `stop_loss_bps` below the mark; only a DAO `resume` restarts trading. |
 | Fees only above the high-water mark | `crystallize` charges fees only on share-price gain above `hwm`, and runs before every deposit, leave and fire, so new money never pays for old profit and leaving never dodges fees. |
 | $5 minimum deposit | `on_deposit` refunds anything worth under $5 at oracle price (`MIN_DEPOSIT_USD_E6`), plus a per-pakt `min_deposit`, so dust accounts can't flood the vote. |
@@ -101,7 +106,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | Backend hardening | Per-IP rate limits (60/min API, 10/min stream, 1/min faucet, 6/min gas relay on `POST /relay` and `POST /relay/topup`), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), CORS allowlist. Writes are only the faucet (`POST /faucet`) and a token-guarded `POST /admin/start`. |
 | Faucet limits | `POST /faucet` sends test tokens from a dedicated pre-funded account (its key is a Worker secret; the owner key never touches the backend). One claim per account per day and 3 per IP per day, tracked in D1 (`faucet_claims`); the account must exist on chain. |
 
-Two independent security audits were run on the contracts and backend; their findings were fixed and have regression tests (`contracts/vault/src/audit_tests.rs`, `contracts/vault/src/review_tests.rs`, `contracts/e2e/tests/audit.rs`).
+Two independent security reviews were run on the contracts and backend (not a professional third-party audit); their findings were fixed and have regression tests (`contracts/vault/src/audit_tests.rs`, `contracts/vault/src/review_tests.rs`, `contracts/e2e/tests/audit.rs`).
 
 **Known limits**
 
@@ -109,7 +114,9 @@ Two independent security audits were run on the contracts and backend; their fin
 - Fees are marked at whatever price the oracle reports at deposit/leave/settle; a short price spike can crystallize a fee that the price then gives back.
 - A DAO majority can use function-call proposals to spend the DAO account's own small NEAR balance (not the vault's tokens).
 - Testnet Ref pools drift from the oracle price; re-centre them with `scripts/deploy-testnet.sh --reseed` or trades hit the 2% floor.
-- A mainnet oracle is still to be chosen: `priceoracle.near` has been stale since March 2026.
+- A mainnet oracle is still to be chosen: `priceoracle.near` has been stale since March 2026. The mainnet plan (accounts, config, oracle options, costs, deploy checklist) is in [issue #9](https://github.com/swarupasaha2005-hue/pakt/issues/9).
+- Fast hire counts hires, not their quality: a pakter with flat or tiny-profit hires qualifies. The 25% budget cap and the DAO's fire vote bound the risk.
+- Vaults have no keys, so pakts created before fast hire shipped don't have it; the app hides the option for them.
 
 ## Quickstart for judges
 
@@ -118,8 +125,8 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 | Do | See |
 |---|---|
 | `make build-contracts` | `contracts/res/` lists `pakt_vault.wasm`, `pakt_factory.wasm`, `pakt_mock_ft.wasm`. |
-| `cd contracts && cargo test` | Unit tests for vault, factory and mock token: `68 passed` for vault, `22 passed` (plus 1 sandbox) for factory, `4 passed` for the mock, `0 failed`. |
-| `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 18 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
+| `cd contracts && cargo test` | Unit tests for vault, factory and mock token: `76 passed` for vault, `22 passed` (plus 1 sandbox) for factory, `4 passed` for the mock, `0 failed`. |
+| `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 19 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
 | `make smoke` | ~1 min. Sandbox + local Worker: one pakt, one deposit. Prints `smoke: <event kinds>` from `/feed`, including `pakt_created` and `deposit`. |
 | `make stack-e2e` | Sandbox runs one pakt through every event kind; the local Worker indexes it; checks HTTP routes, WebSocket push and restart catch-up. Ends with `STACK E2E PASS`. |
 | `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 90 passed`. |
@@ -137,6 +144,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 - trades: happy path, refused below the oracle floor, per-trade and budget caps, stop-loss pause then DAO `resume`;
 - a failed Ref withdraw parks funds, then `dex_recover` brings them home;
 - a failed member sync is retried with `sync_member`;
+- fast hire: a pakter with 3 real hires is offered by one member with no vote and accepts; a pakter with no record, a budget over 25% of the vault, and a non-member caller are all refused;
 - audit regressions: low-NEAR vault refuses deposits but never locks; a sybil majority that hires itself waits out the trade delay and loses under 3%; member sync pays the DAO's storage.
 
 ## Testnet deployment
@@ -164,6 +172,19 @@ Deployed accounts (testnet):
 | Ref exchange | `ref-finance-101.testnet` | [nearblocks](https://testnet.nearblocks.io/address/ref-finance-101.testnet) |
 | Sputnik DAO factory | `sputnikv2.testnet` | [nearblocks](https://testnet.nearblocks.io/address/sputnikv2.testnet) |
 | Ref pools | tUSDC/tBTC `2958`, tUSDC/tNEAR `2959` | [tBTC pool](https://testnet.app.ref.finance/pool/2958), [tNEAR pool](https://testnet.app.ref.finance/pool/2959) |
+
+## Mainnet plan
+
+Pakt runs on testnet today. Nothing is deployed to mainnet yet; the full plan is in [issue #9](https://github.com/swarupasaha2005-hue/pakt/issues/9).
+
+| Step | What changes |
+|---|---|
+| Accounts | A new owner account on a hardware key (only `set_config` and upgrades), `factory.<owner>`, a separate platform-fee account, and a gas relayer with a small capped float. The owner key never touches the backend. |
+| Config | `sputnik-dao.near`, `v2.ref-finance.near`, native USDC, wBTC and wNEAR (`wrap.near`) as tokens, USDC as the base token, a 7-day settle period and at least a 24h trade delay. |
+| Oracle (the blocker) | `priceoracle.near` has been stale since March 2026. Recommended: a small adapter that reads Pyth on NEAR and exposes the same `get_price_data` the vault calls, rejecting stale or wide-confidence prices, so no team key sits on the price path. |
+| Cost | About 6 NEAR for the factory, 5-10 NEAR relayer float, and 12.5 NEAR per pakt paid by its creator. |
+| Launch | Reproducible wasm builds with published hashes, `make e2e` against the oracle adapter, a $10 smoke test (create, deposit, hire, trade, settle, fire, leave), a per-pakt deposit cap, and an external audit before raising caps. No faucet on mainnet. |
+| After launch | Members manage a pakt's DAO through Trezu, which imports `*.sputnikdao.near` DAOs. |
 
 ## Architecture
 
@@ -197,7 +218,7 @@ flowchart LR
 
   C -- "sign txs" --> W
   W -- "create_pakt" --> F
-  W -- "deposit, leave, trade" --> V
+  W -- "deposit, leave, trade, quick_offer" --> V
   W -- "propose, vote" --> D
   W -- "invite by name" --> S
   F -- "deploys" --> V
@@ -205,7 +226,7 @@ flowchart LR
   D -- "offer_trader, set_cap, fire" --> V
   V -- "swap" --> R
   V -- "get_price_data" --> O
-  V -- "record_trader" --> F
+  V -- "record_trader, get_trader_record" --> F
   F -. "NEP-297 events" .-> I
   V -. "NEP-297 events" .-> I
   I --> DB --> API
@@ -234,9 +255,14 @@ sequenceDiagram
   F->>V: deploy vault, no access keys
   M->>V: deposit stablecoins, get shares
   V->>D: add member to the DAO
-  M->>D: propose pakter (budget, max per trade, fee)
-  M->>D: vote yes
-  D->>V: offer_trader
+  alt vote
+    M->>D: propose pakter (budget, max per trade, fee)
+    M->>D: vote yes
+    D->>V: offer_trader
+  else fast hire, proven pakter
+    M->>V: quick_offer
+    V->>F: get_trader_record (3+ hires, no net loss?)
+  end
   P->>V: accept_offer
   V->>F: record hire
   P->>V: trade
@@ -276,10 +302,11 @@ sequenceDiagram
   | Shared budgets | The DAO votes the trader's budget, per-trade cap and stop-loss |
   | Programmable rewards | The vault splits profit on a high-water mark: members, trader fee, platform fee, nothing on losses |
   | Reputation tied to named accounts, every point traceable | The factory keeps each trader's hires, fires, P/L and fees, each from an on-chain vault event |
+  | Reputation-based access, tiered approvals | A pakter with 3+ hires and no net loss can be fast-hired by one member, no vote, for up to 25% of the vault; anything else is a full DAO vote |
   | Public board | The Pakters leaderboard and trader profiles |
   | near.social | Invites are NEAR Social posts that notify each invitee |
 
-  Next: let a pakt's treasury be managed through Trezu, and let a strong trader record unlock bigger budgets without a full vote.
+  Next: let members manage a pakt's DAO through Trezu once Pakt is on mainnet (Trezu imports `*.sputnikdao.near` DAOs).
 - **defi**: a pooled trading vault with shares, high-water-mark fees, oracle pricing and Ref (Rhea) swaps.
 - **security**: a spending-limited role. The trader gets trade rights but no withdraw, inside caps, an oracle floor, a slippage budget, a trade delay and a stop-loss.
 

@@ -919,3 +919,85 @@ fn reputation_records_hire_marks_and_fire() {
     let r = records();
     assert!(r.len() == 1 && r[0].0 == "Fire" && r[0].3.is_zero(), "{r:?}");
 }
+
+fn record(hires: u32, pnl_usd: i128) -> PromiseResult {
+    PromiseResult::Successful(to_vec(&json!({"hires": hires, "fires": hires, "settlements": 1,
+        "profit_usd_e6": (pnl_usd * USD as i128).to_string(), "fees_earned_usd_e6": "0", "last_ms": 1})).unwrap())
+}
+
+/// member alice fast-hires tt on a $1000 vault; returns the vault for the callback step
+fn quick(budget_usd: u128, rec: PromiseResult) -> Vault {
+    let mut v = vault();
+    deposit(&mut v, "alice", 1_000, 1.0);
+    ctx("alice");
+    let _ = v.quick_offer(acc("tt"), U128(budget_usd * USD), U128(10 * USD), 1_500, 2_000);
+    ctx_at("vault", 1_000, vec![prices(1.0), rec]);
+    v.on_quick_offer(acc("alice"), v.offer_terms_for_test(budget_usd));
+    v
+}
+
+#[test]
+fn quick_offer_with_strong_record() {
+    let v = quick(250, record(3, 0));
+    let o = v.offer.as_ref().unwrap();
+    assert_eq!(o.terms.account, acc("tt"));
+    assert_eq!(o.terms.budget.0, 250 * USD);
+}
+
+#[test]
+#[should_panic(expected = "fast hire needs 3+ hires")]
+fn quick_offer_needs_hires() {
+    quick(100, record(2, 50));
+}
+
+#[test]
+#[should_panic(expected = "fast hire needs 3+ hires")]
+fn quick_offer_refuses_net_loss() {
+    quick(100, record(9, -1));
+}
+
+#[test]
+#[should_panic(expected = "fast hire needs 3+ hires")]
+fn quick_offer_refuses_no_record() {
+    quick(100, PromiseResult::Successful(b"null".to_vec()));
+}
+
+#[test]
+#[should_panic(expected = "capped at 25% of the vault")]
+fn quick_offer_budget_cap() {
+    quick(251, record(5, 10));
+}
+
+#[test]
+#[should_panic(expected = "members only")]
+fn quick_offer_members_only() {
+    let mut v = vault();
+    ctx("mallory");
+    let _ = v.quick_offer(acc("tt"), U128(USD), U128(USD), 1_500, 2_000);
+}
+
+#[test]
+#[should_panic(expected = "an offer is already open")]
+fn quick_offer_never_replaces_open_offer() {
+    let mut v = vault();
+    deposit(&mut v, "alice", 1_000, 1.0);
+    ctx("dao");
+    v.offer_trader(acc("uu"), U128(USD), U128(USD), 1_500, 2_000);
+    ctx("alice");
+    let _ = v.quick_offer(acc("tt"), U128(USD), U128(USD), 1_500, 2_000);
+}
+
+#[test]
+fn dao_can_replace_quick_offer() {
+    let mut v = quick(100, record(3, 1));
+    ctx("dao");
+    v.offer_trader(acc("uu"), U128(USD), U128(USD), 1_500, 2_000);
+    assert_eq!(v.offer.as_ref().unwrap().terms.account, acc("uu"));
+}
+
+impl Vault {
+    fn offer_terms_for_test(&self, budget_usd: u128) -> Trader {
+        Trader { account: acc("tt"), fee_bps: 1_500, budget: U128(budget_usd * USD), max_per_trade: U128(10 * USD),
+                 budget_used: U128(0), stop_loss_bps: 2_000, paused: false }
+    }
+}

@@ -216,6 +216,13 @@ export const proposeTrader = (dao: string, vault: string, t: TraderTerms, descri
   propose(dao, vault, "offer_trader", {
     account: t.account, budget: t.budget, max_per_trade: t.maxPerTrade, fee_bps: t.feeBps, stop_loss_bps: t.stopLossBps,
   }, description);
+/** fast hire rules; null on vaults made before fast hire */
+export const getFastHire = (vault: string) => view<{ min_hires: number; budget_bps: number }>(vault, "get_fast_hire").catch(() => null);
+/** member-only, no vote: the vault checks the pakter's factory record and the budget cap, then opens the offer */
+export const quickOffer = (vault: string, t: TraderTerms): Tx[] => [{
+  receiverId: vault,
+  actions: [call("quick_offer", { account: t.account, budget: t.budget, max_per_trade: t.maxPerTrade, fee_bps: t.feeBps, stop_loss_bps: t.stopLossBps }, 300)],
+}];
 export const proposeFire = (dao: string, vault: string, description = "fire trader") => propose(dao, vault, "fire", {}, description);
 /** new caps reset budget_used; more room restarts the trade delay */
 export const proposeCap = (dao: string, vault: string, budget: string, maxPerTrade: string, description = "set caps") =>
