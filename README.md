@@ -23,6 +23,30 @@ A group trading vault on NEAR: friends pool tokens in a vault, vote one person i
 - **NEAR Social**: invite friends by account name (`alice.near`); they get a NEAR Social notification with the pakt link.
 - **Named accounts and Wallet Selector**: each pakt is `<name>.<factory>`; sign in with Meteor, MyNearWallet, HOT or HERE.
 
+## Why not a Discord group and a shared exchange account?
+
+| Discord group + shared account | Pakt on NEAR |
+|---|---|
+| The trader holds the login and can withdraw everything | The money sits in the vault contract; the trader can only swap, never withdraw |
+| Firing the trader means asking nicely | Members vote `fire` in the pakt's Sputnik DAO and the trader is paused at once, even mid-trade |
+| You see the trades they choose to screenshot | Every trade, vote, deposit and fee is on chain and in the live feed |
+| A bad trader starts fresh in the next group | The factory keeps every pakter's hires, fires, P/L and fees across all pakts |
+| Joining and leaving run on trust | Deposits mint shares at the oracle price; `leave` pays your exact share of every token, any time |
+
+## What if the pakter is bad?
+
+The contract limits what a pakter can do, so the group doesn't have to trust them:
+
+- **No withdraw.** `trade` only swaps between allowlisted tokens on Ref, and the output always returns to the vault.
+- **Price floor.** Every swap must get at least the oracle price minus 2%.
+- **Daily slippage budget.** Swaps can lose at most 3% of vault value to slippage in any 24h.
+- **Caps.** The DAO sets a per-trade cap and a total budget, in USD.
+- **Stop-loss.** Trading pauses when the share price falls past the pakt's stop-loss; only a DAO vote resumes it.
+- **Trade delay.** After a hire or a budget raise the pakter has to wait, so members can leave first.
+- **Fees only on new profit.** Pakter fees are charged only above the high-water mark, never for winning back losses.
+
+Details in [Threat model](#threat-model) and [Security guarantees](#security-guarantees).
+
 ## Try it in 5 minutes
 
 1. Install the [Meteor wallet](https://wallet.meteorwallet.app) extension and create a **testnet** account. Get a little testnet NEAR from the [NEAR faucet](https://near-faucet.io/) for gas.
