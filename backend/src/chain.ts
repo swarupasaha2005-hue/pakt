@@ -124,7 +124,8 @@ async function keyed<T>(key: string, run: (key: string) => Promise<T>): Promise<
   try {
     return await run(k);
   } catch (e) {
-    if (!k || !/: 40[13] /.test(String(e))) throw e;
+    // 401/403 bad key, 402 key out of credit: go keyless for a while
+    if (!k || !/: 40[123] /.test(String(e))) throw e;
     keyOffUntil = Date.now() + 600_000;
     return run("");
   }
