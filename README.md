@@ -176,18 +176,30 @@ Deployed accounts (testnet):
 
 ### On-chain walkthrough (testnet)
 
-We ran the full flow from our team test accounts (`*.pakt-0mxhjh.testnet`). The indexer has 4 pakts, 12 accounts, 12 deposits, 9 trades, 7 hires, 4 fires, 3 leaves and 2 settles. One pakt, `alphafund`, end to end:
+We ran the full flow from our team test accounts (`*.pakt-0mxhjh.testnet`) on the current factory. Pakt `squad` (`squad.pakt.pakt-0mxhjh.testnet`, DAO `squad.sputnikv2.testnet`), end to end:
 
 | Step | Account | Call | Tx |
 |---|---|---|---|
-| Create the pakt | `alice` | `create_pakt` on the factory | [`DUZEHtnv…`](https://testnet.nearblocks.io/txns/DUZEHtnvsYMhfTE95aYBurQfyRqEzw74QHg7bhj84rhe) |
-| Deposit tUSDC, get shares and a DAO seat | `alice` | `ft_transfer_call` | [`EXkziGNE…`](https://testnet.nearblocks.io/txns/EXkziGNEVuQBxpTQpr7oW1Q3EgLPkNyzfkHEfcJ84xWu) |
-| Hire vote passes, offer opens | `dave` | `act_proposal` on `alphafund.sputnikv2.testnet` | [`9hzSopjQ…`](https://testnet.nearblocks.io/txns/9hzSopjQ9hEXE3AZB6xJnUp8tKQiPUgtr6DNr7iQPSuQ) |
-| Pakter accepts | `prakhar` | `accept_offer` | [`3GQS4Cgn…`](https://testnet.nearblocks.io/txns/3GQS4CgngJDY81ntycEiEsNrqEPsFzCqQzCLaERMbTgh) |
-| Pakter trades on Ref | `prakhar` | `trade` | [`5MmLqzf5…`](https://testnet.nearblocks.io/txns/5MmLqzf5MHgkuqJEecT8ExcHpp9mwrRAJVRP5CfZscaF) |
-| Fire vote passes | `dave` | `act_proposal` | [`91jijgxF…`](https://testnet.nearblocks.io/txns/91jijgxFhaScxVM99bKuM2BjTcpRqVuxH9pyNUGFVPJ) |
-| Fire with fees settled first (`nearbulls`) | `dave` | `act_proposal` | [`8LNXJdyr…`](https://testnet.nearblocks.io/txns/8LNXJdyrTfSkbMQvcd3nfRw6LchgzNjn5oXcodZwMhXh) |
-| Member leaves, paid in kind (`livetest`) | `pakt-0mxhjh` | `leave` | [`EpugtF6B…`](https://testnet.nearblocks.io/txns/EpugtF6BD7xRm4dZiEs1GK6nhVzScA8ogocmZhJ6vBcH) |
+| Create the pakt `squad` (tUSDC, tBTC) | `pakt-0mxhjh` | `create_pakt` on the factory | [`Ac8TL8qN…`](https://testnet.nearblocks.io/txns/Ac8TL8qN5w6SGM56btxmcPfDofsxVFZwuNrB6FydcTPm) |
+| Deposit 300 tUSDC, get shares and a DAO seat | `alice` | `ft_transfer_call` | [`56sGkWvL…`](https://testnet.nearblocks.io/txns/56sGkWvLrXNfhszAXUC9bP5tJomNFRtfACAxKTvYPTae) |
+| Deposit 300 tUSDC | `dave` | `ft_transfer_call` | [`HZsDbxze…`](https://testnet.nearblocks.io/txns/HZsDbxzeiYKBwxdMjhZ6dpkPZSgk4MaSZhqmZLwLKL8) |
+| Hire vote 1 passes, offer opens | `dave` | `act_proposal` | [`J2rZ6KR2…`](https://testnet.nearblocks.io/txns/J2rZ6KR2xYfzExgSNyLbytPEZ3Ny28r7jJGvzt25EuE7) |
+| Pakter accepts, hire 1 recorded | `srithi` | `accept_offer` | [`8anrsa8k…`](https://testnet.nearblocks.io/txns/8anrsa8kiKEKbMNYhAueeyZPJbgCciyaxpg9Lmb8Hub5) |
+| Fire vote 1 passes | `dave` | `act_proposal` | [`C7Y1XVmo…`](https://testnet.nearblocks.io/txns/C7Y1XVmoJ8rFdFhipbs63ao5TB9uH9Ei3QiKC7oQYFVK) |
+| Hire vote 2 | `dave` | `act_proposal` | [`3TWuZ7dB…`](https://testnet.nearblocks.io/txns/3TWuZ7dBPb4Sz5fMsoJy9pFmeaSCbnW1cS3CGQDLVMpZ) |
+| Hire 2 accepted | `srithi` | `accept_offer` | [`5KRCQwjW…`](https://testnet.nearblocks.io/txns/5KRCQwjWeM6buxmBGvd7Zrqf97XwxHyoZQmxdrnqKy75) |
+| Fire vote 2 | `dave` | `act_proposal` | [`23fGPYYf…`](https://testnet.nearblocks.io/txns/23fGPYYf8GUFUDrfo3Qc8QtvFazG7Zejr44koLUSGEbr) |
+| Hire vote 3 | `dave` | `act_proposal` | [`2iWjhdBv…`](https://testnet.nearblocks.io/txns/2iWjhdBv1gUYRCkKSmSC6Nj8bU81bAhaGauyTVACaFhg) |
+| Hire 3 accepted | `srithi` | `accept_offer` | [`ASidGwsb…`](https://testnet.nearblocks.io/txns/ASidGwsbBfc8tBB4JrEKTGMog44EUnW2oVrmWXkrhtKP) |
+| Fire vote 3; record is now 3 hires, P/L 0 | `dave` | `act_proposal` | [`53CF8qnD…`](https://testnet.nearblocks.io/txns/53CF8qnDT85wg2Ndu9YUEAXM1uZ2LjknRbjfukgBNuG7) |
+| **Fast hire: one member offers $140 (23% of the vault), no vote** | `alice` | `quick_offer` | [`8EX7oB5F…`](https://testnet.nearblocks.io/txns/8EX7oB5FTW4K7ciU889JjSBKGCPH5djPcnePT3MFyKUv) |
+| Pakter accepts the fast-hire offer | `srithi` | `accept_offer` | [`8amgsfMj…`](https://testnet.nearblocks.io/txns/8amgsfMjLC1RgANwWCX7gk23aLWunnM2Y9uSrncJGhEt) |
+| Trade blocked by the oracle floor: the pool was 3% off the oracle price, so the swap reverted and funds stayed in the vault | `srithi` | `trade` | [`7Q7NVHyi…`](https://testnet.nearblocks.io/txns/7Q7NVHyiPfH6gV3zmCrVwvz6sXku53DGFupJQ9vZfjTf) |
+| Trade after the pool was re-centred: 20 tUSDC → tBTC on Ref | `srithi` | `trade` | [`CxuryE9d…`](https://testnet.nearblocks.io/txns/CxuryE9d71h9KLTk7154cPQWRKrzXGDRZpRnxeV2WV3) |
+| **Pakter tries to withdraw: fails on chain (`MethodNotFound`)** | `srithi` | `withdraw` | [`BT6Tsx4p…`](https://testnet.nearblocks.io/txns/BT6Tsx4pgSpP8vSSByewHqUE5QEdYSqedu7toYJGk6bE) |
+| Member leaves with half their shares, paid in kind | `dave` | `leave` | [`8zMummh1…`](https://testnet.nearblocks.io/txns/8zMummh1cavEevu4YJPUUV1Par3jzBcAQvf5mtAkCqe3) |
+
+Earlier pakts (`alphafund`, `nearbulls`, `livetest`) also ran settles and fires, e.g. a fire that settles fees first: [`8LNXJdyr…`](https://testnet.nearblocks.io/txns/8LNXJdyrTfSkbMQvcd3nfRw6LchgzNjn5oXcodZwMhXh).
 
 ## Mainnet plan
 
@@ -278,6 +290,7 @@ sequenceDiagram
   else fast hire, proven pakter
     M->>V: quick_offer
     V->>F: get_trader_record (3+ hires, no net loss?)
+    Note over V: budget at most 25% of the vault at oracle price
   end
   P->>V: accept_offer
   V->>F: record hire
