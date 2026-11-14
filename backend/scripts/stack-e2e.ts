@@ -50,7 +50,7 @@ const wrangler = (args: string[], detached = false) =>
 
 function startWorker(rpc: string, factory: string) {
   worker = wrangler(["dev", "--ip", "127.0.0.1", "--port", String(PORT), "--var", `NEAR_RPC_URL:${rpc}`, "--var", `PAKT_FACTORY:${factory}`,
-    "--var", "START_HEIGHT:1", "--var", "UPSTREAM_PER_MIN:6000", "--var", "CORS_ORIGINS:http://localhost:3000"], true);
+    "--var", "START_HEIGHT:1", "--var", "MIN_HEIGHT:0", "--var", "UPSTREAM_PER_MIN:6000", "--var", "CORS_ORIGINS:http://localhost:3000"], true);
 }
 async function stopWorker() {
   if (!worker) return;
