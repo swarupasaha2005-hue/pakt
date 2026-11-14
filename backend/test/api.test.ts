@@ -145,6 +145,15 @@ describe("indexer step", () => {
     expect(res.items.map((e) => e.height)).toEqual([12, 10, 8, 7, 6, 5, 4]);
   });
 
+  it("starts at MIN_HEIGHT when the cursor is below it", async () => {
+    await save(env.DB, 3, []);
+    const seen: number[] = [];
+    const src: Source = { final: async () => 52, block: async (_up, h) => (seen.push(h), blk(h, [])) };
+    await step({ ...env, MIN_HEIGHT: "50" }, src, new Upstream(40));
+    expect(seen).toEqual([50, 51, 52]);
+    expect(await cursor(env.DB)).toBe(52);
+  });
+
   it("never moves the cursor backwards", async () => {
     await save(env.DB, 500, []);
     await save(env.DB, 20, []); // a step that read the cursor before a skip-ahead
