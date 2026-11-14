@@ -1,12 +1,11 @@
 // Indexer: one Durable Object that runs the alarm-driven index loop and fans new events out over hibernated WebSockets.
 import { DurableObject } from "cloudflare:workers";
 import { clientKey } from "./api";
-import { BadBlock, Budget, events, Neardata, Rpc, type NewEvent, type Source, Upstream } from "./chain";
+import { BadBlock, type Block, Budget, events, Neardata, Rpc, type NewEvent, type Source, Upstream } from "./chain";
 import { cursor, save, toEvent, type Row } from "./store";
 
 const SUBREQUESTS = 24; // free plan allows 50 per invocation; neardata redirects can double a call, D1 takes the rest
 const MAX_BLOCKS = 20;
-const STEP_MS = 20_000;
 const TIP_DELAY_MS = 2_500;
 const MAX_SOCKETS = 500;
 const MAX_PER_IP = 5;
@@ -23,29 +22,33 @@ export async function step(env: Env, src: Source, up: Upstream, sent: (rows: Row
   let h = c ? Math.max(c + 1, Number(env.MIN_HEIGHT) || 0) : Number(env.START_HEIGHT) || 0;
   const evs: NewEvent[] = [];
   let last = 0, final = 0, caughtUp = false, err: unknown = null;
-  const deadline = Date.now() + STEP_MS;
   try {
-    for (let n = 0; n < MAX_BLOCKS && Date.now() < deadline; n++) {
-      if (!h || h > final) {
-        final = await src.final(up);
-        h ||= final;
-        if (h > final) {
-          caughtUp = true;
-          break;
-        }
-      }
-      let b = null;
+    final = await src.final(up);
+    h ||= final;
+    const hs: number[] = [];
+    for (let x = h; x <= final && hs.length < MAX_BLOCKS; x++) hs.push(x);
+    caughtUp = hs.at(-1) === final || !hs.length;
+    // neardata is one call per block: fetch the batch in parallel. rpc fans out per tx, so one block at a time.
+    // Either way apply in height order and stop at the first height that failed.
+    const got: PromiseSettledResult<Block | null>[] = [];
+    const par = src instanceof Rpc ? 1 : hs.length;
+    for (let i = 0; i < hs.length; i += par) {
+      got.push(...(await Promise.allSettled(hs.slice(i, i + par).map((x) => src.block(up, x)))));
+      if (got.some((r) => r.status === "rejected" && !(r.reason instanceof BadBlock))) break;
+    }
+    for (const [i, r] of got.entries()) {
       try {
-        b = await src.block(up, h);
-        if (b) evs.push(...events(b, env.PAKT_FACTORY));
+        if (r.status === "rejected") throw r.reason;
+        if (r.value) evs.push(...events(r.value, env.PAKT_FACTORY));
       } catch (e) {
         // got a block but events() threw: wrong shape, retrying would wedge the cursor
-        if (!(e instanceof BadBlock || (b && e instanceof TypeError))) throw e;
-        console.error(JSON.stringify({ msg: "skip bad block", height: h, err: String(e) }));
+        if (!(e instanceof BadBlock || (r.status === "fulfilled" && r.value && e instanceof TypeError))) throw e;
+        console.error(JSON.stringify({ msg: "skip bad block", height: hs[i], err: String(e) }));
       }
-      last = h++;
+      last = hs[i];
     }
   } catch (e) {
+    caughtUp = false;
     if (!(e instanceof Budget)) err = e;
   }
   const saved = last ? await save(env.DB, last, evs) : [];
