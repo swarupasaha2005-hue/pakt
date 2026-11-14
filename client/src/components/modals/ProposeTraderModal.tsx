@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { leaderboard } from "@/lib/api";
 import { compact } from "@/lib/format";
-import { proposeTrader } from "@/lib/near/contracts";
+import { getFastHire, getTraderRecord, proposeTrader, quickOffer, type TraderRecord } from "@/lib/near/contracts";
+import { useWallet } from "@/lib/near/wallet";
 import { useTx } from "@/lib/pakt/tx";
 import { e6, toRaw } from "@/lib/pakt/units";
 
@@ -31,7 +32,8 @@ const field = "grid grid-cols-[1fr_10rem] items-center gap-3 text-xs text-text-2
 // NEAR account ids: lowercase labels split by '.', with '-' or '_' inside a label
 const ACCOUNT = /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
 
-/** member proposal: once approved the dao calls vault.offer_trader, then the trader accepts */
+/** member proposal: once approved the dao calls vault.offer_trader, then the trader accepts.
+ *  A pakter with a proven record can be fast-hired by one member, no vote */
 export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, trader, onClose, onDone }: Props) {
   const [query, setQuery] = useState(trader ?? "");
   const [traders, setTraders] = useState<{ account: string; note: string }[]>([]);
@@ -40,6 +42,14 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
   const [fee, setFee] = useState("20");
   const [stopLoss, setStopLoss] = useState(String(stopLossBps / 100));
   const tx = useTx(onDone);
+  const { accountId } = useWallet();
+  const [rules, setRules] = useState<{ min_hires: number; budget_bps: number } | null>(null);
+  const [looked, setLooked] = useState<{ account: string; rec: TraderRecord | null } | null>(null);
+  const [fast, setFast] = useState(true);
+
+  useEffect(() => {
+    getFastHire(vault).then(setRules);
+  }, [vault]);
 
   useEffect(() => {
     leaderboard({ range: "7d", limit: 20 })
@@ -49,6 +59,15 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
 
   const list = [...members.map((account) => ({ account, note: "member" })), ...traders.filter((t) => !members.includes(t.account))];
   const account = query.trim().toLowerCase();
+  useEffect(() => {
+    if (!rules || !ACCOUNT.test(account)) return;
+    const t = setTimeout(() => getTraderRecord(account).then((rec) => setLooked({ account, rec })), 300);
+    return () => clearTimeout(t);
+  }, [account, rules]);
+  const rec = looked?.account === account ? looked.rec : null;
+  // the vault re-checks all of this on chain
+  const proven = !!rules && !!rec && rec.hires >= rules.min_hires && !rec.profit_usd_e6.startsWith("-");
+  const quick = proven && fast && !!accountId && members.includes(accountId);
   const b = toRaw(budget, 6);
   const m = toRaw(maxPerTrade, 6);
   const feeN = Number(fee);
@@ -73,9 +92,8 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
         onSubmit={(e) => {
           e.preventDefault();
           if (blocked || !b || !m) return;
-          tx.run(
-            proposeTrader(dao, vault, { account, budget: b, maxPerTrade: m, feeBps: Math.round(feeN * 100), stopLossBps: Math.round(slN * 100) }, `hire ${account} at ${feeN}%`),
-          );
+          const terms = { account, budget: b, maxPerTrade: m, feeBps: Math.round(feeN * 100), stopLossBps: Math.round(slN * 100) };
+          tx.run(quick ? quickOffer(vault, terms) : proposeTrader(dao, vault, terms, `hire ${account} at ${feeN}%`));
         }}
         className="flex flex-col gap-3"
       >
@@ -110,19 +128,35 @@ export function ProposeTraderModal({ name, vault, dao, members, stopLossBps, tra
           Stop-loss %
           <Input type="number" min={1} max={90} required value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} />
         </label>
-        <p className="rounded-xl bg-panel-2 p-3 text-xs text-text-2">
-          ⓘ Starts a DAO vote (needs 50%+ of members, 1 day). Bond <Badge tone="neutral">0.1 NEAR</Badge>, returned when the vote closes.
-        </p>
+        {proven && rules && (
+          <label className="flex items-start gap-2 rounded-xl border border-accent/40 p-3 text-xs">
+            <input type="checkbox" checked={fast} onChange={(e) => setFast(e.target.checked)} className="mt-0.5 accent-accent" />
+            <span>
+              <b className="text-text">Fast hire, no vote.</b>{" "}
+              <span className="text-text-2">
+                {account} has {rec!.hires} hires and no net loss on record, so any member can send the offer. Budget up to {rules.budget_bps / 100}% of the vault. The DAO
+                can still replace the offer or fire anytime.
+              </span>
+            </span>
+          </label>
+        )}
+        {quick ? (
+          <p className="rounded-xl bg-panel-2 p-3 text-xs text-text-2">ⓘ Sends the offer right away. No bond.</p>
+        ) : (
+          <p className="rounded-xl bg-panel-2 p-3 text-xs text-text-2">
+            ⓘ Starts a DAO vote (needs 50%+ of members, 1 day). Bond <Badge tone="neutral">0.1 NEAR</Badge>, returned when the vote closes.
+          </p>
+        )}
         {done ? (
           <Button variant="primary" size="lg" onClick={onClose}>
             Close
           </Button>
         ) : (
           <Button type="submit" variant="primary" size="lg" disabled={!!blocked || tx.pending}>
-            {tx.pending ? "Confirming…" : (blocked ?? "Start vote")}
+            {tx.pending ? "Confirming…" : (blocked ?? (quick ? "Send offer" : "Start vote"))}
           </Button>
         )}
-        <TxStatus {...tx} done="Vote started" />
+        <TxStatus {...tx} done={quick ? "Offer sent" : "Vote started"} />
       </form>
     </Modal>
   );

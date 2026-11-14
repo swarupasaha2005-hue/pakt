@@ -52,7 +52,7 @@ const curve = (x1: number, y1: number, x2: number, y2: number) => `M${x1},${y1} 
 export function HowItWorks() {
   const [open, setOpen] = useState(false);
   const vault = { y: 96, h: 108 }, vmid = vault.y + vault.h / 2;
-  const member = 20 + H / 2, trader = 220 + H / 2, dex = 0 + H / 2, oracle = 120 + H / 2, dao = 240 + H / 2;
+  const member = 20 + H / 2, trader = 220 + H / 2, dex = 0 + H / 2, oracle = 120 + H / 2, dao = 240 + H / 2, factory = 240;
   return (
     <>
       <button
@@ -74,6 +74,7 @@ export function HowItWorks() {
                 curve(OUT(X[1]), vmid - 30, IN(X[2]), dex),
                 curve(IN(X[2]), oracle, OUT(X[1]), vmid),
                 curve(IN(X[2]), dao, OUT(X[1]), vmid + 30),
+                `M${X[1] + W / 2},${vault.y + vault.h} L${X[1] + W / 2},${factory}`,
               ].map((d) => (
                 <path key={d} d={d} strokeDasharray="6 6" className="animate-dash motion-reduce:animate-none" />
               ))}
@@ -87,21 +88,24 @@ export function HowItWorks() {
                 ))}
               </span>
             </Node>
+            <Node x={X[1]} y={factory} title="Factory" id={`${FACTORY} · pakter records`} />
             <Node x={X[2]} y={0} icon={logo("/tokens/ref.svg", "Ref Finance")} title="Ref Finance" id={DEX} />
             <Node x={X[2]} y={120} title="Price oracle" id={ORACLE} />
             <Node x={X[2]} y={240} icon={logo("/tokens/sputnik.svg", "Sputnik DAO")} title="Sputnik DAO" id={`<name>.${SPUTNIK}`} />
-            <Call x={275} y={(member + vmid - 30) / 2}>ft_transfer_call</Call>
+            <Call x={275} y={(member + vmid - 30) / 2}>deposit · quick_offer</Call>
             <Call x={275} y={(trader + vmid + 30) / 2}>trade()</Call>
             <Call x={585} y={(dex + vmid - 30) / 2}>swap</Call>
             <Call x={585} y={(oracle + vmid) / 2 - 12}>prices</Call>
             <Call x={585} y={(dao + vmid + 30) / 2 + 6}>offer · fire · set_cap</Call>
+            <Call x={X[1] + W / 2} y={(vault.y + vault.h + factory) / 2}>record · fast-hire check</Call>
           </div>
         </div>
         <div className="px-2 pt-5">
           <h2 className="text-lg font-medium">How Pakt works</h2>
           <p className="mt-1 max-w-[640px] text-sm text-text-2">
             Members pool tUSDC into a vault and get shares. Their DAO hires a pakter (the pakt&apos;s trader), who can only swap on Ref within the caps the pakt set. A stop-loss
-            pauses trading, and the pakter earns a fee only on profit above the high-water mark. Anyone can leave anytime with their share.
+            pauses trading, and the pakter earns a fee only on profit above the high-water mark. Anyone can leave anytime with their share. The factory keeps every
+            pakter&apos;s record across pakts; a proven pakter (3+ hires, no net loss) can be fast-hired by one member without a vote, for up to 25% of the vault.
           </p>
         </div>
         <div className="mt-5 flex justify-end gap-2 px-2">
