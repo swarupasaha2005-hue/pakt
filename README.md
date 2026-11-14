@@ -266,6 +266,20 @@ sequenceDiagram
 ## Hackathon tracks
 
 - **social** (main): shared money for a group on Sputnik DAO with named accounts. Members hire and fire a trader by vote instead of trusting one person with the funds.
+
+  How Pakt maps to the Social Money brief:
+
+  | Brief | Pakt |
+  |---|---|
+  | Build on Sputnik DAO, don't write a new multisig | One stock Sputnik DAO per pakt; hire, fire, caps and resume are DAO proposals |
+  | Collective ownership | Members hold vault shares and leave with their share at any time |
+  | Shared budgets | The DAO votes the trader's budget, per-trade cap and stop-loss |
+  | Programmable rewards | The vault splits profit on a high-water mark: members, trader fee, platform fee, nothing on losses |
+  | Reputation tied to named accounts, every point traceable | The factory keeps each trader's hires, fires, P/L and fees, each from an on-chain vault event |
+  | Public board | The Pakters leaderboard and trader profiles |
+  | near.social | Invites are NEAR Social posts that notify each invitee |
+
+  Next: let a pakt's treasury be managed through Trezu, and let a strong trader record unlock bigger budgets without a full vote.
 - **defi**: a pooled trading vault with shares, high-water-mark fees, oracle pricing and Ref (Rhea) swaps.
 - **security**: a spending-limited role. The trader gets trade rights but no withdraw, inside caps, an oracle floor, a slippage budget, a trade delay and a stop-loss.
 
