@@ -30,7 +30,7 @@ export function project(kind: string, raw: string): Record<string, unknown> {
 export const toEvent = (r: Row): Event => ({ ...r, data: project(r.kind, r.data) });
 
 export async function cursor(db: D1Database): Promise<number> {
-  return (await db.prepare("select height from cursor").first<number>("height")) ?? 0;
+  return (await db.prepare("select height from index_cursor").first<number>("height")) ?? 0;
 }
 
 // save inserts a step's events and advances the cursor atomically; returns only the new rows.
@@ -40,7 +40,7 @@ export async function save(db: D1Database, height: number, evs: NewEvent[]): Pro
       select value->>'height', value->>'ts_ms', value->>'tx_hash', value->>'receipt_id', value->>'log_idx', value->>'data_idx',
         value->>'emitter', value->>'vault', value->>'kind', value->>'actor', value->>'data'
       from json_each(?1) returning ${COLS}`).bind(JSON.stringify(evs)),
-    db.prepare("insert into cursor (id, height) values (1, ?1) on conflict (id) do update set height = max(height, excluded.height)").bind(height), // never backwards: an operator skip-ahead survives an in-flight step
+    db.prepare("insert into index_cursor (id, height) values (1, ?1) on conflict (id) do update set height = max(height, excluded.height)").bind(height), // never backwards: an operator skip-ahead survives an in-flight step
   ]);
   return ins.results.sort((a, b) => a.id - b.id);
 }
