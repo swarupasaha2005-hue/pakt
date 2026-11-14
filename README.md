@@ -4,6 +4,8 @@
 
 A group trading vault on NEAR: friends pool tokens in a vault, vote one person in as trader, and the trader can swap the pool but can never withdraw it.
 
+A **pakter** is the trader a pakt votes in: they can trade the pool, never withdraw it.
+
 <img width="1920" height="1080" alt="paktdotfam vercel app" src="https://github.com/user-attachments/assets/fba0e6d4-95f5-434d-bc57-13b3c5a999c2" />
 
 **Problem.** Friend groups, Discord/Telegram groups and investment clubs often pool money with the one person who trades well. Today that means "send money and hope": the trader holds everything and the others have no control if the trader loses it, steals it or disappears. Pakt keeps the money in a contract that only lets the trader swap between allowed tokens within voted limits, and only lets members take money out.
