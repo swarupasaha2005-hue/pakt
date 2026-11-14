@@ -129,7 +129,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 | `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 19 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
 | `make smoke` | ~1 min. Sandbox + local Worker: one pakt, one deposit. Prints `smoke: <event kinds>` from `/feed`, including `pakt_created` and `deposit`. |
 | `make stack-e2e` | Sandbox runs one pakt through every event kind; the local Worker indexes it; checks HTTP routes, WebSocket push and restart catch-up. Ends with `STACK E2E PASS`. |
-| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 91 passed`. |
+| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 92 passed`. |
 | `make client` | Next.js dev server; open http://localhost:3000. |
 
 `make e2e` proves, on the sandbox:

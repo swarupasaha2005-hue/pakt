@@ -144,4 +144,10 @@ describe("indexer step", () => {
     const res = await (await get("/accounts/bob.testnet/feed")).json<{ items: { height: number }[] }>();
     expect(res.items.map((e) => e.height)).toEqual([12, 10, 8, 7, 6, 5, 4]);
   });
+
+  it("never moves the cursor backwards", async () => {
+    await save(env.DB, 500, []);
+    await save(env.DB, 20, []); // a step that read the cursor before a skip-ahead
+    expect(await cursor(env.DB)).toBe(500);
+  });
 });
