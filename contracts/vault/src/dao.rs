@@ -40,7 +40,7 @@ impl Vault {
         self.start_sync(account).detach();
     }
 
-    fn wants_member(&self, account: &AccountId) -> bool {
+    pub(crate) fn wants_member(&self, account: &AccountId) -> bool {
         self.holders.get(account).is_some_and(|h| h.member && h.shares.0 > 0)
     }
 
