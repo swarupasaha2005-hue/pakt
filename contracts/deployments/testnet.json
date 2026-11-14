@@ -1,1 +1,34 @@
-{}
+{
+  "network": "testnet",
+  "factory": "pakt.pakt-0mxhjh.testnet",
+  "oracle": "oracle.pakt-0mxhjh.testnet",
+  "tokens": {
+    "tusdc": "tusdc.pakt-0mxhjh.testnet",
+    "tbtc": "tbtc.pakt-0mxhjh.testnet",
+    "tnear": "tnear.pakt-0mxhjh.testnet"
+  },
+  "base_token": "tusdc.pakt-0mxhjh.testnet",
+  "faucet": "faucet.pakt-0mxhjh.testnet",
+  "platform": "pakt-fees.testnet",
+  "price_reporter": "pakt-83p1jb.testnet",
+  "dex": "ref-finance-101.testnet",
+  "sputnik_factory": "sputnikv2.testnet",
+  "pools": {
+    "tusdc_tbtc": 2958,
+    "tusdc_tnear": 2959
+  },
+  "deploy_txs": {
+    "factory": [
+      "6MW5FEkbbU2n7uBkHBcj3XoYcjWWSaExNB4CdpEHkotz",
+      "3bCuYJkAtS8fcBXbyNUbsYYmX4mRzvSGZaPPCdodA5oG"
+    ],
+    "oracle": "CNpZr68Dh8ci4xgFPrKHudFSMQGwJh1d47HnajnHFXJT",
+    "tusdc": "GQkx1RY7KgVNh2CjVi56UQP6zxHGr7eArieNnUmzdE4Q",
+    "tbtc": "8qN2GYdXkJxsjXyJwCKZYfwG3fLdePsWXdNk48WHrBju",
+    "tnear": "ADY192PuLr5axtw9BRTJM5PzHkYnF3SETqvZgFnnwqca",
+    "pools": {
+      "2958": "3hcJ8fTzb8dpQ9hnA3c72oLSZ9WEajMqH4pgN3esE8p4",
+      "2959": "FYVB9z3CTN4ZXiyTTMzxXs69VVy8t4fnNFaTDhumnrkC"
+    }
+  }
+}

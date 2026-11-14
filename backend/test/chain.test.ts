@@ -104,6 +104,16 @@ describe("rejected api key", () => {
     expect(seen).toEqual(["Bearer bad", null, null]);
   });
 
+  it("goes keyless when the key is out of credit (402)", async () => {
+    const urls: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (u) => {
+      urls.push(String(u));
+      return String(u).includes("apiKey") ? Response.json({ error: "quota_exceeded" }, { status: 402 }) : Response.json(null);
+    });
+    expect(await new Neardata("https://nd.test", "spent").block(new Upstream(5), 7)).toBeNull();
+    expect(urls).toEqual(["https://nd.test/v0/block/7?apiKey=spent", "https://nd.test/v0/block/7"]);
+  });
+
   it("neardata drops a rejected apiKey query", async () => {
     const urls: string[] = [];
     vi.spyOn(globalThis, "fetch").mockImplementation(async (u) => {
