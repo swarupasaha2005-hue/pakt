@@ -61,7 +61,7 @@ The **(i)** button in the top bar explains the contracts behind a pakt, and **Si
 | NEAR feature | Use in Pakt |
 |---|---|
 | Sputnik DAO | One DAO per pakt. Members vote on `offer_trader`, `set_cap`, `resume`, `fire`. The vault keeps the `members` role equal to depositors through its own `vault` role (`add_member_to_role` / `remove_member_from_role`); retries via `sync_member`. See `contracts/vault/src/dao.rs`, `contracts/factory/src/policy.rs`. |
-| Named sub-accounts | Each vault is `<name>.<factory>`, e.g. `moon-club.pakt.testnet`. See `contracts/factory/src/name.rs`. |
+| Named sub-accounts | Each vault is `<name>.<factory>`, e.g. `alphafund.pakt.pakt-0mxhjh.testnet`. See `contracts/factory/src/name.rs`. |
 | NEP-141 tokens | Deposits through `ft_transfer_call`, payouts through `ft_transfer`. Only allowlisted tokens. |
 | Account with no access keys | The factory creates, funds, deploys and inits the vault in one batch and adds no key, so the vault code cannot be changed. |
 | Ref (Rhea) exchange | All trades are Ref `swap` actions (`ref-finance-101.testnet`, `v2.ref-finance.near`). See `contracts/vault/src/trade.rs`. |
@@ -83,7 +83,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | **Oracle push: fake a price to drain on deposit, leave or fee** | Price reporter | Not fully stopped: whoever reports prices is trusted, since a pushed price moves the swap floor, deposits and fees. On testnet that's one relay key, a known limit. Mainnet needs a public oracle with no team key. |
 | **Vote takeover: flood the DAO with fake members** | Outsider | $5 minimum deposit at oracle price plus a per-pakt minimum. Votes need a majority of members, and a new pakter waits out a trade delay, so members can leave first. |
 | **Griefing: lock the vault so nobody can leave** | Anyone | Deposits and leaves run as counted flows, not behind the trade lock. Any lock older than 10 min can be cleared by anyone with `unlock`. Fire always pauses first and can be finished by anyone. |
-| **Farmed record: build fake hires, then fast-hire into a real pakt** | Pakter | Fast hire still needs a real member to send the offer and the pakter to accept. The budget is capped at 25% of the vault, the trade delay lets members leave first, the oracle floor, slippage budget and stop-loss still apply, and the DAO can fire at any time. Farming hires costs a new pakt (12.5 NEAR) per fake hire. |
+| **Farmed record: build fake hires, then fast-hire into a real pakt** | Pakter | Fast hire still needs a real member to send the offer and the pakter to accept. The budget is capped at 25% of the vault, the trade delay lets members leave first, the oracle floor, slippage budget and stop-loss still apply, and the DAO can fire at any time. Farming hires costs a new pakt (12.65 NEAR on testnet) per fake hire. |
 | **Bad pakter, mid-trade** | Pakter | A fire vote pauses the pakter immediately, even with a trade in flight. The rest of the fire (fee to date, removal) is finished by anyone once the trade lock clears. |
 
 ## Security guarantees
@@ -103,7 +103,7 @@ How someone could try to take the money, and what stops them. Details in the tab
 | Internal ledger | Balances live in `balances` / `at_dex`, never read from `ft_balance_of`, so tokens sent directly (donations) can't move the share price. |
 | Concurrency and stale-lock unlock | Trade, accept, fire and recover hold an exclusive lock (`op`); deposits, leaves and settles run as counted flows, so deposit spam can't block leaving. A lock or flow older than 10 min is cleared by anyone with `unlock`. Callbacks carry `op_id` / `flow_gen`, so a stale callback is ignored (a stale deposit is refunded). |
 | DAO name squatting | The factory puts a random nonce in the DAO metadata and checks it in `on_dao_check`; a squatted `<name>.<sputnik>` aborts and refunds. |
-| Backend hardening | Per-IP rate limits (60/min API, 10/min stream, 1/min faucet, 6/min gas relay on `POST /relay` and `POST /relay/topup`), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), CORS allowlist. Writes are only the faucet (`POST /faucet`) and a token-guarded `POST /admin/start`. |
+| Backend hardening | Per-IP rate limits (60/min API, 10/min stream, 1/min faucet, 6/min gas relay on `POST /relay` and `POST /relay/topup`), validated account ids and query params, only events emitted by the factory or a direct `<name>.<factory>` vault are indexed (`trusted` in `backend/src/chain.ts`), CORS allowlist. Writes are only the faucet (`POST /faucet`), the gas relayer (`POST /relay`, `POST /relay/topup`) and a token-guarded `POST /admin/start`. |
 | Faucet limits | `POST /faucet` sends test tokens from a dedicated pre-funded account (its key is a Worker secret; the owner key never touches the backend). One claim per account per day and 3 per IP per day, tracked in D1 (`faucet_claims`); the account must exist on chain. |
 
 Two independent security reviews were run on the contracts and backend (not a professional third-party audit); their findings were fixed and have regression tests (`contracts/vault/src/audit_tests.rs`, `contracts/vault/src/review_tests.rs`, `contracts/e2e/tests/audit.rs`).
@@ -114,7 +114,7 @@ Two independent security reviews were run on the contracts and backend (not a pr
 - Fees are marked at whatever price the oracle reports at deposit/leave/settle; a short price spike can crystallize a fee that the price then gives back.
 - A DAO majority can use function-call proposals to spend the DAO account's own small NEAR balance (not the vault's tokens).
 - Testnet Ref pools drift from the oracle price; re-centre them with `scripts/deploy-testnet.sh --reseed` or trades hit the 2% floor.
-- A mainnet oracle is still to be chosen: `priceoracle.near` has been stale since March 2026. The mainnet plan (accounts, config, oracle options, costs, deploy checklist) is in [issue #9](https://github.com/swarupasaha2005-hue/pakt/issues/9).
+- A mainnet oracle is still to be chosen: `priceoracle.near` has been stale since March 2026. The plan for it is in [MAINNET.md](MAINNET.md).
 - Fast hire counts hires, not their quality: a pakter with flat or tiny-profit hires qualifies. The 25% budget cap and the DAO's fire vote bound the risk.
 - Vaults have no keys, so pakts created before fast hire shipped don't have it; the app hides the option for them.
 
@@ -129,7 +129,7 @@ Prerequisites: Rust with the `wasm32-unknown-unknown` target (`rustup target add
 | `make e2e` | Builds wasm, starts a local NEAR sandbox with the real Sputnik DAO, NearDeFi price-oracle and Ref exchange wasm (`contracts/res/external/`), runs `contracts/e2e/tests`. Expect `test result: ok. 19 passed` for `scenarios` and `3 passed` for `audit` and `1 passed` for `gas` (8-token create + full leave fit 300 TGas). |
 | `make smoke` | ~1 min. Sandbox + local Worker: one pakt, one deposit. Prints `smoke: <event kinds>` from `/feed`, including `pakt_created` and `deposit`. |
 | `make stack-e2e` | Sandbox runs one pakt through every event kind; the local Worker indexes it; checks HTTP routes, WebSocket push and restart catch-up. Ends with `STACK E2E PASS`. |
-| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 90 passed`. |
+| `make backend-test` | `tsc --noEmit` clean, then vitest in workerd: `Tests 91 passed`. |
 | `make client` | Next.js dev server; open http://localhost:3000. |
 
 `make e2e` proves, on the sandbox:
@@ -160,31 +160,47 @@ Live demo: https://paktdotfam.vercel.app (client on Vercel, backend on Cloudflar
 
 Deployed accounts (testnet):
 
-| Contract | Account | Explorer |
-|---|---|---|
-| Factory | `pakt.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/pakt.pakt-0mxhjh.testnet) |
-| Price oracle | `oracle.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/oracle.pakt-0mxhjh.testnet) |
-| tUSDC token | `tusdc.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/tusdc.pakt-0mxhjh.testnet) |
-| tBTC token | `tbtc.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/tbtc.pakt-0mxhjh.testnet) |
-| tNEAR token | `tnear.pakt-0mxhjh.testnet` | [nearblocks](https://testnet.nearblocks.io/address/tnear.pakt-0mxhjh.testnet) |
-| Platform fees | `pakt-fees.testnet` | [nearblocks](https://testnet.nearblocks.io/address/pakt-fees.testnet) |
-| Price reporter | `pakt-83p1jb.testnet` | [nearblocks](https://testnet.nearblocks.io/address/pakt-83p1jb.testnet) |
-| Ref exchange | `ref-finance-101.testnet` | [nearblocks](https://testnet.nearblocks.io/address/ref-finance-101.testnet) |
-| Sputnik DAO factory | `sputnikv2.testnet` | [nearblocks](https://testnet.nearblocks.io/address/sputnikv2.testnet) |
-| Ref pools | tUSDC/tBTC `2958`, tUSDC/tNEAR `2959` | [tBTC pool](https://testnet.app.ref.finance/pool/2958), [tNEAR pool](https://testnet.app.ref.finance/pool/2959) |
+| Contract | Account | Deploy tx | Explorer |
+|---|---|---|---|
+| Factory (vault code inside) | `pakt.pakt-0mxhjh.testnet` | Deployed [`6MW5FEkb…`](https://testnet.nearblocks.io/txns/6MW5FEkbbU2n7uBkHBcj3XoYcjWWSaExNB4CdpEHkotz), fast hire upgrade [`3bCuYJkA…`](https://testnet.nearblocks.io/txns/3bCuYJkAtS8fcBXbyNUbsYYmX4mRzvSGZaPPCdodA5oG) | [nearblocks](https://testnet.nearblocks.io/address/pakt.pakt-0mxhjh.testnet) |
+| Price oracle | `oracle.pakt-0mxhjh.testnet` | Deployed [`CNpZr68D…`](https://testnet.nearblocks.io/txns/CNpZr68Dh8ci4xgFPrKHudFSMQGwJh1d47HnajnHFXJT) | [nearblocks](https://testnet.nearblocks.io/address/oracle.pakt-0mxhjh.testnet) |
+| tUSDC token | `tusdc.pakt-0mxhjh.testnet` | Deployed [`GQkx1RY7…`](https://testnet.nearblocks.io/txns/GQkx1RY7KgVNh2CjVi56UQP6zxHGr7eArieNnUmzdE4Q) | [nearblocks](https://testnet.nearblocks.io/address/tusdc.pakt-0mxhjh.testnet) |
+| tBTC token | `tbtc.pakt-0mxhjh.testnet` | Deployed [`8qN2GYdX…`](https://testnet.nearblocks.io/txns/8qN2GYdXkJxsjXyJwCKZYfwG3fLdePsWXdNk48WHrBju) | [nearblocks](https://testnet.nearblocks.io/address/tbtc.pakt-0mxhjh.testnet) |
+| tNEAR token | `tnear.pakt-0mxhjh.testnet` | Deployed [`ADY192Pu…`](https://testnet.nearblocks.io/txns/ADY192PuLr5axtw9BRTJM5PzHkYnF3SETqvZgFnnwqca) | [nearblocks](https://testnet.nearblocks.io/address/tnear.pakt-0mxhjh.testnet) |
+| Test token faucet + gas relayer | `faucet.pakt-0mxhjh.testnet` | Created [`533fDkVx…`](https://testnet.nearblocks.io/txns/533fDkVx7sz79jdKxwS8oBXFv4FSkxzoMRUjGBakt4Ln) | [nearblocks](https://testnet.nearblocks.io/address/faucet.pakt-0mxhjh.testnet) |
+| Platform fees | `pakt-fees.testnet` | Created [`BeFd3Ngj…`](https://testnet.nearblocks.io/txns/BeFd3Ngjb3djY6DMS7cir385BdPhrZb7hbspqwV8hpWR) | [nearblocks](https://testnet.nearblocks.io/address/pakt-fees.testnet) |
+| Price reporter | `pakt-83p1jb.testnet` | Created [`5uaR3dya…`](https://testnet.nearblocks.io/txns/5uaR3dya7ZZP3N5jvBDp5nzbVCCsYWJAyzQYVhp5DftP) | [nearblocks](https://testnet.nearblocks.io/address/pakt-83p1jb.testnet) |
+| Ref exchange | `ref-finance-101.testnet` | External (Ref Finance) | [nearblocks](https://testnet.nearblocks.io/address/ref-finance-101.testnet) |
+| Sputnik DAO factory | `sputnikv2.testnet` | External (Sputnik DAO) | [nearblocks](https://testnet.nearblocks.io/address/sputnikv2.testnet) |
+| Ref pools | tUSDC/tBTC `2958`, tUSDC/tNEAR `2959` | Created [`3hcJ8fTz…`](https://testnet.nearblocks.io/txns/3hcJ8fTzb8dpQ9hnA3c72oLSZ9WEajMqH4pgN3esE8p4) (2958), [`FYVB9z3C…`](https://testnet.nearblocks.io/txns/FYVB9z3CTN4ZXiyTTMzxXs69VVy8t4fnNFaTDhumnrkC) (2959) | [tBTC pool](https://testnet.app.ref.finance/pool/2958), [tNEAR pool](https://testnet.app.ref.finance/pool/2959) |
+
+### On-chain walkthrough (testnet)
+
+We ran the full flow from our team test accounts (`*.pakt-0mxhjh.testnet`). The indexer has 4 pakts, 12 accounts, 12 deposits, 9 trades, 7 hires, 4 fires, 3 leaves and 2 settles. One pakt, `alphafund`, end to end:
+
+| Step | Account | Call | Tx |
+|---|---|---|---|
+| Create the pakt | `alice` | `create_pakt` on the factory | [`DUZEHtnv…`](https://testnet.nearblocks.io/txns/DUZEHtnvsYMhfTE95aYBurQfyRqEzw74QHg7bhj84rhe) |
+| Deposit tUSDC, get shares and a DAO seat | `alice` | `ft_transfer_call` | [`EXkziGNE…`](https://testnet.nearblocks.io/txns/EXkziGNEVuQBxpTQpr7oW1Q3EgLPkNyzfkHEfcJ84xWu) |
+| Hire vote passes, offer opens | `dave` | `act_proposal` on `alphafund.sputnikv2.testnet` | [`9hzSopjQ…`](https://testnet.nearblocks.io/txns/9hzSopjQ9hEXE3AZB6xJnUp8tKQiPUgtr6DNr7iQPSuQ) |
+| Pakter accepts | `prakhar` | `accept_offer` | [`3GQS4Cgn…`](https://testnet.nearblocks.io/txns/3GQS4CgngJDY81ntycEiEsNrqEPsFzCqQzCLaERMbTgh) |
+| Pakter trades on Ref | `prakhar` | `trade` | [`5MmLqzf5…`](https://testnet.nearblocks.io/txns/5MmLqzf5MHgkuqJEecT8ExcHpp9mwrRAJVRP5CfZscaF) |
+| Fire vote passes | `dave` | `act_proposal` | [`91jijgxF…`](https://testnet.nearblocks.io/txns/91jijgxFhaScxVM99bKuM2BjTcpRqVuxH9pyNUGFVPJ) |
+| Fire with fees settled first (`nearbulls`) | `dave` | `act_proposal` | [`8LNXJdyr…`](https://testnet.nearblocks.io/txns/8LNXJdyrTfSkbMQvcd3nfRw6LchgzNjn5oXcodZwMhXh) |
+| Member leaves, paid in kind (`livetest`) | `pakt-0mxhjh` | `leave` | [`EpugtF6B…`](https://testnet.nearblocks.io/txns/EpugtF6BD7xRm4dZiEs1GK6nhVzScA8ogocmZhJ6vBcH) |
 
 ## Mainnet plan
 
-Pakt runs on testnet today. Nothing is deployed to mainnet yet; the full plan is in [issue #9](https://github.com/swarupasaha2005-hue/pakt/issues/9).
+Pakt runs on testnet today. Nothing is deployed to mainnet yet. The plan is in [MAINNET.md](MAINNET.md); discussion in [issue #9](https://github.com/swarupasaha2005-hue/pakt/issues/9).
 
 | Step | What changes |
 |---|---|
 | Accounts | A new owner account on a hardware key (only `set_config` and upgrades), `factory.<owner>`, a separate platform-fee account, and a gas relayer with a small capped float. The owner key never touches the backend. |
 | Config | `sputnik-dao.near`, `v2.ref-finance.near`, native USDC, wBTC and wNEAR (`wrap.near`) as tokens, USDC as the base token, a 7-day settle period and at least a 24h trade delay. |
 | Oracle (the blocker) | `priceoracle.near` has been stale since March 2026. Recommended: a small adapter that reads Pyth on NEAR and exposes the same `get_price_data` the vault calls, rejecting stale or wide-confidence prices, so no team key sits on the price path. |
-| Cost | About 6 NEAR for the factory, 5-10 NEAR relayer float, and 12.5 NEAR per pakt paid by its creator. |
+| Cost | About 6 NEAR for the factory, 5-10 NEAR relayer float, and about 12.65 NEAR per pakt paid by its creator. |
 | Launch | Reproducible wasm builds with published hashes, `make e2e` against the oracle adapter, a $10 smoke test (create, deposit, hire, trade, settle, fire, leave), a per-pakt deposit cap, and an external audit before raising caps. No faucet on mainnet. |
-| After launch | Members manage a pakt's DAO through Trezu, which imports `*.sputnikdao.near` DAOs. |
+| After launch | Members can also run a pakt's DAO from Trezu, a NEAR treasury app built on Sputnik DAO. |
 
 ## Architecture
 
@@ -284,7 +300,7 @@ sequenceDiagram
 | `contracts/e2e/` | near-workspaces sandbox tests and the `stack` binary used by the backend stack test |
 | `contracts/res/` | Built wasm; `res/external/` holds the Sputnik, price-oracle and Ref wasm |
 | `contracts/deployments/` | Contract ids per network |
-| `backend/` | Cloudflare Worker: indexer, read API, WebSocket stream, price relay, faucet, gas relayer, D1 migrations, vitest tests, `scripts/stack-e2e.ts` |
+| `backend/` | Cloudflare Worker: indexer, read API, WebSocket stream, price relay, faucet, gas relayer, D1 migrations, vitest tests, `backend/scripts/stack-e2e.ts` |
 | `client/` | Next.js app (see `client/README.md`) |
 | `scripts/` | `build-contracts.sh`, `deploy-testnet.sh` |
 | `Makefile` | All targets above |
@@ -306,7 +322,7 @@ sequenceDiagram
   | Public board | The Pakters leaderboard and trader profiles |
   | near.social | Invites are NEAR Social posts that notify each invitee |
 
-  Next: let members manage a pakt's DAO through Trezu once Pakt is on mainnet (Trezu imports `*.sputnikdao.near` DAOs).
+  Next: let members also run a pakt's DAO from Trezu (a treasury app on Sputnik DAO) once Pakt is on mainnet.
 - **defi**: a pooled trading vault with shares, high-water-mark fees, oracle pricing and Ref (Rhea) swaps.
 - **security**: a spending-limited role. The trader gets trade rights but no withdraw, inside caps, an oracle floor, a slippage budget, a trade delay and a stop-loss.
 
