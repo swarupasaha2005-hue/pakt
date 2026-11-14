@@ -173,6 +173,19 @@ Deployed accounts (testnet):
 | Sputnik DAO factory | `sputnikv2.testnet` | [nearblocks](https://testnet.nearblocks.io/address/sputnikv2.testnet) |
 | Ref pools | tUSDC/tBTC `2958`, tUSDC/tNEAR `2959` | [tBTC pool](https://testnet.app.ref.finance/pool/2958), [tNEAR pool](https://testnet.app.ref.finance/pool/2959) |
 
+## Mainnet plan
+
+Pakt runs on testnet today. Nothing is deployed to mainnet yet; the full plan is in [issue #9](https://github.com/swarupasaha2005-hue/pakt/issues/9).
+
+| Step | What changes |
+|---|---|
+| Accounts | A new owner account on a hardware key (only `set_config` and upgrades), `factory.<owner>`, a separate platform-fee account, and a gas relayer with a small capped float. The owner key never touches the backend. |
+| Config | `sputnik-dao.near`, `v2.ref-finance.near`, native USDC, wBTC and wNEAR (`wrap.near`) as tokens, USDC as the base token, a 7-day settle period and at least a 24h trade delay. |
+| Oracle (the blocker) | `priceoracle.near` has been stale since March 2026. Recommended: a small adapter that reads Pyth on NEAR and exposes the same `get_price_data` the vault calls, rejecting stale or wide-confidence prices, so no team key sits on the price path. |
+| Cost | About 6 NEAR for the factory, 5-10 NEAR relayer float, and 12.5 NEAR per pakt paid by its creator. |
+| Launch | Reproducible wasm builds with published hashes, `make e2e` against the oracle adapter, a $10 smoke test (create, deposit, hire, trade, settle, fire, leave), a per-pakt deposit cap, and an external audit before raising caps. No faucet on mainnet. |
+| After launch | Members manage a pakt's DAO through Trezu, which imports `*.sputnikdao.near` DAOs. |
+
 ## Architecture
 
 GitHub renders these diagrams; the source is plain Mermaid.
@@ -205,7 +218,7 @@ flowchart LR
 
   C -- "sign txs" --> W
   W -- "create_pakt" --> F
-  W -- "deposit, leave, trade" --> V
+  W -- "deposit, leave, trade, quick_offer" --> V
   W -- "propose, vote" --> D
   W -- "invite by name" --> S
   F -- "deploys" --> V
@@ -213,7 +226,7 @@ flowchart LR
   D -- "offer_trader, set_cap, fire" --> V
   V -- "swap" --> R
   V -- "get_price_data" --> O
-  V -- "record_trader" --> F
+  V -- "record_trader, get_trader_record" --> F
   F -. "NEP-297 events" .-> I
   V -. "NEP-297 events" .-> I
   I --> DB --> API
