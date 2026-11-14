@@ -115,20 +115,21 @@ export class Upstream {
   }
 }
 
-// A rejected key (401/403) must not stop indexing: go keyless (free tier) for 10 min, then try the key again.
-let keyOffUntil = 0;
-export const resetKey = () => (keyOffUntil = 0); // tests
-const useKey = (key: string) => (key && Date.now() >= keyOffUntil ? key : "");
-async function keyed<T>(key: string, run: (key: string) => Promise<T>): Promise<T> {
-  const k = useKey(key);
-  try {
-    return await run(k);
-  } catch (e) {
-    // 401/403 bad key, 402 key out of credit: go keyless for a while
-    if (!k || !/: 40[123] /.test(String(e))) throw e;
-    keyOffUntil = Date.now() + 600_000;
-    return run("");
+// FASTNEAR_API_KEY may list several keys, comma separated. A rejected (401/403) or out-of-credit (402) key
+// is skipped for 10 min and the next one tried; with none left, go keyless (free tier).
+const keyOff = new Map<string, number>();
+export const resetKey = () => keyOff.clear(); // tests
+async function keyed<T>(keys: string, run: (key: string) => Promise<T>): Promise<T> {
+  for (const k of keys.split(",").map((x) => x.trim()).filter(Boolean)) {
+    if (Date.now() < (keyOff.get(k) ?? 0)) continue;
+    try {
+      return await run(k);
+    } catch (e) {
+      if (!/: 40[123] /.test(String(e))) throw e;
+      keyOff.set(k, Date.now() + 600_000);
+    }
   }
+  return run("");
 }
 
 export interface Source {
