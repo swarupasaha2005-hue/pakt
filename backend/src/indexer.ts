@@ -19,7 +19,8 @@ export function source(env: Env): Source {
 // step indexes up to MAX_BLOCKS final blocks after the cursor. Progress is saved, and sent, even when a later block fails.
 export async function step(env: Env, src: Source, up: Upstream, sent: (rows: Row[]) => void = () => {}): Promise<{ saved: Row[]; caughtUp: boolean }> {
   const c = await cursor(env.DB);
-  let h = c ? c + 1 : Number(env.START_HEIGHT) || 0; // 0 = start at the final tip
+  // MIN_HEIGHT skips a known-empty stretch; 0 START_HEIGHT = start at the final tip
+  let h = c ? Math.max(c + 1, Number(env.MIN_HEIGHT) || 0) : Number(env.START_HEIGHT) || 0;
   const evs: NewEvent[] = [];
   let last = 0, final = 0, caughtUp = false, err: unknown = null;
   const deadline = Date.now() + STEP_MS;

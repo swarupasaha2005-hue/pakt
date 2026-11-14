@@ -14,6 +14,7 @@ export default defineConfig(async () => ({
           PAKT_FACTORY: "pakt.testnet", // fixtures use this, not the deployed factory
           PRICE_MAP: "",
           PRICE_ORACLE: "",
+          MIN_HEIGHT: "0", // fixtures index from low heights
         },
       },
     }),
