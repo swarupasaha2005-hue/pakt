@@ -11,6 +11,7 @@ interface __BaseEnv_Env {
 	NEARDATA_URL: string;
 	NEAR_RPC_URL: string;
 	START_HEIGHT: string;
+	MIN_HEIGHT: string;
 	UPSTREAM_PER_MIN: string;
 	CORS_ORIGINS: string;
 	PRICE_MAP: string;
@@ -34,7 +35,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PAKT_FACTORY" | "NEARDATA_URL" | "NEAR_RPC_URL" | "START_HEIGHT" | "UPSTREAM_PER_MIN" | "CORS_ORIGINS" | "PRICE_MAP" | "PRICE_ORACLE" | "HERMES_URL" | "COINGECKO_URL" | "COINBASE_URL" | "TESTNET_RPC_URL" | "ADMIN_TOKEN">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "PAKT_FACTORY" | "NEARDATA_URL" | "NEAR_RPC_URL" | "START_HEIGHT" | "MIN_HEIGHT" | "UPSTREAM_PER_MIN" | "CORS_ORIGINS" | "PRICE_MAP" | "PRICE_ORACLE" | "HERMES_URL" | "COINGECKO_URL" | "COINBASE_URL" | "TESTNET_RPC_URL" | "ADMIN_TOKEN">> {}
 }
 declare module "*.txt" {
 	const value: string;

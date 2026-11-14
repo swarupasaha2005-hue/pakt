@@ -15,6 +15,8 @@
     "NEAR_RPC_URL": "",
     // first block when no cursor is stored; 0 = the final tip
     "START_HEIGHT": "0",
+    // indexer never reads below this; raise it to skip a stretch with no pakt events
+    "MIN_HEIGHT": "277635748",
     // upstream requests per minute; free rpc took 60 rapid calls unthrottled
     "UPSTREAM_PER_MIN": "600",
     // exact origins; `*` = one dns label, so vercel preview urls work. Add the custom domain once there is one
