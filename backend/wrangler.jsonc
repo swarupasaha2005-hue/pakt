@@ -14,7 +14,7 @@
     // empty = neardata, one call per block (needs FASTNEAR_API_KEY: keyless 429s); an rpc url (sandbox :3030) polls per tx
     "NEAR_RPC_URL": "",
     // first block when no cursor is stored; 0 = the final tip
-    "START_HEIGHT": "0",
+    "START_HEIGHT": "277635748",
     // indexer never reads below this; raise it to skip a stretch with no pakt events
     "MIN_HEIGHT": "277635748",
     // upstream requests per minute; free rpc took 60 rapid calls unthrottled

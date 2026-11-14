@@ -15,6 +15,7 @@ export default defineConfig(async () => ({
           PRICE_MAP: "",
           PRICE_ORACLE: "",
           MIN_HEIGHT: "0", // fixtures index from low heights
+          START_HEIGHT: "0",
         },
       },
     }),
