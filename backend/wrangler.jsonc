@@ -31,7 +31,7 @@
     // faucet drip per request, raw units: 1000 tUSDC, 0.01 tBTC, 50 tNEAR; needs the FAUCET_SIGNER secret (pre-funded faucet account, not the owner), which also pays gas for POST /relay
     "FAUCET_DRIPS": "{\"tusdc.pakt-0mxhjh.testnet\":\"1000000000\",\"tbtc.pakt-0mxhjh.testnet\":\"1000000\",\"tnear.pakt-0mxhjh.testnet\":\"50000000000000000000000000\"}"
   },
-  // FASTNEAR_API_KEY (optional secret): raises neardata/RPC limits. ADMIN_TOKEN guards POST /admin/start.
+  // FASTNEAR_API_KEY (optional secret): raises neardata/RPC limits; comma-separated keys are tried in order, then keyless. ADMIN_TOKEN guards POST /admin/start.
   // relay secrets (optional, `wrangler secret put`): ORACLE_REPORTER `account_id:ed25519:<secret>` signs
   // report_prices; HERMES_API_KEY (Pyth bearer key) switches the source from keyless CoinGecko to Hermes.
   "secrets": { "required": ["ADMIN_TOKEN"] },
